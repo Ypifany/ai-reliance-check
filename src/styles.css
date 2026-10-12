@@ -166,6 +166,7 @@ button {
   align-items: center;
   gap: 0.75rem;
   color: var(--ink);
+  font-size: 0.95rem;
   font-weight: 750;
   text-decoration: none;
 }
@@ -247,22 +248,21 @@ main:focus,
 
 .hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.65fr);
-  gap: clamp(3rem, 7vw, 7rem);
+  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap: clamp(2.5rem, 6vw, 6rem);
   align-items: center;
-  min-height: calc(100vh - 72px);
-  padding-block: clamp(4rem, 10vw, 8rem);
+  padding-block: clamp(3.5rem, 7vw, 6rem);
 }
 
 .hero-copy > p {
   max-width: 690px;
-  font-size: clamp(1.08rem, 2vw, 1.3rem);
+  font-size: clamp(1.05rem, 1.8vw, 1.2rem);
   color: var(--muted);
 }
 
 .hero-copy h1 {
-  max-width: 12ch;
-  font-size: clamp(2.75rem, 6vw, 5.15rem);
+  max-width: 14ch;
+  font-size: clamp(2.75rem, 5.3vw, 4.7rem);
 }
 
 .hero-copy h1 span {
@@ -270,11 +270,31 @@ main:focus,
   color: var(--teal);
 }
 
+.hero-copy > .hero-kicker {
+  margin-bottom: 1.2rem;
+  color: var(--teal);
+  font-family: var(--mono);
+  font-size: clamp(1.05rem, 1.8vw, 1.3rem);
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  line-height: 1.2;
+  text-transform: uppercase;
+}
+
+.hero-copy > .hero-definition {
+  color: var(--ink);
+  font-size: clamp(1.1rem, 2vw, 1.28rem);
+}
+
+.hero-copy > .hero-promise {
+  font-weight: 650;
+}
+
 .situation-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
-  margin: 0 0 2rem;
+  margin: 0;
   padding: 0;
   list-style: none;
 }
@@ -345,7 +365,17 @@ main:focus,
 }
 
 .kitchen-figure figcaption strong {
+  display: block;
+  margin-bottom: 0.25rem;
   color: var(--ink);
+}
+
+.section-compact {
+  padding-block: clamp(3rem, 6vw, 5rem);
+}
+
+.situations-section {
+  border-top: 1px solid var(--border);
 }
 
 .eyebrow,
@@ -1258,6 +1288,21 @@ button.button {
   font-weight: 600;
 }
 
+.record-action-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.record-action-summary p {
+  margin: 0;
+  padding: 0.85rem;
+  border: 1px solid var(--border);
+  background: var(--paper);
+  font-size: 0.92rem;
+}
+
 .contribution-table {
   width: 100%;
   margin: 1.2rem 0;
@@ -1410,6 +1455,20 @@ button.button {
 
 .brand-footer {
   margin-bottom: 0.75rem;
+}
+
+.creator-credit,
+.method-credit {
+  margin-bottom: 0.35rem;
+}
+
+.creator-credit {
+  color: var(--ink);
+}
+
+.method-credit {
+  color: var(--muted);
+  font-size: 0.88rem;
 }
 
 .footer-notice {
@@ -1609,6 +1668,10 @@ button.button {
 
   .contribution-table thead {
     display: none;
+  }
+
+  .record-action-summary {
+    grid-template-columns: 1fr;
   }
 
   .contribution-table,
