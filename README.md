@@ -1,8 +1,8 @@
-# AI Reliance Check
+# Human + AI Work Check
 
 **What can I delegate to AI—and still stand behind the result?**
 
-AI Reliance Check is a task-specific decision aid for calibrating human reliance on AI. It evaluates the working arrangement—not the model name—across five dimensions:
+Human + AI Work Check is a task-specific decision aid built on the AI Reliance Check method. It looks at one real project—not the model name alone—across five dimensions:
 
 - Capability Fit
 - Behavioral Fit
@@ -10,7 +10,7 @@ AI Reliance Check is a task-specific decision aid for calibrating human reliance
 - Workflow Control
 - Outcome Testability
 
-The check produces a transparent Reliance Score, evidence confidence, validation status, authorization boundary, hard gates, and practical actions that can strengthen the arrangement now, within 24 hours, within days, or within weeks.
+The check produces a transparent project score, information about how solid the score is, what AI may and may not do, problems that need to be fixed first, and practical actions that can strengthen the project now, within 24 hours, within days, or within weeks.
 
 ## Current status
 
@@ -22,8 +22,8 @@ The prototype:
 - Stores project data locally on the device
 - Supports Plan, Release, and Outcome checks
 - Exports and imports project JSON
-- Prints a task-specific Reliance Card
-- Creates a separate Human–AI Creation Record
+- Prints a task-specific project card
+- Creates a separate How the Work Was Made record
 
 Do not enter confidential, regulated, or sensitive information.
 
