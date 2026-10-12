@@ -9,6 +9,7 @@ import {
   getBand,
   scoreAssessment,
 } from './scoring.js';
+import kitchenRelationshipIllustration from './kitchen-relationship.svg';
 
 const STORAGE_KEY = 'ai-reliance-check:v0.1';
 const RECORD_KEY = 'ai-reliance-check:creation-record:v0.1';
@@ -225,29 +226,30 @@ function setActiveNav(path) {
 }
 
 function renderHome() {
-  document.title = 'AI Reliance Check — Delegate with a boundary';
+  document.title = 'AI Reliance Check — See the working relationship';
   main.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="eyebrow">AI Reliance Check</p>
-        <h1>What can I delegate to AI—and still stand behind the result?</h1>
-        <p>Examine the person, configured system, task, workflow, authority, and outcome at stake. Get a clear boundary for what may be delegated, what must be verified, and what should not be authorized yet.</p>
-        <div class="hero-actions">
-          <a class="button" href="#/check">Check a project <span aria-hidden="true">→</span></a>
-          <a class="button button-secondary" href="#/sample">View a completed example</a>
-        </div>
-      </div>
-      <aside class="sample-card" aria-label="Example result">
-        <span class="stamp stamp-warning">Conditional reliance</span>
-        <div class="sample-score"><strong>55</strong><span>/ 100</span></div>
-        <p><strong>Drafting and supervised changes are supported.</strong> Independent verification and release approval are not.</p>
-        <ul class="boundary-list">
-          <li class="allow">Organize and draft under review</li>
-          <li class="allow">Propose website changes</li>
-          <li class="block">Do not self-verify material claims</li>
-          <li class="block">Do not publish without approval</li>
+        <p class="eyebrow">When AI is involved</p>
+        <ul class="situation-list" aria-label="Common situations involving AI">
+          <li><span>Teacher</span><q>This sounds like AI wrote it.</q></li>
+          <li><span>Publisher</span><q>The checker says you didn’t write this.</q></li>
+          <li><span>Manager</span><q>Let the AI agent do it—we’ll save time. You’re responsible for checking it.</q></li>
+          <li><span>Business owner</span><q>If an expert checks everything, what are we saving?</q></li>
         </ul>
-      </aside>
+        <h1>The output is the cake. <span>The collaboration is the kitchen.</span></h1>
+        <p>AI Reliance Check shows what the human did, what the AI contributed, what was checked, and what the human authorized the AI to do within the workflow.</p>
+        <p class="assurance-note"><strong>Human presence is not human assurance.</strong> A review protects the outcome only when the person can recognize, correct, and stop a serious error.</p>
+        <div class="hero-actions">
+          <a class="button" href="#/check">Decide what AI may do <span aria-hidden="true">→</span></a>
+          <a class="button button-secondary" href="#/creation-record">Document how it was made</a>
+        </div>
+        <p class="hero-limit"><strong>Not an AI detector.</strong> It examines the actual working relationship.</p>
+      </div>
+      <figure class="kitchen-figure">
+        <img src="${kitchenRelationshipIllustration}" alt="A person directs an AI-assisted workflow, reviews a marked-up plan, and checks a finished cake before it is served." />
+        <figcaption><strong>Same cake. Different kitchen.</strong> Different basis for reliance.</figcaption>
+      </figure>
     </section>
 
     <section class="section">
@@ -259,9 +261,9 @@ function renderHome() {
         <p class="lede">Use it before work begins, before a result creates a consequence, or after the project is live. Each check measures the actual arrangement—not a model’s reputation.</p>
       </div>
       <div class="grid-3">
-        ${stageCard('01', 'Before starting', 'Plan Check', 'Decide what AI may produce or do, what remains under human judgment, and which checks belong in the workflow.', 'plan', 'Plan a project')}
-        ${stageCard('02', 'Before release', 'Release Check', 'Compare the planned arrangement with what actually happened before you publish, deploy, send, or approve.', 'release', 'Check before release')}
-        ${stageCard('03', 'Completed or live', 'Outcome Check', 'Record what happened, which errors appeared, and whether continued reliance is justified.', 'live', 'Review a live project')}
+        ${stageCard('01', 'Plan Check · Before starting', 'Set the boundary', 'Decide what AI may contribute or carry out, what the human must do, and which checks belong in the workflow.', 'plan', 'Plan a project')}
+        ${stageCard('02', 'Release Check · Before release', 'Check before it leaves your hands', 'Compare the planned relationship with what actually happened before you publish, deploy, send, or approve.', 'release', 'Check before release')}
+        ${stageCard('03', 'Outcome Check · Completed or live', 'Decide whether to continue', 'Record what happened, which errors appeared, and whether continued reliance is justified.', 'live', 'Review a live project')}
       </div>
     </section>
 
@@ -291,6 +293,24 @@ function renderHome() {
       <div class="section-heading">
         <div><p class="kicker">What you receive</p><h2>A boundary you can use.</h2></div>
         <p class="lede">The score is only the beginning. The useful result is knowing what the current arrangement supports and what would change it.</p>
+      </div>
+      <div class="sample-result">
+        <div class="sample-result-copy">
+          <p class="kicker">Example result</p>
+          <h3>A task-specific Reliance Score—not a human percentage.</h3>
+          <p>The score describes how much reliance the evidence and workflow currently support for this particular task. It does not measure how much of the work is “human” or “AI.”</p>
+        </div>
+        <aside class="sample-card" aria-label="Example task-specific Reliance Score">
+          <span class="stamp stamp-warning">Conditional reliance</span>
+          <div class="sample-score"><strong>55</strong><span>/ 100</span></div>
+          <p><strong>Drafting and supervised changes are supported.</strong> Independent verification and release approval are not.</p>
+          <ul class="boundary-list">
+            <li class="allow">Organize and draft under review</li>
+            <li class="allow">Propose website changes</li>
+            <li class="block">Do not self-verify material claims</li>
+            <li class="block">Do not publish without approval</li>
+          </ul>
+        </aside>
       </div>
       <div class="grid-3">
         ${featureCard('01', 'Reliance score', 'A task-specific, evidence-adjusted score with a named band—never a general rating of the model.')}

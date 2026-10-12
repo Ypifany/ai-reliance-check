@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 540" role="img" aria-labelledby="kitchen-title kitchen-desc">
+  <title id="kitchen-title">A person directing an AI-assisted kitchen workflow</title>
+  <desc id="kitchen-desc">A person guides work at a kitchen counter. A digital assistant contributes a card to a marked-up recipe, and the person checks a finished cake before it is served.</desc>
+
+  <rect x="12" y="12" width="736" height="516" rx="28" fill="#f6f2e9" stroke="#cbd3cd" stroke-width="2"/>
+  <path d="M48 430H712" fill="none" stroke="#87938c" stroke-width="2"/>
+  <path d="M48 459H712" fill="none" stroke="#d8d2c6" stroke-width="2"/>
+
+  <!-- Shelving and quiet kitchen context -->
+  <path d="M55 111H235" fill="none" stroke="#87938c" stroke-width="3" stroke-linecap="round"/>
+  <path d="M78 73V111M111 82V111M150 68V111M196 79V111" fill="none" stroke="#0e5b50" stroke-width="8" stroke-linecap="round"/>
+  <path d="M594 87H696V190H594Z" fill="#eee7d9" stroke="#87938c" stroke-width="2"/>
+  <path d="M645 87V190M594 138H696" fill="none" stroke="#cbd3cd" stroke-width="2"/>
+  <path d="M640 213C661 200 681 202 697 216" fill="none" stroke="#0e5b50" stroke-width="3" stroke-linecap="round"/>
+  <path d="M653 215C653 196 665 185 683 183C685 201 676 214 653 215Z" fill="#dce8df" stroke="#0e5b50" stroke-width="2"/>
+  <path d="M649 216C641 201 628 194 614 198C617 213 629 220 649 216Z" fill="#dce8df" stroke="#0e5b50" stroke-width="2"/>
+  <path d="M644 218V248" fill="none" stroke="#0e5b50" stroke-width="3"/>
+  <path d="M624 248H668L662 277H630Z" fill="#e8bc68" stroke="#18211d" stroke-width="2"/>
+
+  <!-- Human: largest and visually central -->
+  <path d="M104 428C105 363 109 323 138 298C163 277 211 278 237 302C264 326 268 365 270 428Z" fill="#0e5b50" stroke="#18211d" stroke-width="3"/>
+  <path d="M149 296V273H207V299C196 315 162 315 149 296Z" fill="#b96d4d" stroke="#18211d" stroke-width="3"/>
+  <path d="M124 220C124 172 149 144 188 144C227 144 246 174 242 218C239 259 217 282 183 282C148 282 124 258 124 220Z" fill="#c87c59" stroke="#18211d" stroke-width="3"/>
+  <path d="M122 217C108 177 132 124 186 125C229 126 253 151 246 199C235 188 229 174 225 159C200 177 163 184 127 173C126 185 125 199 122 217Z" fill="#18211d"/>
+  <path d="M129 207C119 198 109 207 113 221C116 234 126 238 133 230" fill="#c87c59" stroke="#18211d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M237 205C248 196 257 207 252 220C248 232 239 237 233 229" fill="#c87c59" stroke="#18211d" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="161" cy="216" r="3.5" fill="#18211d"/>
+  <circle cx="211" cy="216" r="3.5" fill="#18211d"/>
+  <path d="M174 244C183 250 194 250 204 242" fill="none" stroke="#18211d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M151 201C159 196 168 196 176 200M200 200C208 196 217 197 224 202" fill="none" stroke="#18211d" stroke-width="3" stroke-linecap="round"/>
+
+  <!-- Directing arm and hand -->
+  <path d="M231 320C280 314 315 298 349 274" fill="none" stroke="#0e5b50" stroke-width="24" stroke-linecap="round"/>
+  <path d="M230 320C281 313 315 297 347 274" fill="none" stroke="#18211d" stroke-width="3" stroke-linecap="round"/>
+  <path d="M347 274C359 266 368 262 375 264C382 266 381 272 374 277C385 274 393 277 390 283C387 289 373 293 359 291L347 286Z" fill="#c87c59" stroke="#18211d" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M135 329C116 359 111 389 112 426" fill="none" stroke="#083f38" stroke-width="20" stroke-linecap="round"/>
+
+  <!-- Counter -->
+  <path d="M50 407H710V438H50Z" fill="#eee7d9" stroke="#18211d" stroke-width="3"/>
+  <path d="M67 438V478M693 438V478" fill="none" stroke="#18211d" stroke-width="5" stroke-linecap="round"/>
+
+  <!-- Digital assistant: a bounded tool, not a character -->
+  <path d="M273 138H421V245H273Z" fill="#ffffff" stroke="#18211d" stroke-width="3"/>
+  <path d="M290 157H404V224H290Z" fill="#dce8df" stroke="#0e5b50" stroke-width="2"/>
+  <circle cx="312" cy="178" r="7" fill="#e8bc68" stroke="#18211d" stroke-width="2"/>
+  <path d="M330 178H384M306 202H362M371 202H389" fill="none" stroke="#0e5b50" stroke-width="5" stroke-linecap="round"/>
+  <path d="M320 246L310 263H386L374 246" fill="#87938c" stroke="#18211d" stroke-width="3" stroke-linejoin="round"/>
+
+  <!-- System contribution moving into the workflow -->
+  <path d="M417 177C449 177 462 192 462 214" fill="none" stroke="#e8bc68" stroke-width="5" stroke-linecap="round" stroke-dasharray="2 11"/>
+  <path d="M451 209L462 221L473 209" fill="none" stroke="#e8bc68" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M422 200H466V249H422Z" fill="#ffffff" stroke="#18211d" stroke-width="2.5" transform="rotate(-7 444 224)"/>
+  <path d="M432 216H454M432 228H448" fill="none" stroke="#0e5b50" stroke-width="3" stroke-linecap="round" transform="rotate(-7 444 224)"/>
+
+  <!-- Marked-up recipe / workflow -->
+  <path d="M380 260H528L514 397H366Z" fill="#ffffff" stroke="#18211d" stroke-width="3"/>
+  <path d="M398 281H488" fill="none" stroke="#0e5b50" stroke-width="6" stroke-linecap="round"/>
+  <circle cx="397" cy="311" r="8" fill="#dce8df" stroke="#0e5b50" stroke-width="2"/>
+  <path d="M416 311H487" fill="none" stroke="#87938c" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="397" cy="340" r="8" fill="#dce8df" stroke="#0e5b50" stroke-width="2"/>
+  <path d="M416 340H472" fill="none" stroke="#87938c" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="397" cy="369" r="8" fill="#f5e7c8" stroke="#963e38" stroke-width="2"/>
+  <path d="M416 369H483" fill="none" stroke="#87938c" stroke-width="4" stroke-linecap="round"/>
+  <path d="M391 309L396 314L405 303M391 338L396 343L405 332" fill="none" stroke="#0e5b50" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M489 329C511 323 525 324 537 331M485 354C510 349 524 351 533 359" fill="none" stroke="#963e38" stroke-width="3" stroke-linecap="round"/>
+  <path d="M516 318L529 305" fill="none" stroke="#963e38" stroke-width="3" stroke-linecap="round"/>
+  <circle cx="532" cy="302" r="4" fill="#963e38"/>
+
+  <!-- Human checkpoint -->
+  <path d="M524 362C553 369 574 356 581 330" fill="none" stroke="#0e5b50" stroke-width="5" stroke-linecap="round"/>
+  <path d="M572 335L582 324L589 337" fill="none" stroke="#0e5b50" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="585" cy="302" r="27" fill="#dce8df" stroke="#0e5b50" stroke-width="3"/>
+  <path d="M570 302L580 312L600 290" fill="none" stroke="#0e5b50" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <!-- Finished cake, waiting to be served -->
+  <ellipse cx="642" cy="394" rx="66" ry="13" fill="#eee7d9" stroke="#18211d" stroke-width="3"/>
+  <path d="M595 350H687V390C675 401 608 401 595 390Z" fill="#e8bc68" stroke="#18211d" stroke-width="3"/>
+  <path d="M594 350C596 335 612 328 629 335C641 317 666 321 670 337C683 335 693 342 688 351C671 360 614 361 594 350Z" fill="#ffffff" stroke="#18211d" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M613 362V384M642 362V386M670 361V383" fill="none" stroke="#f5e7c8" stroke-width="5" stroke-linecap="round"/>
+  <path d="M642 394V413M613 414H671" fill="none" stroke="#18211d" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="626" cy="332" r="5" fill="#963e38"/>
+  <circle cx="654" cy="329" r="5" fill="#963e38"/>
+
+  <!-- Direction of work: contribution, review, consequence -->
+  <path d="M478 414H684" fill="none" stroke="#87938c" stroke-width="2" stroke-dasharray="5 8"/>
+  <path d="M678 406L689 414L678 422" fill="none" stroke="#87938c" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
