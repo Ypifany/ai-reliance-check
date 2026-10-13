@@ -164,27 +164,10 @@ button {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 0.75rem;
   color: var(--ink);
   font-size: 0.95rem;
   font-weight: 750;
   text-decoration: none;
-}
-
-.brand-mark {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.1rem;
-  color: var(--teal);
-  font-family: var(--mono);
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.brand-mark i {
-  display: inline-block;
-  width: 1rem;
-  border-top: 2px solid currentColor;
 }
 
 .site-nav {
@@ -353,7 +336,9 @@ main:focus,
 .kitchen-figure img {
   display: block;
   width: 100%;
-  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: center;
   background: var(--paper);
 }
 
@@ -851,6 +836,81 @@ button.button {
   font-size: 0.86rem;
 }
 
+.field-note {
+  min-height: 46px;
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border-left: 4px solid var(--teal);
+  background: var(--sage);
+  color: var(--muted);
+}
+
+.systems-fieldset,
+.record-panel > .fieldset {
+  margin-top: 1.5rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border);
+}
+
+.system-editor-list,
+.record-system-list {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.system-editor {
+  padding: 1rem;
+  border: 1px solid var(--border-dark);
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.7);
+}
+
+.system-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.system-editor-heading h2 {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 1.05rem;
+  letter-spacing: 0;
+}
+
+.consequential-choice {
+  margin-top: 0.35rem;
+}
+
+.system-review-field {
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.system-review-field label + select {
+  margin-bottom: 0.85rem;
+}
+
+.optional-review {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.optional-review > summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.optional-review[open] > summary {
+  margin-bottom: 1rem;
+}
+
 .required {
   color: var(--brick);
 }
@@ -1071,7 +1131,7 @@ button.button {
 .score-band {
   position: relative;
   display: grid;
-  grid-template-columns: 20fr 20fr 20fr 20fr 15fr 5fr;
+  grid-template-columns: 40fr 20fr 20fr 20fr;
   height: 52px;
   margin: 2rem 0 0.6rem;
   overflow: visible;
@@ -1087,9 +1147,7 @@ button.button {
 .score-band > span:nth-child(1) { background: #e4c7c3; }
 .score-band > span:nth-child(2) { background: #edd9bc; }
 .score-band > span:nth-child(3) { background: var(--ochre); }
-.score-band > span:nth-child(4) { background: #cfe0dc; }
-.score-band > span:nth-child(5),
-.score-band > span:nth-child(6) { background: var(--sage); }
+.score-band > span:nth-child(4) { background: var(--sage); }
 
 .score-marker {
   position: absolute;
@@ -1114,7 +1172,7 @@ button.button {
 
 .band-labels {
   display: grid;
-  grid-template-columns: 20fr 20fr 20fr 20fr 15fr 5fr;
+  grid-template-columns: 40fr 20fr 20fr 20fr;
   gap: 0.5rem;
   color: var(--muted);
   font-size: 0.72rem;
@@ -1232,6 +1290,45 @@ button.button {
   margin-top: 0.7rem;
 }
 
+.recommendation-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.recommendation-card,
+.recommendation-action {
+  margin: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  background: white;
+  font-size: 0.86rem;
+}
+
+.recommendation-card .recommendation-action {
+  padding: 0;
+  border: 0;
+  font-size: 0.92rem;
+  font-weight: 750;
+}
+
+.recommendation-card p {
+  margin: 0.55rem 0 0;
+}
+
+.recommendation-card details {
+  margin-top: 0.65rem;
+}
+
+.recommendation-card summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.review-load-card {
+  margin-top: 1rem;
+  border-left: 5px solid var(--ochre);
+}
+
 .reliance-card {
   margin-top: 3rem;
   padding: clamp(1.4rem, 4vw, 2.5rem);
@@ -1262,7 +1359,7 @@ button.button {
 
 .record-grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.72fr) minmax(0, 1.28fr);
+  grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
   gap: 1.5rem;
   align-items: start;
 }
@@ -1498,6 +1595,10 @@ button.button {
     max-width: 600px;
   }
 
+  .kitchen-figure {
+    width: 100%;
+  }
+
   .grid-5 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1541,7 +1642,7 @@ button.button {
   }
 }
 
-@media (max-width: 740px) {
+@media (max-width: 840px) {
   .site-header {
     min-height: 64px;
   }
@@ -1585,6 +1686,10 @@ button.button {
 
   .hero {
     padding-block: 3.5rem;
+  }
+
+  .kitchen-figure img {
+    min-height: 0;
   }
 
   .situation-list {

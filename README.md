@@ -1,29 +1,28 @@
 # Human + AI Work Check
 
-**What can I delegate to AI—and still stand behind the result?**
+**Is the trust I am placing in this human and AI work arrangement supported?**
 
-Human + AI Work Check is a task-specific decision aid built on the AI Reliance Check method. It looks at one real project—not the model name alone—across five dimensions:
+Human + AI Work Check examines the relationship among the person doing the work, one consequential AI system and role, the workflow, and what is at stake. It looks at one real project, not the model name alone.
 
-- Capability Fit
-- Behavioral Fit
-- Human Assurance
-- Workflow Control
-- Outcome Testability
+The site provides two connected tools:
 
-The check produces a transparent project score, information about how solid the score is, what AI may and may not do, problems that need to be fixed first, and practical actions that can strengthen the project now, within 24 hours, within days, or within weeks.
+- **Work Check:** Shows whether the current relationship supports relying on AI in its proposed role, the largest role supported now, and what could strengthen the arrangement.
+- **Work Record:** Documents how the work was made, what the person did, what each AI system contributed, and what evidence supports that account.
+
+The Work Check produces a transparent project result, a separate evidence-strength result, supported roles and limits, problems that need to be fixed first, and practical actions that can strengthen the relationship now, within 24 hours, within days, or within weeks.
 
 ## Current status
 
-This repository contains the v0.1 public prototype. It is a transparent, practice-based working method, not a certification, guarantee, legal conclusion, general model rating, probability of accuracy, or independently validated scientific instrument.
+This repository contains the v0.2 public prototype. It is a transparent, practice-based working method, not a certification, guarantee, legal conclusion, general model rating, probability of accuracy, or independently validated scientific instrument.
 
 The prototype:
 
 - Runs entirely in the browser
 - Stores project data locally on the device
-- Supports Plan, Release, and Outcome checks
+- Supports planning, ready-to-launch, and current-use checks
 - Exports and imports project JSON
 - Prints a task-specific project card
-- Creates a separate How the Work Was Made record
+- Creates a separate Work Record showing how the work was made
 
 Do not enter confidential, regulated, or sensitive information.
 
@@ -52,15 +51,15 @@ The included GitHub Actions workflow builds and deploys the `dist` directory to 
 
 ## Method summary
 
-Each assessment answer uses a published rubric value. Evidence changes how much credit the answer receives:
+The Work Check asks whether the person's current capacity, the AI setup and assigned role, the workflow and controls, and what is at stake support the trust being placed in the relationship.
 
-- Confirmed: 100% of the rubric value
-- Reported: 75% of the rubric value
-- Unknown: no evidence credit
+- **Reliance Support** describes the largest AI role the current arrangement supports.
+- **Evidence Strength** describes how well the available records support that conclusion.
+- A serious gap in knowledge, access, authority, time, attention, or the ability to correct or stop the work can limit the supported AI role.
+- Multiple AI systems and models can be recorded, but one consequential system-role pair is assessed at a time. Run another Work Check for another consequential role.
+- Recommended actions may change the AI role, add qualified human help, strengthen the workflow, or test a different model. Planned actions do not change the current result until they are completed and supported by evidence.
 
-The five dimension scores contribute equally to the public score, which is rounded to the nearest five. Stakes and proposed authority determine how much assurance is required; they do not manipulate the score. Hard gates can limit authorization even when the average is high.
-
-See the in-product **Method** page for the full v0.1 explanation.
+See the in-product **How it works** page for the complete explanation.
 
 ## License and reuse
 
