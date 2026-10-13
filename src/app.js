@@ -455,7 +455,7 @@ function renderHome() {
       <details class="term-help"><summary>What do arrangement, AI role, authority, wager, and Evidence Strength mean?</summary><dl>
         <div><dt>Arrangement</dt><dd>The person, AI system, task, workflow, controls, and outcome considered together.</dd></div>
         <div><dt>AI role</dt><dd>The part of the work assigned to the AI system.</dd></div>
-        <div><dt>Authority</dt><dd>What the AI system may do without another approval.</dd></div>
+        <div><dt>Authority</dt><dd>What the AI system is permitted to do, including whether it must wait for explicit human approval before acting.</dd></div>
         <div><dt>Wager</dt><dd>The useful outcome you are counting on this work to produce.</dd></div>
         <div><dt>Evidence Strength</dt><dd>How well the answers are supported by current records or direct observation.</dd></div>
       </dl></details>
@@ -475,19 +475,19 @@ function renderHome() {
       <div class="sample-result">
         <div class="sample-result-copy">
           <p class="kicker">Fictional example result</p>
-          <h3>55/100 for this arrangement. Not 55% human.</h3>
-          <p>The operational score reflects the human capacity, AI fit, workflow controls, and measurable outcome. Evidence strength is shown separately.</p>
+          <h3>Preparation supported. AI-executed deployment not authorized yet.</h3>
+          <p>The project owner keeps the release decision. The current arrangement supports AI preparing changes and test reports, but not carrying out the public deployment.</p>
+          <p>This fictional example has no numeric score because it was not produced from a completed assessment record.</p>
           <p><a class="text-link" href="#/sample">Open the full sample result</a></p>
         </div>
-        <aside class="sample-card" aria-label="Example task-specific Reliance Score">
-          <span class="stamp stamp-warning">Supported only in a smaller role</span>
-          <div class="sample-score"><strong>55</strong><span>/ 100</span></div>
-          <p><strong>Drafting and supervised changes are supported.</strong> Independent verification and release approval still need capable human review.</p>
+        <aside class="sample-card" aria-label="Example task-specific Work Check result">
+          <span class="stamp stamp-restriction">Deployment not authorized</span>
+          <p class="sample-verdict"><strong>AI may prepare the release.</strong><span>A capable person must review the technical work before the project owner decides whether to launch.</span></p>
           <ul class="boundary-list">
-            <li class="allow"><strong>Supported:</strong> Organize and draft under review</li>
-            <li class="allow"><strong>Supported:</strong> Propose website changes</li>
-            <li class="block"><strong>Not supported:</strong> Self-verify material claims</li>
-            <li class="block"><strong>Not supported:</strong> Publish without approval</li>
+            <li class="allow"><span><strong>Supported:</strong> Organize and draft under review</span></li>
+            <li class="allow"><span><strong>Supported:</strong> Propose changes and report named tests</span></li>
+            <li class="block"><span><strong>Not supported:</strong> Self-verify material claims</span></li>
+            <li class="block"><span><strong>Not supported:</strong> Execute the public deployment yet</span></li>
           </ul>
         </aside>
       </div>
@@ -722,7 +722,7 @@ function systemEditor(system, index, count, errors = []) {
     <div class="field-grid">
       <div class="field"><label for="${prefix}-product">AI product or tool <span class="required">Required</span></label><input id="${prefix}-product" name="systemProduct" value="${escapeHTML(system.product)}" placeholder="For example, ChatGPT" required ${errorAttributes(errors, `${prefix}-product`)} />${fieldError(errors, `${prefix}-product`)}</div>
       <div class="field"><label for="${prefix}-model">Exact model or version <span class="required">Required</span></label><input id="${prefix}-model" name="systemModel" value="${escapeHTML(system.model)}" placeholder="Enter Unknown if needed" required ${errorAttributes(errors, `${prefix}-model`)} />${fieldError(errors, `${prefix}-model`)}</div>
-      <div class="field field-span-2"><label for="${prefix}-role">What role does this system have in the workflow? <span class="required">Required</span></label><textarea id="${prefix}-role" name="systemRole" placeholder="For example, organize source material, draft code, or publish approved changes" required ${errorAttributes(errors, `${prefix}-role`)}>${escapeHTML(system.role)}</textarea>${fieldError(errors, `${prefix}-role`)}</div>
+      <div class="field field-span-2"><label for="${prefix}-role">What role does this system have in the workflow? <span class="required">Required</span></label><textarea id="${prefix}-role" name="systemRole" placeholder="For example, organize source material, draft code, or execute an approved deployment" required ${errorAttributes(errors, `${prefix}-role`)}>${escapeHTML(system.role)}</textarea>${fieldError(errors, `${prefix}-role`)}</div>
       <div class="field"><label for="${prefix}-authority">What authority does this system have?</label><select id="${prefix}-authority" name="systemAuthority">${Object.entries(AUTHORITY_LABELS).map(([value, label]) => `<option value="${value}" ${system.proposedAuthority === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select></div>
       <div class="field"><label for="${prefix}-access">Can it connect to accounts, files, repositories, data, publishing, or other tools?</label><select id="${prefix}-access" name="systemAccess">${triStateOptions(system.connectedAccess, 'No', 'Yes', 'Unknown')}</select></div>
       <div class="field"><label for="${prefix}-permissions">If it connects, are its permissions known and limited?</label><select id="${prefix}-permissions" name="systemPermissions">${triStateOptions(system.permissionsConfirmed, 'No', 'Yes, confirmed', 'Unknown or not applicable')}</select></div>
@@ -1673,46 +1673,49 @@ function renderSample() {
         ${contextItem('What AI did', 'Organized sources, created first drafts, suggested code, and ran named tests.')}
         ${contextItem('What the person can review', 'Cybersecurity content, source use, and whether the website reflects its intended purpose.')}
         ${contextItem('Current capacity gap', 'The person cannot fully inspect the code, accessibility, or deployment settings without capable help.')}
-        ${contextItem('Role proposed for AI', 'Produce changes, run tests, and publish approved changes.')}
+        ${contextItem('Role proposed for AI', 'Prepare changes, run named tests, and execute a specific deployment after the project owner approves that release.')}
+        ${contextItem('Release decision authority', 'The project owner decides whether the website is ready to launch.')}
+        ${contextItem('AI action requested', 'Carry out the approved deployment. AI may not choose what or when to publish.')}
         ${contextItem('Outcome at stake', 'Learners receive accurate instruction and a usable, working practice experience.')}
         ${contextItem('Consequence if it fails', 'Learners may study inaccurate material, lose time, or be unable to complete the practice tasks.')}
       </dl>
-      <p class="decision-question"><strong>Decision tested:</strong> Does this arrangement support letting ChatGPT produce changes, run tests, and publish approved changes before the website launches?</p>
+      <p class="decision-question"><strong>Decision tested:</strong> Does this arrangement support allowing ChatGPT to carry out a specific public deployment after the project owner approves that release?</p>
     </section>
 
     <section class="result-summary" aria-labelledby="sample-decision-heading">
-      <div class="result-header">
+      <div class="result-header result-header-single">
         <div>
           <p class="eyebrow">Result</p>
-          <h2 id="sample-decision-heading">Supported only in a smaller role</h2>
-          <p class="lede">AI can help produce the website, but this arrangement does not support letting it publish. Keep AI at the drafting, proposal, and named-test level. A person must make the release decision, and technical gaps still need capable review.</p>
-        </div>
-        <div class="score-lockup" aria-label="Work arrangement support score 55 out of 100">
-          <strong>55</strong><span>/ 100 work arrangement support</span>
+          <h2 id="sample-decision-heading">Do not authorize AI to deploy the website yet</h2>
+          <p class="lede">AI may prepare changes and run named tests. It should not execute the public release until a capable reviewer has checked the code, accessibility, permissions, and deployment settings, the project owner has explicitly approved that exact release, and rollback has been confirmed.</p>
         </div>
       </div>
       <dl class="result-facts" aria-label="Key result facts">
+        ${resultFact('Proposed AI action', 'Execute a specific, reversible deployment after explicit human approval')}
+        ${resultFact('Release decision authority', 'Retained by the project owner')}
+        ${resultFact('Current supported AI role', 'Prepare changes and test reports for capable human review')}
+        ${resultFact('Launch status', 'Blocked pending capable technical review and confirmed release controls')}
         ${resultFact('Evidence Strength', 'Partly documented')}
-        ${resultFact('Highest AI authority supported', 'Produce work for human approval')}
         ${resultFact('Human Review Load', 'High')}
       </dl>
-      <div class="callout"><p><strong>What 55 means:</strong> The person’s current capacity, the assigned AI role, the workflow, controls, and available evidence do not support the proposed publishing authority. This is not an AI accuracy rating or a human versus AI percentage.</p></div>
+      <div class="callout"><p><strong>The distinction:</strong> The project owner keeps the authority to decide whether to release. The requested AI role adds permission to execute that decision. The first does not automatically support the second.</p></div>
     </section>
 
     <section class="visible-result-section" aria-labelledby="sample-conditions-heading">
       <p class="kicker">Required boundary</p>
       <h2 id="sample-conditions-heading">What must be true before this project launches?</h2>
       <ol class="condition-list">
-        <li>The AI remains limited to drafts, proposed changes, and named tests.</li>
-        <li>The project owner makes the final release decision.</li>
+        <li>AI remains limited to preparing changes and reporting named tests while deployment is blocked.</li>
         <li>A capable person reviews the code, accessibility, permissions, and deployment settings.</li>
         <li>Material cybersecurity claims are checked against the named sources.</li>
+        <li>The project owner explicitly approves the exact release after the reviews are complete.</li>
+        <li>The AI system's permissions are limited and a tested rollback path is available.</li>
       </ol>
-      <div class="callout callout-warning"><p><strong>Important:</strong> These controls reduce risk. They do not give the project owner technical expertise they do not have.</p></div>
+      <div class="callout callout-warning"><p><strong>Important:</strong> These controls reduce risk. They do not give the project owner technical expertise they do not have. Run a new Work Check before granting deployment permission.</p></div>
     </section>
 
     <section class="visible-result-section" aria-labelledby="sample-reasons-heading">
-      <p class="kicker">Why the role is smaller</p>
+      <p class="kicker">Why deployment is blocked</p>
       <h2 id="sample-reasons-heading">Three facts drive the decision.</h2>
       <div class="reason-grid">
         <article class="card"><h3>Human strength</h3><p>The project owner can judge the main cybersecurity content and whether it fits the website’s purpose.</p></article>
@@ -1724,12 +1727,12 @@ function renderSample() {
     <section class="visible-result-section" aria-labelledby="sample-actions-heading">
       <p class="kicker">Next actions</p>
       <h2 id="sample-actions-heading">What would strengthen the result?</h2>
-      <p class="lede">Planned actions add no points. The result changes only after an action is completed, recorded, and checked again.</p>
+      <p class="lede">A plan does not change the result. Complete and record each action, then run the Work Check again before changing AI's role.</p>
       <div class="action-timeline">
-        ${timeBlock('Now', [sampleRecommendation('Keep publishing approval with the project owner and confirm the AI system’s repository permissions.', 'Removes a release blocker. No score increase until the limit is confirmed and recorded.', 'Save the permission and approval record.', 'Keeps AI within the smaller supported role.')])}
-        ${timeBlock('Within 24 hours', [sampleRecommendation('Run and save build, link, phone, keyboard, and automated accessibility checks.', 'May add 5 to 10 points after the checks are completed and recorded.', 'Save the test results and unresolved failures.', 'May support a larger technical production role.')])}
-        ${timeBlock('Within days', [sampleRecommendation('Have a capable reviewer examine the code, accessibility, and deployment areas the project owner cannot fully judge.', 'May add 5 to 15 points after the review is completed and recorded.', 'Save the reviewer’s name, scope, findings, and date.', 'May support a larger release role.')])}
-        ${timeBlock('Within weeks', [sampleRecommendation('Watch intended users complete the main tasks and record where they succeed, stop, or misunderstand.', 'May add 5 to 10 points during a later Current-Use Support check.', 'Save observations and outcome data.', 'May support continued or expanded use.')])}
+        ${timeBlock('Now', [sampleRecommendation('Keep AI deployment permission disabled and confirm the project owner holds the release decision.', 'Prevents the unresolved technical gaps from reaching the public site.', 'Save the current permission settings and release approval rule.', 'Keeps AI in the supported preparation role.')])}
+        ${timeBlock('Within 24 hours', [sampleRecommendation('Run and save build, link, phone, keyboard, and automated accessibility checks. Confirm the deployment can be reversed.', 'Adds current test and recovery records, but does not replace capable review.', 'Save the test results, unresolved failures, and rollback result.', 'May remove workflow blockers after the findings are resolved.')])}
+        ${timeBlock('Within days', [sampleRecommendation('Have a capable reviewer examine the code, accessibility, permissions, and deployment areas the project owner cannot fully judge.', 'Adds the missing technical review needed before the release decision.', 'Save the reviewer’s name, capacity, scope, findings, required changes, and date.', 'May support approved deployment after the findings are resolved and the check is run again.')])}
+        ${timeBlock('Within weeks', [sampleRecommendation('Watch representative users complete the main tasks in a private preview and record where they succeed, stop, or misunderstand.', 'Adds direct evidence about usability and task completion.', 'Save observations, failures, changes, and results from a later check.', 'May support a later Current-Use Support decision.')])}
       </div>
     </section>
 
@@ -1740,8 +1743,8 @@ function renderSample() {
         <summary>See what each participant may do</summary>
         <div class="decision-grid">
           ${decisionColumn('Supported in this workflow', 'supported', ['AI organizes supplied material', 'AI drafts content and code', 'AI proposes site changes', 'AI runs named tests and reports the results'], 'Functions supported within the current boundary.')}
-          ${decisionColumn('Needs capable review', 'verify', ['Cybersecurity claims and source use', 'Code, permissions, and deployment settings', 'Keyboard, phone, link, and accessibility behavior', 'Final release decision'], 'Checks that require a person with the needed capacity.')}
-          ${decisionColumn('Not supported yet', 'blocked', ['AI independently verifies its own work', 'AI publishes without human approval', 'The project claims learner success before observing learners', 'AI receives broader permissions without confirming their scope'], 'Functions the arrangement cannot support yet.')}
+          ${decisionColumn('Needs capable review', 'verify', ['Cybersecurity claims and source use', 'Code, permissions, and deployment settings', 'Keyboard, phone, link, and accessibility behavior', 'The exact release the project owner is being asked to approve'], 'Checks that require a person with the needed capacity.')}
+          ${decisionColumn('Not supported yet', 'blocked', ['AI independently verifies its own work', 'AI carries out the public deployment', 'The project claims learner success before observing learners', 'AI receives broader permissions without confirming their scope'], 'Functions the arrangement cannot support yet.')}
         </div>
       </details>
       <details>
@@ -1750,10 +1753,9 @@ function renderSample() {
         <ul><li>Documented evidence supports stronger conclusions.</li><li>Personal experience can inform the result, but it is easier to misunderstand or dispute.</li><li>Unknown information lowers confidence. It does not automatically prove poor performance.</li></ul>
       </details>
       <details>
-        <summary>See how the score was formed</summary>
-        <p>The operational score weighs four connected parts: human capacity, the AI system’s behavior in its assigned role, workflow controls, and the outcome and stakes.</p>
-        <p>Evidence Strength is reported separately. It limits how strong a conclusion the check can support, but it does not add points to or subtract points from the operational score.</p>
-        <p>The requested publishing role is more consequential than the largest role supported by this arrangement, so the decision is more restrictive than the number alone.</p>
+        <summary>Why does this fictional sample have no score?</summary>
+        <p>A score should be reproducible from a completed set of assessment answers. This fictional example was written to demonstrate the result format, not generated from a saved assessment record, so displaying an exact number would suggest evidence that does not exist.</p>
+        <p>A real Work Check displays a score after the questions are answered. It also shows the separate Evidence Strength and the serious gaps that can limit the supported role.</p>
         <p><a href="#/method">Read the full scoring method</a></p>
       </details>
       <details>
@@ -1782,7 +1784,7 @@ function resultFact(term, description) {
 function sampleRecommendation(action, condition, evidenceEffect, roleEffect) {
   return {
     action,
-    scoreEffect: { projectedChange: 0, projectedScore: 55, condition },
+    scoreEffect: { projectedChange: 0, condition },
     evidenceEffect,
     roleEffect,
     evidenceRequired: evidenceEffect,
@@ -2129,7 +2131,7 @@ function renderMethod() {
       </ol>
       <p>If several systems are involved, record each one and identify the most consequential role. The detailed questions focus on that role. Run a separate Work Check when another consequential system needs its own evaluation.</p>
       <h2>Four working score ranges</h2>
-      <p>The scope statement applies to every range: <strong>your current capacity, evidence, controls, and workflow for this project and proposed AI role.</strong></p>
+      <p>The scope statement applies to every range: <strong>your current capacity, AI role fit, working relationship, workflow controls, and outcome for this project and proposed AI role.</strong> Evidence Strength is reported separately.</p>
       <div class="table-scroll" role="region" aria-label="Four working score ranges" tabindex="0"><table><thead><tr><th scope="col">Score</th><th scope="col">Result</th><th scope="col">Meaning</th></tr></thead><tbody>
         <tr><td>0 to 39</td><td>Not supported for proposed role</td><td>The current arrangement does not support relying on AI in the role proposed.</td></tr>
         <tr><td>40 to 59</td><td>Supported only in a smaller role</td><td>A narrower function or lower authority may be supported.</td></tr>
@@ -2147,7 +2149,7 @@ function renderMethod() {
       <ul>
         <li>Unknown permissions block sensitive, external, or autonomous action.</li>
         <li>Unverified material claims cannot be presented as verified.</li>
-        <li>Production changes without relevant technical checks cannot receive unsupervised release authority.</li>
+        <li>AI cannot carry out a production deployment without the relevant technical checks, even when a person approved the release.</li>
         <li>High-consequence decisions without capable human review cannot be delegated solely to AI.</li>
         <li>A review process that cannot be sustained limits the supported role.</li>
         <li>A project without outcome evidence may be piloted but cannot claim demonstrated effectiveness.</li>

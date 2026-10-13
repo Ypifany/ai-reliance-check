@@ -539,23 +539,21 @@ button.button {
   color: var(--brick);
 }
 
-.sample-score {
-  display: flex;
-  align-items: baseline;
-  gap: 0.75rem;
-  margin: 1.3rem 0 0.5rem;
+.sample-verdict {
+  display: grid;
+  gap: 0.45rem;
+  margin: 1.4rem 0 0;
 }
 
-.sample-score strong {
+.sample-verdict strong {
   font-family: var(--serif);
-  font-size: clamp(3.25rem, 7vw, 5rem);
+  font-size: clamp(1.65rem, 3vw, 2.35rem);
   font-weight: 500;
-  line-height: 1;
+  line-height: 1.08;
 }
 
-.sample-score span {
+.sample-verdict span {
   color: var(--muted);
-  font-weight: 700;
 }
 
 .boundary-list {
@@ -570,6 +568,10 @@ button.button {
   gap: 0.55rem;
   padding-block: 0.6rem;
   border-top: 1px solid var(--border);
+}
+
+.boundary-list li > span {
+  min-width: 0;
 }
 
 .boundary-list .allow::before {
@@ -1195,6 +1197,10 @@ fieldset[aria-invalid="true"] {
   align-items: end;
   padding-bottom: 2rem;
   border-bottom: 2px solid var(--ink);
+}
+
+.result-header-single {
+  grid-template-columns: minmax(0, 900px);
 }
 
 .result-header h1 {
