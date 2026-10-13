@@ -5,33 +5,33 @@
  * rendered consistently in the browser, a printable form, or a future API.
  */
 
-export const METHOD_VERSION = "0.1";
+export const METHOD_VERSION = "0.2";
 
 export const DIMENSIONS = Object.freeze({
-  capabilityFit: {
-    label: "Capability Fit",
+  humanAssurance: {
+    label: "Your Capacity",
     description:
-      "Whether this configured system has demonstrated the ability to perform this task.",
+      "Whether you have the knowledge, access, authority, time, and sustainable attention to recognize, correct, or stop a serious error.",
+  },
+  capabilityFit: {
+    label: "AI Role Fit",
+    description:
+      "Whether this exact AI setup has demonstrated the ability to perform the role you are giving it.",
   },
   behavioralFit: {
-    label: "Behavioral Fit",
+    label: "Working Relationship",
     description:
-      "Whether the system behaves as the role requires, including when it should challenge, qualify, or stop.",
-  },
-  humanAssurance: {
-    label: "Human Assurance",
-    description:
-      "Whether a capable person can recognize, correct, and stop material errors before consequence.",
+      "Whether the system behaves as you need it to, including when it should challenge, qualify, ask, or stop.",
   },
   workflowControl: {
-    label: "Workflow Control",
+    label: "Workflow and Controls",
     description:
       "Whether access, checks, approvals, records, stopping, and recovery match the authority being granted.",
   },
   outcomeTestability: {
-    label: "Outcome Testability",
+    label: "Outcome and Stakes",
     description:
-      "Whether success and harm are defined clearly enough to observe, measure, and revisit.",
+      "Whether the result you are counting on, possible harm, and warning signs are clear enough to observe and revisit.",
   },
 });
 
@@ -79,6 +79,22 @@ const CAP1_OPTIONS = [
   option(100, "Repeated normal, edge, and failure cases", "Repeated tests under the same configuration passed normal, edge, and failure cases."),
 ];
 
+const CAP1_PLAN_OPTIONS = [
+  option(0, "No task-specific evidence", "The plan rests on the model name, reputation, or an assumption."),
+  option(25, "One informal example", "A single example looked acceptable, without stated acceptance criteria."),
+  option(50, "One representative case", "One representative case met stated acceptance criteria."),
+  option(75, "Several representative cases", "Several cases passed under the proposed setup, including a difficult case."),
+  option(100, "Repeated matched tests", "The same setup repeatedly passed normal, difficult, edge, and failure cases for this role."),
+];
+
+const CAP1_LIVE_OPTIONS = [
+  option(0, "No task-specific observations", "There is no record showing how this setup performs in actual use."),
+  option(25, "One informal observation", "One result looked acceptable, without stated acceptance criteria."),
+  option(50, "Representative use observed", "At least one representative use met stated acceptance criteria."),
+  option(75, "Normal and difficult use observed", "Several uses passed, including a difficult or unusual case."),
+  option(100, "Repeated performance demonstrated", "Repeated use under the same setup passed normal, edge, and failure cases."),
+];
+
 const CAP2_OPTIONS = [
   option(0, "Failure paths not examined", "No likely task-specific failure has been identified or checked."),
   option(25, "Only generic limitations", "General AI limitations are known, but the likely failures in this project are not."),
@@ -96,11 +112,19 @@ const BEH1_OPTIONS = [
 ];
 
 const HUM1_OPTIONS = [
-  option(0, "No capable reviewer", "No person can recognize and correct a material error before consequence."),
-  option(25, "Reviewer lacks coverage", "A reviewer exists but lacks enough knowledge, access, authority, or time."),
-  option(50, "Partial capable review", "A capable person can inspect samples or some important parts."),
-  option(75, "All material parts covered", "Every material part has a capable reviewer at the correct checkpoint."),
-  option(100, "Independent high-impact checks", "Material work is covered, high-impact items receive a different-method or independent check, and the reviewer can stop or correct it."),
+  option(0, "You cannot catch or correct a serious error", "You lack the knowledge, access, authority, or time needed to examine the important work."),
+  option(25, "Major gaps limit your review", "You can review some of the work, but an important gap remains in your knowledge, access, authority, or time."),
+  option(50, "You can review some important parts", "You can judge and correct part of the work, but not every part that could create a serious consequence."),
+  option(75, "You can cover every important part", "You can examine every important part at the right checkpoint and require a correction or stop."),
+  option(100, "You can cover every part and use independent checks", "You can examine every important part, and the highest-impact work also receives a different-method or independent check."),
+];
+
+const HUM3_OPTIONS = [
+  option(0, "The required review cannot be maintained", "The work moves too quickly, lasts too long, or is too large for the available attention and time."),
+  option(25, "The review will probably break down", "The review can happen briefly or occasionally, but not at the expected volume and pace."),
+  option(50, "The review is possible with limits", "The review can be maintained only if scope, pace, volume, or the AI role stays limited."),
+  option(75, "The review can be maintained", "Enough time, attention, and backup are available for the expected volume and pace."),
+  option(100, "Sustainable review has been demonstrated", "The review has held up at the expected volume and pace, including during busy or difficult periods."),
 ];
 
 const WF1_OPTIONS = [
@@ -133,6 +157,14 @@ const OUT_LIVE_OPTIONS = [
   option(50, "One side of the outcome observed", "Either intended results or harm signals are being collected."),
   option(75, "Results and harms compared", "Intended results and harm signals are both compared with stated targets."),
   option(100, "Repeated evidence changed decisions", "Repeated observations led to documented continuation, correction, limitation, or stopping decisions."),
+];
+
+const OUT_RELEASE_OPTIONS = [
+  option(0, "No result or warning signs defined", "The work may be finished, but success, failure, and likely harm have not been defined."),
+  option(25, "The finished output was checked", "The output was reviewed, but post-launch success or harm cannot yet be recognized."),
+  option(50, "Success and warning signs are defined", "The intended result, likely failure, and important warning signs are named."),
+  option(75, "Post-launch check is ready", "Measures, thresholds, timing, data source, and the person who will check them are defined."),
+  option(100, "Pilot, stop point, and reassessment are ready", "A baseline, pilot, stop threshold, and reassessment point are defined before launch."),
 ];
 
 const HUM2_OPTIONS = [
@@ -173,56 +205,108 @@ const WF4_OPTIONS = [
  */
 export const QUESTION_DEFINITIONS = Object.freeze([
   {
+    id: "HUM1",
+    dimension: "humanAssurance",
+    prompt: "Can you recognize and correct a serious error in this work? Do you have the knowledge, access, authority, and time?",
+    promptByStage: {
+      plan: "Will you be able to recognize and correct a serious error? Will you have the knowledge, access, authority, and time?",
+      release: "Could you recognize and correct a serious error in the finished work? Did you have the knowledge, access, authority, and time?",
+      live: "Can you recognize and correct a serious error while this work is in use? Do you have the knowledge, access, authority, and time?",
+    },
+    why: "The role you give AI cannot be larger than your own reliable ability to examine the important work and intervene. If you need another person to close a gap, the result should name that as a condition rather than count it as your capacity.",
+    options: HUM1_OPTIONS,
+  },
+  {
+    id: "HUM3",
+    dimension: "humanAssurance",
+    prompt: "Can you keep performing the required review at the expected volume and pace?",
+    promptByStage: {
+      plan: "Will you be able to keep performing the required review at the expected volume and pace?",
+      release: "Was the required review completed, and can it be maintained after launch at the expected volume and pace?",
+      live: "Can you keep performing the required review at the actual volume and pace?",
+    },
+    why: "A relationship that depends on more attention than you can sustain may work once and still fail during normal use.",
+    options: HUM3_OPTIONS,
+  },
+  {
     id: "CAP1",
     dimension: "capabilityFit",
-    prompt: "What supports the belief that this exact AI setup can perform this task?",
+    prompt: "What shows that this exact AI setup can perform the role you gave it?",
+    promptByStage: {
+      plan: "What supports your belief that this exact AI setup can perform the role you plan to give it?",
+      release: "What shows that this exact AI setup performed the role you gave it in the finished work?",
+      live: "What shows that this exact AI setup keeps performing its assigned role in actual use?",
+    },
     why: "A model's reputation is not evidence that the configured system can do this particular work.",
     options: CAP1_OPTIONS,
+    optionsByStage: {
+      plan: CAP1_PLAN_OPTIONS,
+      release: CAP1_OPTIONS,
+      live: CAP1_LIVE_OPTIONS,
+    },
   },
   {
     id: "CAP2",
     dimension: "capabilityFit",
     prompt: "Have the likely ways this could fail been identified and checked?",
+    promptByStage: {
+      plan: "Have you identified the likely ways this AI role could fail, and how will you check them?",
+      release: "Were the likely ways this AI role could fail identified and checked before launch?",
+      live: "Are likely failures being detected, corrected, and recorded during actual use?",
+    },
     why: "Reliance depends on knowing where performance ends and what happens when it fails.",
     options: CAP2_OPTIONS,
   },
   {
     id: "BEH1",
     dimension: "behavioralFit",
-    prompt: "What evidence shows that the system performs the behaviors this role requires?",
+    prompt: "What shows that the AI behaves the way you need it to in this relationship?",
+    promptByStage: {
+      plan: "How will you test whether the AI behaves the way you need it to in this relationship?",
+      release: "What shows that the AI behaved the way you needed it to while making this work?",
+      live: "What shows that the AI continues to behave the way you need it to in actual use?",
+    },
     why: "An instruction to challenge, verify, or stop does not show that the behavior will occur when it matters.",
     options: BEH1_OPTIONS,
-  },
-  {
-    id: "HUM1",
-    dimension: "humanAssurance",
-    prompt: "Who can recognize and correct a material error before it creates a consequence?",
-    why: "Your real ability to inspect the work is part of the reliance calculation.",
-    options: HUM1_OPTIONS,
   },
   {
     id: "WF1",
     dimension: "workflowControl",
     prompt: "Are the system's access and authority limited to what this task requires?",
+    promptByStage: {
+      plan: "Will the AI's access and authority be limited to what this work requires?",
+      release: "Were the AI's access and authority limited to what this work required?",
+      live: "Are the AI's current access and authority still limited to what this work requires?",
+    },
     why: "Authority should not exceed what the evidence, human capacity, and recovery controls can support.",
     options: WF1_OPTIONS,
   },
   {
     id: "WF2",
     dimension: "workflowControl",
-    prompt: "What actually happens before the result is used?",
+    prompt: "What check happens before the result creates a consequence?",
+    promptByStage: {
+      plan: "What will be checked before an AI output or action creates a consequence?",
+      release: "What was checked before this finished work was approved for launch?",
+      live: "What is checked before each AI output or action creates a consequence?",
+    },
     why: "A check changes the boundary only when it can detect a problem and stop or correct the work.",
     options: WF2_OPTIONS,
   },
   {
     id: "OUT1",
     dimension: "outcomeTestability",
-    prompt: "How will you know whether the intended result occurred—and whether harm occurred?",
+    prompt: "What are you counting on this work to accomplish, and how will you recognize success or harm?",
+    promptByStage: {
+      plan: "What are you counting on this work to accomplish, and how will you recognize success or harm?",
+      release: "Have you defined what success, failure, and warning signs will look like after launch?",
+      live: "What actually happened? Did the expected result occur, and what problems appeared?",
+    },
     why: "An output can look complete without producing the outcome you are betting on.",
     options: OUT_PLAN_OPTIONS,
     optionsByStage: {
       plan: OUT_PLAN_OPTIONS,
-      release: OUT_PLAN_OPTIONS,
+      release: OUT_RELEASE_OPTIONS,
       live: OUT_LIVE_OPTIONS,
     },
   },
@@ -230,6 +314,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     id: "HUM2",
     dimension: "humanAssurance",
     prompt: "How were material claims verified?",
+    promptByStage: {
+      plan: "How will material claims be checked outside the AI system that produces or repeats them?",
+      release: "How were material claims checked outside the AI system that produced or repeated them?",
+      live: "How are material claims checked during actual use?",
+    },
     why: "Material claims need verification outside the same system that produced them.",
     options: HUM2_OPTIONS,
     trigger: {
@@ -242,6 +331,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     id: "BEH2",
     dimension: "behavioralFit",
     prompt: "Was the system tested with a flawed premise or a situation in which it should disagree or stop?",
+    promptByStage: {
+      plan: "How will you test the AI with a flawed premise or a situation in which it should disagree or stop?",
+      release: "Was the AI tested with a flawed premise or a situation in which it should disagree or stop?",
+      live: "Does continued testing show that the AI disagrees or stops when it should?",
+    },
     why: "Agreeable output is not evidence that a system can serve as a critic, verifier, or stop gate.",
     options: BEH2_OPTIONS,
     trigger: {
@@ -253,6 +347,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     id: "WF3",
     dimension: "workflowControl",
     prompt: "Which technical checks were completed and saved?",
+    promptByStage: {
+      plan: "Which technical checks will have to pass before launch?",
+      release: "Which technical checks were completed and saved before launch?",
+      live: "Which technical checks are repeated and saved while the work is in use?",
+    },
     why: "Visible review alone cannot establish that software, links, accessibility, or deployment behavior works.",
     options: WF3_OPTIONS,
     trigger: {
@@ -265,6 +364,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     id: "WF4",
     dimension: "workflowControl",
     prompt: "Can the activity be seen, stopped, limited, and reversed while it is running?",
+    promptByStage: {
+      plan: "Will you be able to see, stop, limit, and reverse the AI's activity while it is running?",
+      release: "Were monitoring, stopping, limits, and recovery tested before launch?",
+      live: "Can you see, stop, limit, and reverse the AI's activity during actual use?",
+    },
     why: "Repeated or autonomous operation needs controls that work during execution, not only a review afterward.",
     options: WF4_OPTIONS,
     trigger: {
@@ -276,7 +380,7 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   },
 ]);
 
-const CORE_IDS = new Set(["CAP1", "CAP2", "BEH1", "HUM1", "WF1", "WF2", "OUT1"]);
+const CORE_IDS = new Set(["HUM1", "HUM3", "CAP1", "CAP2", "BEH1", "WF1", "WF2", "OUT1"]);
 
 function normalizedTerms(values) {
   return (Array.isArray(values) ? values : [])
@@ -316,6 +420,7 @@ export function getActiveQuestionDefinitions(assessment = {}) {
     CORE_IDS.has(question.id) || isQuestionActive(question, assessment),
   ).map((question) => ({
     ...question,
+    prompt: question.promptByStage?.[stage] || question.prompt,
     options: question.optionsByStage?.[stage] || question.options,
   }));
 }

@@ -9,10 +9,13 @@ import {
   getBand,
   scoreAssessment,
 } from './scoring.js';
-import kitchenRelationshipIllustration from './kitchen-relationship.svg';
+import homeBakingPhoto from './home-baking.webp';
 
-const STORAGE_KEY = 'ai-reliance-check:v0.1';
-const RECORD_KEY = 'ai-reliance-check:creation-record:v0.1';
+const STORAGE_KEY = 'ai-reliance-check:v0.2';
+const LEGACY_STORAGE_KEY = 'ai-reliance-check:v0.1';
+const RECORD_KEY = 'ai-reliance-check:work-record:v0.2';
+const LEGACY_RECORD_KEY = 'ai-reliance-check:creation-record:v0.1';
+const SCHEMA_VERSION = 2;
 
 const WORK_TYPES = [
   ['factual', 'Factual content', 'Claims, research, or source-based material'],
@@ -36,21 +39,22 @@ const BEHAVIORS = [
 ];
 
 const CONTRIBUTIONS = [
-  'Purpose and originating idea',
-  'Sources and context',
-  'Concept development',
-  'Structure and organization',
-  'Draft or technical production',
-  'Evaluation and rejection',
-  'Revision and final meaning',
-  'Verification and testing',
-  'Final approval',
+  ['idea', 'Originating idea'],
+  ['sources', 'Sources and context'],
+  ['structure', 'Structure and organization'],
+  ['production', 'Draft or technical production'],
+  ['review', 'Reviewed suggestions and decided what to keep, change, or leave out'],
+  ['revision', 'Revision and final meaning'],
+  ['verification', 'Verification and testing'],
+  ['release', 'Final release decision'],
 ];
 
 const CONTRIBUTION_OPTIONS = [
-  ['Human-led', 'Person did this'],
-  ['Shared', 'Person and AI both did this'],
-  ['AI-led', 'AI contributed this'],
+  ['Human-led', 'I led this'],
+  ['Shared', 'I did this with AI'],
+  ['AI-reviewed', 'AI did this, then I reviewed and changed it'],
+  ['AI-accepted', 'AI did this, and I accepted it as given'],
+  ['Other-person', 'Another person did this'],
   ['Unknown', 'Unknown'],
   ['Not applicable', 'Not applicable'],
 ];
@@ -63,16 +67,21 @@ const toast = document.querySelector('#toast');
 let assessment = loadAssessment();
 let creationRecord = loadCreationRecord();
 let checkView = assessment.completed ? 'result' : 'entry';
-let currentQuestionIndex = assessment.currentQuestion || 0;
+let currentQuestionIndex = resumeQuestionIndex(assessment);
 
 function makeAssessment() {
+  const firstSystem = makeSystem();
   return {
+    schemaVersion: SCHEMA_VERSION,
     methodVersion: METHOD_VERSION,
+    id: makeId('check'),
     stage: '',
     project: {
       name: '',
       task: '',
       system: '',
+      systems: [firstSystem],
+      primarySystemId: firstSystem.id,
       intendedOutcome: '',
       consequence: 'moderate',
       proposedAuthority: 'A1',
@@ -93,27 +102,63 @@ function makeAssessment() {
       observedInRealUseForFullOperatingCycle: false,
       outcomeDataCollected: false,
       materialFailuresResolved: false,
+      reviewSustainable: null,
+      independentReviewerName: '',
+      independentReviewerRole: '',
+      independentReviewScope: '',
+      independentReviewDate: '',
+      qualifiedIndependentReview: false,
     },
     answers: {},
     completed: false,
     currentQuestion: 0,
+    currentQuestionId: '',
+    needsReassessment: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
 }
 
-function makeCreationRecord() {
+function makeSystem(overrides = {}) {
   return {
+    product: '',
+    model: '',
+    role: '',
+    proposedAuthority: 'A1',
+    setup: '',
+    evidence: '',
+    evidenceBasis: 'reported',
+    connectedAccess: null,
+    permissionsConfirmed: null,
+    ...overrides,
+    id: overrides.id || makeId('system'),
+  };
+}
+
+function makeCreationRecord(projectId = '') {
+  return {
+    schemaVersion: SCHEMA_VERSION,
+    id: makeId('record'),
+    projectId,
+    aiUse: 'yes',
     title: '',
     description: '',
+    ideaSource: '',
     humanActions: '',
     aiContributions: '',
     artifactUrl: '',
     system: '',
-    accountability: '',
-    evidenceLevel: 'Declared',
-    evidenceLinks: '',
-    contributions: Object.fromEntries(CONTRIBUTIONS.map((item) => [item, 'Unknown'])),
+    systems: [makeSystem()],
+    interactionEvidence: '',
+    otherEvidence: '',
+    reviewerName: '',
+    reviewerRole: '',
+    reviewerScope: '',
+    reviewerDate: '',
+    finalDecisionName: '',
+    finalDecisionRole: '',
+    finalDecisionDate: '',
+    contributions: Object.fromEntries(CONTRIBUTIONS.map(([id]) => [id, 'Unknown'])),
     updatedAt: new Date().toISOString(),
   };
 }
@@ -129,28 +174,121 @@ function loadJSON(key, fallback) {
 
 function loadAssessment() {
   const fallback = makeAssessment();
-  const stored = loadJSON(STORAGE_KEY, null);
+  const current = loadJSON(STORAGE_KEY, null);
+  const legacy = current ? null : loadJSON(LEGACY_STORAGE_KEY, null);
+  const stored = current || legacy;
   if (!stored || typeof stored !== 'object') return fallback;
+  const isLegacy = stored.schemaVersion !== SCHEMA_VERSION || stored.methodVersion !== METHOD_VERSION;
   const project = { ...fallback.project, ...(stored.project || {}) };
+  project.systems = normalizeSystems(stored.project?.systems, project.system, project.proposedAuthority);
+  project.primarySystemId = project.systems.some((item) => item.id === project.primarySystemId)
+    ? project.primarySystemId
+    : project.systems[0].id;
   project.workTypes = Array.isArray(project.workTypes) ? project.workTypes : [];
   project.requiredBehaviors = Array.isArray(project.requiredBehaviors) ? project.requiredBehaviors.slice(0, 3) : [];
-  return {
+  const normalized = {
     ...fallback,
     ...stored,
+    schemaVersion: SCHEMA_VERSION,
+    methodVersion: METHOD_VERSION,
     project,
     answers: stored.answers && typeof stored.answers === 'object' ? stored.answers : {},
   };
+  if (isLegacy) {
+    normalized.legacySnapshot = {
+      methodVersion: stored.methodVersion || '0.1',
+      completed: Boolean(stored.completed),
+      answers: normalized.answers,
+      completedAt: stored.completedAt || '',
+    };
+    normalized.answers = {};
+    normalized.completed = false;
+    normalized.currentQuestion = 0;
+    normalized.currentQuestionId = '';
+    normalized.needsReassessment = true;
+  }
+  return normalized;
 }
 
 function loadCreationRecord() {
-  const fallback = makeCreationRecord();
-  const stored = loadJSON(RECORD_KEY, null);
+  const fallback = makeCreationRecord(assessment.id);
+  const current = loadJSON(RECORD_KEY, null);
+  const stored = current || loadJSON(LEGACY_RECORD_KEY, null);
   if (!stored || typeof stored !== 'object') return fallback;
+  const legacyContributions = { ...(stored.contributions || {}) };
+  const migrateContribution = (value) => value === 'AI-led' ? 'Unknown' : value || 'Unknown';
+  const migratedContributions = {
+    idea: migrateContribution(legacyContributions.idea || legacyContributions['Originating idea'] || legacyContributions['Main idea and purpose'] || legacyContributions['Purpose and originating idea']),
+    sources: migrateContribution(legacyContributions.sources || legacyContributions['Sources and context']),
+    structure: migrateContribution(legacyContributions.structure || legacyContributions['Structure and organization']),
+    production: migrateContribution(legacyContributions.production || legacyContributions['Draft or technical production']),
+    review: migrateContribution(legacyContributions.review || legacyContributions['Reviewed suggestions and decided what to keep, change, or leave out'] || legacyContributions['Evaluation and rejection']),
+    revision: migrateContribution(legacyContributions.revision || legacyContributions['Revision and final meaning']),
+    verification: migrateContribution(legacyContributions.verification || legacyContributions['Verification and testing']),
+    release: migrateContribution(legacyContributions.release || legacyContributions['Final release decision'] || legacyContributions['Final approval']),
+  };
+  const legacyNotes = [];
+  if (legacyContributions['Concept development']) {
+    legacyNotes.push(`Earlier record, Concept development: ${legacyContributions['Concept development']}`);
+  }
+  if (Object.values(legacyContributions).includes('AI-led')) {
+    legacyNotes.push('Earlier records marked one or more contributions as “AI contributed this.” Review those rows because the earlier option did not distinguish AI work that was revised from AI work accepted as given.');
+  }
+  if (stored.accountability) {
+    legacyNotes.push(`Earlier final approval entry: ${stored.accountability}`);
+  }
   return {
     ...fallback,
     ...stored,
-    contributions: { ...fallback.contributions, ...(stored.contributions || {}) },
+    schemaVersion: SCHEMA_VERSION,
+    projectId: stored.projectId || assessment.id,
+    systems: normalizeSystems(stored.systems, stored.system),
+    interactionEvidence: stored.interactionEvidence || '',
+    otherEvidence: stored.otherEvidence || stored.evidenceLinks || '',
+    finalDecisionName: stored.finalDecisionName || stored.accountability || '',
+    finalDecisionRole: stored.finalDecisionRole || '',
+    legacyNotes: stored.legacyNotes || legacyNotes.join('\n'),
+    contributions: { ...fallback.contributions, ...migratedContributions },
   };
+}
+
+function makeId(prefix) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+function resumeQuestionIndex(value) {
+  const questions = getActiveQuestionDefinitions(value || {});
+  if (!questions.length) return 0;
+  const firstUnanswered = questions.findIndex((question) => !isValidAnswer(question, value?.answers?.[question.id]));
+  if (firstUnanswered >= 0) return firstUnanswered;
+  if (value?.currentQuestionId) {
+    const savedIndex = questions.findIndex((question) => question.id === value.currentQuestionId);
+    if (savedIndex >= 0) return savedIndex;
+  }
+  return Math.min(Number(value?.currentQuestion || 0), questions.length - 1);
+}
+
+function isValidAnswer(question, answer) {
+  if (!question || !answer || typeof answer !== 'object') return false;
+  const validLevel = question.options.some((option) => Number(option.value) === Number(answer.level));
+  const validBasis = ['confirmed', 'reported', 'unknown'].includes(answer.basis);
+  if (!validLevel || !validBasis) return false;
+  if (answer.basis === 'confirmed' && !String(answer.evidenceNote || '').trim() && !String(answer.evidenceUrl || '').trim()) {
+    return false;
+  }
+  return true;
+}
+
+function normalizeSystems(systems, legacySystem = '', legacyAuthority = 'A1') {
+  const normalized = Array.isArray(systems)
+    ? systems.filter((item) => item && typeof item === 'object').map((item) => makeSystem(item))
+    : [];
+  if (normalized.length) return normalized;
+  return [makeSystem({
+    product: String(legacySystem || ''),
+    setup: String(legacySystem || ''),
+    proposedAuthority: Object.hasOwn(AUTHORITY_LABELS, legacyAuthority) ? legacyAuthority : 'A1',
+  })];
 }
 
 function saveAssessment() {
@@ -173,7 +311,10 @@ function escapeHTML(value = '') {
 }
 
 function formatDate(date = new Date()) {
-  const parsed = new Date(date);
+  const dateOnly = typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const parsed = dateOnly
+    ? new Date(...date.split('-').map((part, index) => Number(part) - (index === 1 ? 1 : 0)))
+    : new Date(date);
   const safeDate = Number.isNaN(parsed.getTime()) ? new Date() : parsed;
   return new Intl.DateTimeFormat('en', {
     year: 'numeric',
@@ -234,24 +375,24 @@ function setActiveNav(path) {
 }
 
 function renderHome() {
-  document.title = 'Human + AI Work Check — Know what AI may do';
+  document.title = 'Home | Human + AI Work Check';
   main.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">When AI is involved</p>
-        <h1>Know what AI may do—and what still needs you.</h1>
-        <p class="hero-definition"><strong>Human + AI Work Check is the tool.</strong> It uses the AI Reliance Check method to examine one real project: the person, the AI setup, the job, the steps, and what could happen if it goes wrong.</p>
-        <p class="hero-promise">You get a score, a clear list of what AI may do, what must be checked, and where a person must decide.</p>
-        <p class="assurance-note"><strong>A human in the loop is not enough.</strong> The person must know enough, have enough time, and be able to correct or stop the work.</p>
+        <p class="hero-kicker">When human work includes AI</p>
+        <h1>Check whether the trust you are placing in the work is supported.</h1>
+        <p class="hero-definition"><strong>Human + AI Work Check starts with your capacity.</strong> It then examines one consequential AI system and role, the task, the workflow, the evidence, and what you are betting will happen.</p>
+        <p class="hero-promise">See the largest role supported now, what needs capable review, what is not supported yet, and what would strengthen the arrangement.</p>
+        <p class="assurance-note"><strong>A person in the loop is not enough.</strong> You need the knowledge, access, authority, time, attention, and stamina to recognize a problem, correct it, or stop the work.</p>
         <div class="hero-actions">
-          <a class="button" href="#/check">Check a project <span aria-hidden="true">→</span></a>
+          <a class="button" href="#/check">Check my work arrangement <span aria-hidden="true">→</span></a>
           <a class="button button-secondary" href="#/creation-record">Show how the work was made</a>
         </div>
-        <p class="hero-limit"><strong>Not an AI detector.</strong> Not a general score for a model. It checks one person–AI setup doing one job.</p>
+        <p class="hero-limit"><strong>It is not an AI detector.</strong> It does not grade a model in general or guess who made a finished artifact. It examines one real human and AI arrangement doing one job.</p>
       </div>
       <figure class="kitchen-figure">
-        <img src="${kitchenRelationshipIllustration}" alt="A person directs an AI-assisted workflow, reviews a marked-up plan, and checks a finished cake before it is served." />
-        <figcaption><strong>The output is the cake. The collaboration is the kitchen.</strong> This tool checks the kitchen—not just the cake.</figcaption>
+        <img src="${homeBakingPhoto}" alt="A woman in a kitchen smiles at a finished chocolate cake beside an open recipe notebook." />
+        <figcaption><strong>The output is the cake. The working relationship is the kitchen.</strong> This tool checks how the person and AI made the work, not just the finished product.</figcaption>
       </figure>
     </section>
 
@@ -261,68 +402,81 @@ function renderHome() {
           <p class="kicker">Why this matters</p>
           <h2>The final product does not show how the work was done.</h2>
         </div>
-        <p class="lede">These are different problems, but each one is missing the same thing: a clear view of what the person did, what AI contributed, what was checked, and what AI was allowed to do.</p>
+        <p class="lede">These are different problems, but each one is missing the same thing: evidence of what the person did, what AI contributed, what was checked, and what AI was authorized to do.</p>
       </div>
       <ul class="situation-list" aria-label="Common situations involving AI">
         <li><span>Teacher</span><q>This sounds like AI wrote it.</q></li>
         <li><span>Publisher</span><q>The checker says you didn’t write this.</q></li>
-        <li><span>Manager</span><q>Let the AI agent do it—we’ll save time. You’re responsible for checking it.</q></li>
+        <li><span>Manager</span><q>Let the AI agent do it so we can save time. You are responsible for checking it.</q></li>
         <li><span>Business owner</span><q>If an expert checks everything, what are we saving?</q></li>
       </ul>
     </section>
 
     <section class="section">
       <div class="section-heading">
-        <div>
-          <p class="kicker">Use it when you need it</p>
-          <h2>Check the work at any point.</h2>
-        </div>
-        <p class="lede">Use it before you begin, just before you publish or launch, or after people have used the work. The questions change to match the moment.</p>
+        <div><p class="kicker">Two connected tools</p><h2>Check the arrangement. Document the work.</h2></div>
+        <p class="lede">The tools answer different questions. Use either one, or connect them when you need both a decision and a record.</p>
       </div>
-      <div class="grid-3">
-        ${stageCard('01', 'Before you start', 'Decide AI’s role', 'Choose what AI may do, what the person must do, and where review or approval belongs.', 'plan', 'Plan AI’s role')}
-        ${stageCard('02', 'Before you publish, send, or launch', 'Check what actually happened', 'Compare the plan with the work that was really done before it reaches other people or systems.', 'release', 'Check before release')}
-        ${stageCard('03', 'After people use it', 'Decide whether to keep, limit, or stop it', 'Look at results, errors, and consequences before you continue using the same setup.', 'live', 'Review live work')}
+      <div class="grid-2">
+        <article class="card"><span class="card-number">01</span><h3>Work Check</h3><p><strong>Is the trust I am placing in this human and AI work arrangement supported?</strong></p><p>Use it to plan a project, check work before launch, or review an arrangement already in use.</p><a class="text-link" href="#/check">Check an arrangement</a></article>
+        <article class="card"><span class="card-number">02</span><h3>Work Record</h3><p><strong>How was this finished work actually made?</strong></p><p>Record the person’s actions, each AI system and role, supporting records, and the final release decision.</p><a class="text-link" href="#/creation-record">Create a Work Record</a></article>
       </div>
     </section>
 
     <section class="section">
       <div class="section-heading">
         <div>
-          <p class="kicker">What the check looks at</p>
-          <h2>It checks the whole setup—not just the AI model.</h2>
+          <p class="kicker">Three decision points</p>
+          <h2>Use the Work Check when the decision changes.</h2>
         </div>
-        <p class="lede">A powerful model can still be used badly. A simpler model may work well inside a narrow, tested process. The answer depends on all five parts together.</p>
-      </div>
-      <div class="formula" aria-label="The person or team plus the AI tool and setup plus the job plus the steps and checks plus what is at stake">
-        <span>Person or team</span><span class="formula-symbol">+</span>
-        <span>AI tool and setup</span><span class="formula-symbol">+</span>
-        <span>Job</span><span class="formula-symbol">+</span>
-        <span>Steps and checks</span><span class="formula-symbol">+</span>
-        <span>What is at stake</span>
+        <p class="lede">The questions and result change depending on whether you are planning, ready to launch, or reviewing real use.</p>
       </div>
       <div class="grid-3">
-        <article class="card"><h3>Supported for this project</h3><p>The person, proof, and checks support this use of AI for this job.</p></article>
-        <article class="card"><h3>Needs stronger checks</h3><p>The current setup is not strong enough for everything you want AI to do.</p></article>
-        <article class="card"><h3>Not enough information yet</h3><p>You need more proof before deciding. Unknown does not automatically mean unsafe or incapable.</p></article>
+        ${stageCard('01', 'Before you start', 'Plan Readiness', 'Choose a supported AI role, required human capacity, workflow checks, and stopping points.', 'plan', 'Plan the work')}
+        ${stageCard('02', 'Ready to publish, send, or launch', 'Launch Support', 'Check what actually happened and whether the finished arrangement supports release.', 'release', 'Check before launch')}
+        ${stageCard('03', 'Already in use', 'Current-Use Support', 'Use observed results, errors, and consequences to decide whether to continue, limit, or stop.', 'live', 'Review current use')}
       </div>
     </section>
 
     <section class="section">
       <div class="section-heading">
-        <div><p class="kicker">What you receive</p><h2>A score, clear limits, and next steps.</h2></div>
-        <p class="lede">The score starts the answer. The useful part is knowing what AI may do now, what still needs checking, and what would make the setup stronger.</p>
+        <div>
+          <p class="kicker">What the Work Check weighs</p>
+          <h2>The arrangement has to carry the wager.</h2>
+        </div>
+        <p class="lede">A stronger model can still be a poor fit. A simpler model can work inside a narrow, tested workflow when the person can carry the review load. The parts have to work together.</p>
+      </div>
+      <div class="formula" aria-label="Your capacity plus the AI system and role plus the task plus the workflow plus the wager">
+        <span>Your capacity</span><span class="formula-symbol">+</span>
+        <span>AI system and role</span><span class="formula-symbol">+</span>
+        <span>Task</span><span class="formula-symbol">+</span>
+        <span>Workflow</span><span class="formula-symbol">+</span>
+        <span>Wager</span>
+      </div>
+      <p class="helper-text"><strong>Evidence is reported separately.</strong> It determines how strongly the Work Check can state its conclusion. Missing evidence creates uncertainty. It does not automatically prove poor ability.</p>
+      <div class="grid-2">
+        <article class="card"><h3>Not supported for proposed role</h3><p>Your current capacity, AI fit, controls, or workflow cannot support the role you want AI to have.</p></article>
+        <article class="card"><h3>Supported only in a smaller role</h3><p>The work may continue if AI has less authority or performs a narrower function.</p></article>
+        <article class="card"><h3>Supported with named conditions</h3><p>The arrangement supports the role only while specific review, evidence, or controls remain in place.</p></article>
+        <article class="card"><h3>Strongly supported under current conditions</h3><p>Your current capacity, evidence, controls, and workflow provide strong support for this use.</p></article>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="section-heading">
+        <div><p class="kicker">What you receive</p><h2>A decision you can use, not just a number.</h2></div>
+        <p class="lede">The score starts the answer. The useful part is the supported role, the conditions and limits, and the shortest actions that could strengthen the arrangement.</p>
       </div>
       <div class="sample-result">
         <div class="sample-result-copy">
           <p class="kicker">Example result</p>
-          <h3>55/100 for this project—not 55% human.</h3>
-          <p>The score shows how strongly the person, proof, and checks support this use of AI. It does not measure how much of the finished work is “human” or “AI.”</p>
+          <h3>55/100 for this arrangement. Not 55% human.</h3>
+          <p>The operational score reflects the human capacity, AI fit, workflow controls, and measurable outcome. Evidence strength is shown separately.</p>
         </div>
         <aside class="sample-card" aria-label="Example task-specific Reliance Score">
-          <span class="stamp stamp-warning">Use with limits</span>
+          <span class="stamp stamp-warning">Supported only in a smaller role</span>
           <div class="sample-score"><strong>55</strong><span>/ 100</span></div>
-          <p><strong>Drafting and supervised changes are supported.</strong> Independent verification and release approval are not.</p>
+          <p><strong>Drafting and supervised changes are supported.</strong> Independent verification and release approval still need capable human review.</p>
           <ul class="boundary-list">
             <li class="allow">Organize and draft under review</li>
             <li class="allow">Propose website changes</li>
@@ -332,14 +486,14 @@ function renderHome() {
         </aside>
       </div>
       <div class="grid-3">
-        ${featureCard('01', 'Current score', 'A score for this person, AI setup, job, process, and outcome—not a general rating of the model.')}
-        ${featureCard('02', 'What AI may do', 'What you may hand to AI, what a person must check, and what AI should not do yet.')}
-        ${featureCard('03', 'How solid the score is', 'Whether the answer rests on things you confirmed, things you reported, or things you do not know yet.')}
+        ${featureCard('01', 'Current score', 'A score for this human and AI arrangement, task, workflow, and wager. It is not a general rating of the model.')}
+        ${featureCard('02', 'Supported role', 'What is supported in this workflow, what needs capable review, and what is not supported yet.')}
+        ${featureCard('03', 'Evidence strength', 'How much the conclusion rests on documented evidence, reported experience, or unknowns.')}
         ${featureCard('04', 'Problems to fix first', 'Serious gaps that a high average cannot cancel, such as unknown access or no capable reviewer.')}
-        ${featureCard('05', 'What to do next', 'Actions you can take now, in 24 hours, in days, and in weeks.')}
-        ${featureCard('06', 'A result you can save or share', 'A printable score card and an optional record showing how the work was made.')}
+        ${featureCard('05', 'What to do next', 'Actions for now, 24 hours, days, and weeks, including what each completed action is expected to change.')}
+        ${featureCard('06', 'A record you can save or share', 'A printable result and a separate Work Record that documents how finished work was made.')}
       </div>
-      <p class="quote">Use the parts that are ready. Limit the parts that are not.</p>
+      <p class="quote">Trust the relationship only as far as the whole arrangement can support.</p>
       <div class="button-row">
         <a class="button" href="#/check">Check a project</a>
         <a class="button button-secondary" href="#/method">See how it works</a>
@@ -387,7 +541,7 @@ function startAssessment(stage) {
 }
 
 function renderCheck() {
-  document.title = 'Check a Project — Human + AI Work Check';
+  document.title = 'Check a Project | Human + AI Work Check';
   if (checkView === 'setup') renderSetup();
   else if (checkView === 'questions') renderQuestion();
   else if (checkView === 'review') renderReview();
@@ -397,21 +551,23 @@ function renderCheck() {
 }
 
 function renderCheckEntry() {
-  const savedNotice = assessment.project?.task && !assessment.completed
+  const savedNotice = assessment.needsReassessment
+    ? `<div class="callout callout-warning"><p><strong>Your saved project used an earlier method.</strong> The project setup was preserved, but its old answers will not be silently rescored under method ${escapeHTML(METHOD_VERSION)}.</p><button class="text-button" id="resume-check" type="button">Reassess this project</button></div>`
+    : assessment.project?.task && !assessment.completed
     ? `<div class="callout"><p><strong>You have a saved check in this browser.</strong> ${escapeHTML(assessment.project.task)}</p><button class="text-button" id="resume-check" type="button">Resume where you left off</button></div>`
     : '';
 
   main.innerHTML = `<div class="page">
     <header class="page-header">
       <p class="eyebrow">Check a project</p>
-      <h1>When are you checking the work?</h1>
-      <p>Choose the point that matches your project. Use the check before you start, just before release, or after people have used the work.</p>
+      <h1>What decision are you making now?</h1>
+      <p>The questions change depending on whether you are planning the work, ready to launch it, or reviewing what happened in real use.</p>
     </header>
     ${savedNotice}
     <div class="grid-3">
-      ${stageCard('01', 'Before you start', 'Plan AI’s role', 'I have not started, or I am deciding what AI should be allowed to do.', 'plan', 'Start here')}
-      ${stageCard('02', 'Before you publish, send, or launch', 'Check the finished work', 'The work is mostly complete, and I need to check what really happened before release.', 'release', 'Start here')}
-      ${stageCard('03', 'After people use it', 'Review the results', 'The work has been released or used, and I have results, errors, or feedback to examine.', 'live', 'Start here')}
+      ${stageCard('01', 'I am planning work that may use AI', 'Plan Readiness', 'See what role the proposed arrangement can support before the work begins.', 'plan', 'Plan the work')}
+      ${stageCard('02', 'I am ready to publish, send, or launch', 'Launch Support', 'Check what actually happened and whether the reliance is supported before release.', 'release', 'Check before launch')}
+      ${stageCard('03', 'People are already using the work', 'Current-Use Support', 'Review results, errors, and consequences before continuing, expanding, limiting, or stopping.', 'live', 'Review current use')}
     </div>
     <div class="button-row no-print">
       <button class="button button-secondary" type="button" id="import-trigger">Import a saved project</button>
@@ -422,7 +578,9 @@ function renderCheckEntry() {
 
   bindStageLinks();
   document.querySelector('#resume-check')?.addEventListener('click', () => {
-    checkView = Object.keys(assessment.answers || {}).length ? 'questions' : 'setup';
+    assessment.needsReassessment = false;
+    checkView = assessment.currentQuestionId || Object.keys(assessment.answers || {}).length ? 'questions' : 'setup';
+    saveAssessment();
     renderCheck();
   });
   document.querySelector('#import-trigger').addEventListener('click', () => document.querySelector('#import-assessment').click());
@@ -431,14 +589,15 @@ function renderCheckEntry() {
 
 function renderSetup(error = '') {
   const p = assessment.project;
+  const stage = stagePrompts(assessment.stage);
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
       <section class="assessment-main setup-card">
         <div class="progress-row"><span>PROJECT SETUP</span><span>Setup takes about 2 minutes; the full check depends on your project</span></div>
         <div class="progress-track" aria-hidden="true"><span style="width: 8%"></span></div>
         <p class="eyebrow">${stageLabel(assessment.stage)}</p>
-        <h1>Tell us about the work.</h1>
-        <p class="question-why">Describe the AI setup you are using or plan to use. This check is about this project—not every possible use of the model.</p>
+        <h1>${escapeHTML(stage.setupHeading)}</h1>
+        <p class="question-why">${escapeHTML(stage.setupIntro)}</p>
         ${error ? `<p class="inline-error" role="alert" tabindex="-1">${escapeHTML(error)}</p>` : ''}
         <form id="setup-form" novalidate>
           <div class="field-grid">
@@ -447,37 +606,36 @@ function renderSetup(error = '') {
               <input id="project-name" name="name" value="${escapeHTML(p.name)}" autocomplete="off" />
             </div>
             <div class="field field-span-2">
-              <label for="task">What are you asking AI to produce, recommend, decide, change, or do? <span class="required">*</span></label>
+              <label for="task">${escapeHTML(stage.taskQuestion)} <span class="required">*</span></label>
               <textarea id="task" name="task" required>${escapeHTML(p.task)}</textarea>
             </div>
             <div class="field field-span-2">
-              <label for="system">What system and setup are you using? <span class="required">*</span></label>
-              <textarea id="system" name="system" required>${escapeHTML(p.system)}</textarea>
-              <small>Include the product or model, important instructions or memory, connected tools, and permissions you know about.</small>
-            </div>
-            <div class="field field-span-2">
-              <label for="outcome">What are you counting on happening? <span class="required">*</span></label>
+              <label for="outcome">${escapeHTML(stage.outcomeQuestion)} <span class="required">*</span></label>
               <textarea id="outcome" name="intendedOutcome" required>${escapeHTML(p.intendedOutcome)}</textarea>
-              <small>What should happen—and what could happen if the work is wrong, incomplete, late, biased, insecure, or unused?</small>
+              <small>${escapeHTML(stage.outcomeHelp)}</small>
             </div>
             <div class="field">
               <label for="consequence">Consequence if it fails</label>
               <select id="consequence" name="consequence">
                 ${selectOptions([
-                  ['low', 'Low — easy to notice and correct'],
-                  ['moderate', 'Moderate — real cost, delay, or confusion'],
-                  ['high', 'High — serious harm or difficult recovery'],
-                  ['critical', 'Critical — safety, rights, major loss, or irreversible harm'],
+                  ['low', 'Low, easy to notice and correct'],
+                  ['moderate', 'Moderate, real cost, delay, or confusion'],
+                  ['high', 'High, serious harm or difficult recovery'],
+                  ['critical', 'Critical, safety, rights, major loss, or irreversible harm'],
                 ], p.consequence)}
               </select>
             </div>
-            <div class="field">
-              <label for="authority">What do you want AI to be allowed to do?</label>
-              <select id="authority" name="proposedAuthority">
-                ${Object.entries(AUTHORITY_LABELS).map(([value, label]) => `<option value="${value}" ${p.proposedAuthority === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('')}
-              </select>
-            </div>
+            <div class="field"><p class="field-note"><strong>Role assessed</strong><br />Choose the authority for each AI system below. The detailed questions focus on the system with the most consequential role.</p></div>
           </div>
+
+          <fieldset class="fieldset systems-fieldset">
+            <legend>Which AI systems and models are part of this arrangement? <span class="required">*</span></legend>
+            <p class="helper-text">Record each system separately. Enter “Unknown” when you do not know the exact model or version. Mark the system with the most consequential role.</p>
+            <div class="system-editor-list">
+              ${p.systems.map((system, index) => systemEditor(system, index, p.primarySystemId, p.systems.length)).join('')}
+            </div>
+            <button class="button button-secondary" type="button" id="add-system">Add another system</button>
+          </fieldset>
 
           <fieldset class="fieldset">
             <legend>What kind of work is involved? <span class="required">*</span></legend>
@@ -487,7 +645,7 @@ function renderSetup(error = '') {
           </fieldset>
 
           <fieldset class="fieldset">
-            <legend>Which behaviors matter most? Choose up to three. <span class="required">*</span></legend>
+            <legend>${escapeHTML(stage.behaviorQuestion)} Choose up to three. <span class="required">*</span></legend>
             <div class="choice-grid choice-grid-compact">
               ${BEHAVIORS.map(([value, label]) => checkboxChoice('requiredBehaviors', value, label, '', p.requiredBehaviors.includes(value))).join('')}
             </div>
@@ -513,7 +671,48 @@ function renderSetup(error = '') {
     checkView = 'entry';
     renderCheck();
   });
+  document.querySelector('#add-system').addEventListener('click', () => {
+    captureSetupDraft(form);
+    assessment.project.systems.push(makeSystem());
+    saveAssessment();
+    renderSetup();
+  });
+  document.querySelectorAll('[data-remove-system]').forEach((button) => {
+    button.addEventListener('click', () => {
+      captureSetupDraft(form);
+      assessment.project.systems = assessment.project.systems.filter((system) => system.id !== button.dataset.removeSystem);
+      if (!assessment.project.systems.some((system) => system.id === assessment.project.primarySystemId)) {
+        assessment.project.primarySystemId = assessment.project.systems[0].id;
+      }
+      saveAssessment();
+      renderSetup();
+    });
+  });
   focusCurrentStep();
+}
+
+function systemEditor(system, index, primarySystemId, count) {
+  const prefix = `system-${index}`;
+  return `<article class="system-editor">
+    <div class="system-editor-heading"><h2>System ${index + 1}</h2>${count > 1 ? `<button class="text-button" type="button" data-remove-system="${escapeHTML(system.id)}">Remove</button>` : ''}</div>
+    <input type="hidden" name="systemId" value="${escapeHTML(system.id)}" />
+    <div class="field-grid">
+      <div class="field"><label for="${prefix}-product">AI product or tool <span class="required">*</span></label><input id="${prefix}-product" name="systemProduct" value="${escapeHTML(system.product)}" placeholder="For example, ChatGPT" /></div>
+      <div class="field"><label for="${prefix}-model">Exact model or version <span class="required">*</span></label><input id="${prefix}-model" name="systemModel" value="${escapeHTML(system.model)}" placeholder="Enter Unknown if needed" /></div>
+      <div class="field field-span-2"><label for="${prefix}-role">What role does this system have in the workflow? <span class="required">*</span></label><textarea id="${prefix}-role" name="systemRole" placeholder="For example, organize source material, draft code, or publish approved changes">${escapeHTML(system.role)}</textarea></div>
+      <div class="field"><label for="${prefix}-authority">What authority does this system have?</label><select id="${prefix}-authority" name="systemAuthority">${Object.entries(AUTHORITY_LABELS).map(([value, label]) => `<option value="${value}" ${system.proposedAuthority === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select></div>
+      <div class="field"><label for="${prefix}-access">Can it connect to accounts, files, repositories, data, publishing, or other tools?</label><select id="${prefix}-access" name="systemAccess">${triStateOptions(system.connectedAccess, 'No', 'Yes', 'Unknown')}</select></div>
+      <div class="field"><label for="${prefix}-permissions">If it connects, are its permissions known and limited?</label><select id="${prefix}-permissions" name="systemPermissions">${triStateOptions(system.permissionsConfirmed, 'No', 'Yes, confirmed', 'Unknown or not applicable')}</select></div>
+      <div class="field field-span-2"><label for="${prefix}-setup">Instructions, memory, tools, data, access, or permissions</label><textarea id="${prefix}-setup" name="systemSetup" placeholder="Describe the setup that could affect how this system behaves">${escapeHTML(system.setup)}</textarea></div>
+      <div class="field field-span-2"><label for="${prefix}-evidence">Evidence about this system in this role <span class="helper-text">Optional</span></label><textarea id="${prefix}-evidence" name="systemEvidence" placeholder="Model documentation, tests, work samples, or known limits">${escapeHTML(system.evidence)}</textarea></div>
+      <div class="field field-span-2"><label for="${prefix}-evidence-basis">How is this system description supported?</label><select id="${prefix}-evidence-basis" name="systemEvidenceBasis">${selectOptions([
+        ['confirmed', 'Documented with a current record or result'],
+        ['reported', 'Based on my experience or description'],
+        ['unknown', 'Unknown or not yet determined'],
+      ], system.evidenceBasis || 'reported')}</select></div>
+    </div>
+    <label class="choice consequential-choice"><input type="radio" name="primarySystemId" value="${escapeHTML(system.id)}" ${system.id === primarySystemId ? 'checked' : ''} /><span><strong>This system has the most consequential role</strong><span>Answer the detailed questions for this system and role. A weak consequential role can limit the whole result.</span></span></label>
+  </article>`;
 }
 
 function selectOptions(options, selected) {
@@ -538,33 +737,89 @@ function limitBehaviors(event) {
 
 function submitSetup(event) {
   event.preventDefault();
-  const form = new FormData(event.currentTarget);
+  const formElement = event.currentTarget;
+  const form = new FormData(formElement);
   const workTypes = form.getAll('workTypes');
   const requiredBehaviors = form.getAll('requiredBehaviors');
   const task = String(form.get('task') || '').trim();
-  const system = String(form.get('system') || '').trim();
   const intendedOutcome = String(form.get('intendedOutcome') || '').trim();
-
-  assessment.project = {
-    ...assessment.project,
-    name: String(form.get('name') || '').trim(),
-    task,
-    system,
-    intendedOutcome,
-    consequence: form.get('consequence'),
-    proposedAuthority: form.get('proposedAuthority'),
-    workTypes,
-    requiredBehaviors,
-  };
+  captureSetupDraft(formElement);
   assessment.completed = false;
   saveAssessment();
 
-  if (!task || !system || !intendedOutcome || !workTypes.length || !requiredBehaviors.length) {
-    return renderSetup('Complete the task, system, outcome, work type, and at least one required behavior.');
+  const systemsComplete = assessment.project.systems.every((system) => system.product && system.model && system.role);
+  if (!task || !intendedOutcome || !workTypes.length || !requiredBehaviors.length || !systemsComplete) {
+    return renderSetup('Complete the task, outcome, work type, at least one required behavior, and the product, model, and role for every AI system.');
+  }
+  const unsupportedDocumentedSystem = assessment.project.systems.some(
+    (system) => system.evidenceBasis === 'confirmed' && !system.evidence,
+  );
+  if (unsupportedDocumentedSystem) {
+    return renderSetup('Add the current record or result that supports each Documented system description, or choose Based on my experience.');
   }
   currentQuestionIndex = Math.min(currentQuestionIndex, activeQuestions().length - 1);
   checkView = 'questions';
   renderCheck();
+}
+
+function captureSetupDraft(formElement) {
+  const form = new FormData(formElement);
+  const ids = form.getAll('systemId');
+  const products = form.getAll('systemProduct');
+  const models = form.getAll('systemModel');
+  const roles = form.getAll('systemRole');
+  const authorities = form.getAll('systemAuthority');
+  const setups = form.getAll('systemSetup');
+  const evidence = form.getAll('systemEvidence');
+  const evidenceBases = form.getAll('systemEvidenceBasis');
+  const access = form.getAll('systemAccess');
+  const permissions = form.getAll('systemPermissions');
+  const systems = ids.map((id, index) => makeSystem({
+    id: String(id),
+    product: String(products[index] || '').trim(),
+    model: String(models[index] || '').trim(),
+    role: String(roles[index] || '').trim(),
+    proposedAuthority: Object.hasOwn(AUTHORITY_LABELS, authorities[index]) ? authorities[index] : 'A1',
+    setup: String(setups[index] || '').trim(),
+    evidence: String(evidence[index] || '').trim(),
+    evidenceBasis: ['confirmed', 'reported', 'unknown'].includes(evidenceBases[index])
+      ? evidenceBases[index]
+      : 'reported',
+    connectedAccess: parseTriState(access[index]),
+    permissionsConfirmed: parseTriState(permissions[index]),
+  }));
+  const primarySystemId = String(form.get('primarySystemId') || systems[0]?.id || '');
+  const primarySystem = systems.find((system) => system.id === primarySystemId) || systems[0];
+  const connectedSystems = systems.filter((system) => system.connectedAccess === true);
+  assessment.project = {
+    ...assessment.project,
+    name: String(form.get('name') || '').trim(),
+    task: String(form.get('task') || '').trim(),
+    intendedOutcome: String(form.get('intendedOutcome') || '').trim(),
+    consequence: form.get('consequence'),
+    proposedAuthority: primarySystem?.proposedAuthority || form.get('proposedAuthority') || 'A1',
+    workTypes: form.getAll('workTypes'),
+    requiredBehaviors: form.getAll('requiredBehaviors'),
+    systems,
+    primarySystemId,
+    system: systems.map(systemSummary).join('; '),
+    connectedAccess: systems.some((system) => system.connectedAccess === true)
+      ? true
+      : systems.some((system) => system.connectedAccess === null) ? null : false,
+    permissionsConfirmed: connectedSystems.length
+      ? connectedSystems.every((system) => system.permissionsConfirmed === true)
+      : systems.some((system) => system.connectedAccess === null) ? null : true,
+  };
+}
+
+function parseTriState(value) {
+  return value === 'true' ? true : value === 'false' ? false : null;
+}
+
+function systemSummary(system) {
+  const model = system.model ? ` (${system.model})` : '';
+  const role = system.role ? `: ${system.role}` : '';
+  return `${system.product || 'Unnamed system'}${model}${role}`;
 }
 
 function activeQuestions() {
@@ -579,6 +834,7 @@ function renderQuestion(error = '') {
     return renderReview();
   }
   assessment.currentQuestion = currentQuestionIndex;
+  assessment.currentQuestionId = question.id;
   saveAssessment();
   const answer = assessment.answers[question.id] || {};
   const progress = Math.round(((currentQuestionIndex + 1) / (questions.length + 1)) * 100);
@@ -606,8 +862,8 @@ function renderQuestion(error = '') {
             <h2>What supports this answer?</h2>
             <p class="helper-text">An instruction or plan is not proof that the behavior occurred. “I don’t know” is a valid and useful answer.</p>
             <fieldset class="fieldset"><legend class="sr-only">Evidence basis</legend><div class="choice-grid choice-grid-compact">
-                ${evidenceChoice('confirmed', 'Confirmed', 'Directly observed or supported by a result, record, or link', answer.basis)}
-                ${evidenceChoice('reported', 'Reported', 'Intended, recalled, or asserted without a current record', answer.basis)}
+                ${evidenceChoice('confirmed', 'Documented', 'Directly observed and supported by a current result, record, note, or link', answer.basis)}
+                ${evidenceChoice('reported', 'Based on my experience', 'Observed, recalled, or asserted without a current supporting record', answer.basis)}
                 ${evidenceChoice('unknown', 'Unknown', 'I cannot determine this yet', answer.basis)}
               </div></fieldset>
             <div class="field-grid" style="margin-top: 1rem">
@@ -650,37 +906,46 @@ function evidenceChoice(value, label, description, selected) {
 function submitQuestion(event, question, count) {
   event.preventDefault();
   const form = new FormData(event.currentTarget);
-  assessment.answers[question.id] = {
+  const answer = {
     level: form.get('level') === null ? undefined : Number(form.get('level')),
     basis: form.get('basis') || undefined,
     evidenceNote: String(form.get('evidenceNote') || '').trim(),
     evidenceUrl: String(form.get('evidenceUrl') || '').trim(),
   };
+  if (answer.level === undefined || !answer.basis) {
+    return renderQuestion('Choose one answer and identify whether it is documented, based on your experience, or unknown.');
+  }
+  if (!isValidAnswer(question, answer)) {
+    return renderQuestion('Add a brief evidence note or link to support a Documented answer, or choose Based on my experience.');
+  }
+  assessment.answers[question.id] = answer;
+  if (question.id === 'CAP1' && assessment.stage === 'plan') {
+    const matchedEvidence = answer.basis === 'confirmed' && answer.level >= 50;
+    assessment.project.priorMatchedEvidence = matchedEvidence;
+    assessment.project.priorEvidenceFromSameConfiguration = matchedEvidence;
+  }
   saveAssessment();
-  if (form.get('level') === null || !form.get('basis')) {
-    return renderQuestion('Choose one answer and identify whether its basis is confirmed, reported, or unknown.');
-  }
-  if (form.get('basis') === 'confirmed' && !String(form.get('evidenceNote') || '').trim() && !String(form.get('evidenceUrl') || '').trim()) {
-    return renderQuestion('Add a brief evidence note or link to support a Confirmed answer, or choose Reported.');
-  }
   if (currentQuestionIndex >= count - 1) checkView = 'review';
   else currentQuestionIndex += 1;
+  assessment.currentQuestionId = activeQuestions()[currentQuestionIndex]?.id || '';
+  saveAssessment();
   renderCheck();
 }
 
 function arrangementSummary() {
   const p = assessment.project;
   const open = !window.matchMedia('(max-width: 900px)').matches;
+  const primarySystem = p.systems.find((system) => system.id === p.primarySystemId) || p.systems[0];
   return `<details class="assessment-summary" ${open ? 'open' : ''}>
     <summary>Project setup</summary>
     <h2 class="summary-heading">Project setup</h2>
     <dl class="summary-list">
       <div><dt>Stage</dt><dd>${escapeHTML(stageLabel(assessment.stage))}</dd></div>
-      <div><dt>Person</dt><dd>You or the named reviewing team</dd></div>
-      <div><dt>AI setup</dt><dd>${escapeHTML(p.system || 'Not defined yet')}</dd></div>
-      <div><dt>Job</dt><dd>${escapeHTML(p.task || 'Not defined yet')}</dd></div>
-      <div><dt>AI role</dt><dd>${escapeHTML(AUTHORITY_LABELS[p.proposedAuthority] || 'Not defined yet')}</dd></div>
-      <div><dt>Expected result</dt><dd>${escapeHTML(p.intendedOutcome || 'Not defined yet')}</dd></div>
+      <div><dt>Person</dt><dd>You, plus any capable reviewer actually included in the workflow</dd></div>
+      <div><dt>AI systems</dt><dd>${p.systems.length ? p.systems.map((system) => `${escapeHTML(systemSummary(system))}${system.id === primarySystem?.id ? ' <strong>(most consequential)</strong>' : ''}`).join('<br />') : 'Not defined yet'}</dd></div>
+      <div><dt>Work</dt><dd>${escapeHTML(p.task || 'Not defined yet')}</dd></div>
+      <div><dt>Role assessed</dt><dd>${escapeHTML(AUTHORITY_LABELS[primarySystem?.proposedAuthority || p.proposedAuthority] || 'Not defined yet')}</dd></div>
+      <div><dt>Wager</dt><dd>${escapeHTML(p.intendedOutcome || 'Not defined yet')}</dd></div>
     </dl>
     <p class="helper-text">Saved on this device when you continue.</p>
   </details>`;
@@ -688,10 +953,50 @@ function arrangementSummary() {
 
 function stageLabel(stage) {
   return {
-    plan: 'Before you start',
-    release: 'Before you publish, send, or launch',
-    live: 'After people have used it',
+    plan: 'Plan Readiness',
+    release: 'Launch Support',
+    live: 'Current-Use Support',
   }[stage] || 'Project check';
+}
+
+function stagePrompts(stage) {
+  return {
+    plan: {
+      setupHeading: 'Describe the work you are planning.',
+      setupIntro: 'Record the arrangement you intend to use. The result will show what role it can support before the work begins.',
+      taskQuestion: 'What work are you planning, and what are you considering delegating to AI?',
+      outcomeQuestion: 'What are you betting will happen if this arrangement works?',
+      outcomeHelp: 'Name the useful result, what could happen if it fails, and how you plan to recognize success.',
+      authorityQuestion: 'What do you plan to authorize AI to do?',
+      behaviorQuestion: 'What are you counting on the AI system to do?',
+    },
+    release: {
+      setupHeading: 'Describe the work you are ready to launch.',
+      setupIntro: 'Record what actually happened, not only what you planned. The result will show whether the finished arrangement supports publication, delivery, or launch.',
+      taskQuestion: 'What did the work produce, recommend, decide, change, or do?',
+      outcomeQuestion: 'What are you betting will happen when you publish, send, or launch it?',
+      outcomeHelp: 'Name the result you expect and what could happen if the work is wrong, incomplete, biased, insecure, or unused.',
+      authorityQuestion: 'What was the most consequential AI role in this work?',
+      behaviorQuestion: 'What did you count on the AI system to do?',
+    },
+    live: {
+      setupHeading: 'Describe the arrangement people are already using.',
+      setupIntro: 'Record the current arrangement and observed use. The result will show whether current reliance should continue, expand, narrow, or stop.',
+      taskQuestion: 'What work is the arrangement producing, recommending, deciding, changing, or doing now?',
+      outcomeQuestion: 'What result are you continuing to bet on?',
+      outcomeHelp: 'Name the intended result, the observed consequences, and what would make you limit or stop the arrangement.',
+      authorityQuestion: 'What is the most consequential AI role now?',
+      behaviorQuestion: 'What are you counting on the AI system to keep doing?',
+    },
+  }[stage] || {
+    setupHeading: 'Describe the work.',
+    setupIntro: 'Record the human and AI arrangement for this project.',
+    taskQuestion: 'What work is being done?',
+    outcomeQuestion: 'What are you betting will happen?',
+    outcomeHelp: 'Describe the intended result and what could happen if it fails.',
+    authorityQuestion: 'What authority does AI have?',
+    behaviorQuestion: 'What are you counting on the AI system to do?',
+  };
 }
 
 function renderReview(error = '') {
@@ -706,26 +1011,19 @@ function renderReview(error = '') {
         <div class="progress-row"><span>FINAL CHECK</span><span>Review before your result</span></div>
         <div class="progress-track" aria-hidden="true"><span style="width: 94%"></span></div>
         <p class="eyebrow">${stageLabel(assessment.stage)}</p>
-        <h1>Check what AI may and may not do.</h1>
-        <p class="question-why">Some gaps limit AI’s role even when the other answers are strong. That includes unknown access, missing approval, or a serious problem that has not been fixed.</p>
+        <h1>${assessment.stage === 'plan' ? 'Confirm the planned boundaries.' : assessment.stage === 'release' ? 'Confirm the launch boundaries.' : 'Confirm the current operating boundaries.'}</h1>
+        <p class="question-why">Some gaps limit the supported role even when other answers are strong. That includes unknown access, missing approval, or a serious problem that has not been fixed.</p>
         ${error ? `<p class="inline-error" role="alert" tabindex="-1">${escapeHTML(error)}</p>` : ''}
         <form id="review-form">
           <div class="field-grid">
-            <div class="field">
-              <label for="connectedAccess">Can the system connect to accounts, repositories, data, publishing, or other tools?</label>
-              <select id="connectedAccess" name="connectedAccess">${triStateOptions(p.connectedAccess, 'No', 'Yes', 'Unknown')}</select>
-            </div>
-            <div class="field" id="permissions-field" ${p.connectedAccess === false ? 'hidden' : ''}>
-              <label for="permissionsConfirmed">Are its permissions known and limited to what this task needs?</label>
-              <select id="permissionsConfirmed" name="permissionsConfirmed">${triStateOptions(p.permissionsConfirmed, 'No', 'Yes—confirmed', 'Unknown')}</select>
-            </div>
+            ${systemReviewFields(p.systems)}
             <div class="field" id="approval-field" ${needsApproval ? '' : 'hidden'}>
               <label for="humanApproval">Does a human approve the work before it creates an external consequence?</label>
-              <select id="humanApproval" name="humanApprovalBeforeConsequence">${triStateOptions(p.humanApprovalBeforeConsequence, 'No', 'Yes—confirmed', 'Unknown')}</select>
+              <select id="humanApproval" name="humanApprovalBeforeConsequence">${triStateOptions(p.humanApprovalBeforeConsequence, 'No', 'Yes, confirmed', 'Unknown')}</select>
             </div>
             <div class="field" id="reversible-field" ${needsReversibility ? '' : 'hidden'}>
               <label for="reversible">Can consequential actions be reversed or rolled back?</label>
-              <select id="reversible" name="actionsAreReversible">${triStateOptions(p.actionsAreReversible, 'No', 'Yes—confirmed', 'Unknown')}</select>
+              <select id="reversible" name="actionsAreReversible">${triStateOptions(p.actionsAreReversible, 'No', 'Yes, confirmed', 'Unknown')}</select>
             </div>
             <div class="field">
               <label for="sensitiveData">Will the system receive confidential, regulated, personal, or otherwise sensitive information?</label>
@@ -733,11 +1031,11 @@ function renderReview(error = '') {
             </div>
             <div class="field" id="data-authorization-field" ${p.sensitiveData === false ? 'hidden' : ''}>
               <label for="dataAuthorization">If sensitive data is involved, is its use explicitly authorized?</label>
-              <select id="dataAuthorization" name="dataAuthorizationConfirmed">${triStateOptions(p.dataAuthorizationConfirmed, 'No', 'Yes—confirmed', 'Unknown')}</select>
+              <select id="dataAuthorization" name="dataAuthorizationConfirmed">${triStateOptions(p.dataAuthorizationConfirmed, 'No', 'Yes, confirmed', 'Unknown')}</select>
             </div>
             <div class="field" id="monitoring-field" ${needsMonitoring ? '' : 'hidden'}>
               <label for="monitoring">If the system acts repeatedly or independently, can the activity be seen and stopped?</label>
-              <select id="monitoring" name="monitoringConfirmed">${triStateOptions(p.monitoringConfirmed, 'No', 'Yes—confirmed', 'Unknown')}</select>
+              <select id="monitoring" name="monitoringConfirmed">${triStateOptions(p.monitoringConfirmed, 'No', 'Yes, confirmed', 'Unknown')}</select>
             </div>
             <div class="field">
               <label for="failure">Is there a known material failure that remains unresolved?</label>
@@ -746,6 +1044,17 @@ function renderReview(error = '') {
           </div>
 
           ${assessment.stage === 'live' ? liveEvidenceFields(p) : ''}
+
+          <details class="optional-review" ${p.independentReviewerName ? 'open' : ''}>
+            <summary>Independent evidence review <span class="helper-text">Optional</span></summary>
+            <p class="helper-text">Complete this only if another qualified person checked the important records within a stated scope.</p>
+            <div class="field-grid">
+              <div class="field"><label for="check-reviewer-name">Reviewer name</label><input id="check-reviewer-name" name="independentReviewerName" value="${escapeHTML(p.independentReviewerName)}" /></div>
+              <div class="field"><label for="check-reviewer-role">Reviewer role</label><input id="check-reviewer-role" name="independentReviewerRole" value="${escapeHTML(p.independentReviewerRole)}" /></div>
+              <div class="field field-span-2"><label for="check-reviewer-scope">Records examined, scope, and limits</label><textarea id="check-reviewer-scope" name="independentReviewScope">${escapeHTML(p.independentReviewScope)}</textarea></div>
+              <div class="field"><label for="check-reviewer-date">Review date</label><input id="check-reviewer-date" name="independentReviewDate" type="date" value="${escapeHTML(p.independentReviewDate)}" /></div>
+            </div>
+          </details>
 
           <h2 style="margin-top: 2rem">Review your evidence answers</h2>
           <div class="review-list">
@@ -760,7 +1069,7 @@ function renderReview(error = '') {
           </div>
 
           <div class="callout callout-warning" style="margin-top: 1.5rem">
-            <p><strong>Before you calculate:</strong> this is a self-assessment. “Confirmed” means you have direct evidence, not that an independent reviewer has certified it.</p>
+            <p><strong>Before you calculate:</strong> this is a self-assessment. “Documented” means you identified direct support for an answer. It does not mean an independent reviewer certified it.</p>
           </div>
           <div class="form-actions">
             <button class="button button-secondary" type="button" id="review-back">Back</button>
@@ -774,10 +1083,8 @@ function renderReview(error = '') {
 
   document.querySelector('#review-form').addEventListener('submit', submitReview);
   const syncConditionalReviewFields = () => {
-    toggleConditionalField('permissions-field', document.querySelector('#connectedAccess').value !== 'false');
     toggleConditionalField('data-authorization-field', document.querySelector('#sensitiveData').value !== 'false');
   };
-  document.querySelector('#connectedAccess').addEventListener('change', syncConditionalReviewFields);
   document.querySelector('#sensitiveData').addEventListener('change', syncConditionalReviewFields);
   syncConditionalReviewFields();
   document.querySelector('#review-back').addEventListener('click', () => {
@@ -793,6 +1100,16 @@ function renderReview(error = '') {
     });
   });
   focusCurrentStep();
+}
+
+function systemReviewFields(systems) {
+  return systems.map((system, index) => `<div class="field system-review-field">
+    <input type="hidden" name="reviewSystemId" value="${escapeHTML(system.id)}" />
+    <label for="review-system-access-${index}">${escapeHTML(system.product || `System ${index + 1}`)} ${system.model ? `(${escapeHTML(system.model)})` : ''}: can it connect to accounts, files, repositories, data, publishing, or other tools?</label>
+    <select id="review-system-access-${index}" name="reviewSystemAccess">${triStateOptions(system.connectedAccess, 'No', 'Yes', 'Unknown')}</select>
+    <label for="review-system-permissions-${index}">Are its permissions known and limited to this role?</label>
+    <select id="review-system-permissions-${index}" name="reviewSystemPermissions">${triStateOptions(system.permissionsConfirmed, 'No', 'Yes, confirmed', 'Unknown or not applicable')}</select>
+  </div>`).join('');
 }
 
 function toggleConditionalField(id, visible) {
@@ -833,16 +1150,51 @@ function booleanSelect(name, label, selected) {
 
 function submitReview(event) {
   event.preventDefault();
+  const questions = activeQuestions();
+  const invalidQuestionIndex = questions.findIndex((question) => !isValidAnswer(question, assessment.answers[question.id]));
+  if (invalidQuestionIndex >= 0) {
+    currentQuestionIndex = invalidQuestionIndex;
+    checkView = 'questions';
+    return renderQuestion('Complete this answer and its evidence basis before calculating the result.');
+  }
   const form = new FormData(event.currentTarget);
   const keys = [
-    'connectedAccess', 'permissionsConfirmed', 'humanApprovalBeforeConsequence',
-    'actionsAreReversible', 'sensitiveData', 'dataAuthorizationConfirmed',
+    'humanApprovalBeforeConsequence', 'actionsAreReversible', 'sensitiveData', 'dataAuthorizationConfirmed',
     'monitoringConfirmed', 'unresolvedMaterialFailure',
   ];
   keys.forEach((key) => {
     const value = form.get(key);
     assessment.project[key] = value === 'true' ? true : value === 'false' ? false : null;
   });
+
+  const systemIds = form.getAll('reviewSystemId');
+  const systemAccess = form.getAll('reviewSystemAccess');
+  const systemPermissions = form.getAll('reviewSystemPermissions');
+  assessment.project.systems = assessment.project.systems.map((system) => {
+    const index = systemIds.indexOf(system.id);
+    if (index < 0) return system;
+    return {
+      ...system,
+      connectedAccess: parseTriState(systemAccess[index]),
+      permissionsConfirmed: parseTriState(systemPermissions[index]),
+    };
+  });
+  const connectedSystems = assessment.project.systems.filter((system) => system.connectedAccess === true);
+  assessment.project.connectedAccess = assessment.project.systems.some((system) => system.connectedAccess === true)
+    ? true
+    : assessment.project.systems.some((system) => system.connectedAccess === null) ? null : false;
+  assessment.project.permissionsConfirmed = connectedSystems.length
+    ? connectedSystems.every((system) => system.permissionsConfirmed === true)
+    : assessment.project.systems.some((system) => system.connectedAccess === null) ? null : true;
+  ['independentReviewerName', 'independentReviewerRole', 'independentReviewScope', 'independentReviewDate'].forEach((key) => {
+    assessment.project[key] = String(form.get(key) || '').trim();
+  });
+  assessment.project.qualifiedIndependentReview = Boolean(
+    assessment.project.independentReviewerName &&
+    assessment.project.independentReviewerRole &&
+    assessment.project.independentReviewScope &&
+    assessment.project.independentReviewDate
+  );
 
   if (assessment.stage === 'live') {
     assessment.project.observedRuns = Number(form.get('observedRuns') || 0);
@@ -860,114 +1212,139 @@ function submitReview(event) {
 function renderResult() {
   const result = scoreAssessment(assessment);
   const p = assessment.project;
-  const dimensionLabels = {
-    capabilityFit: 'Capability Fit',
-    behavioralFit: 'Behavioral Fit',
-    humanAssurance: 'Human Assurance',
-    workflowControl: 'Workflow Control',
-    outcomeTestability: 'Outcome Testability',
-  };
+  const dimensionLabels = Object.fromEntries(Object.entries(DIMENSIONS).map(([key, value]) => [key, value.label]));
   const authorization = result.authorization || {};
   const gates = result.gates || [];
-  const actions = result.actions || {};
+  const recommendations = result.recommendations || [];
   const date = assessment.completedAt || assessment.updatedAt;
+  const evidenceStrength = result.evidenceStrength || { label: result.evidenceConfidence || 'Unknown', description: '' };
+  const reviewLoad = humanReviewLoad(result);
 
   main.innerHTML = `<div class="page results-page print-all">
     <header class="result-header">
       <div>
         <p class="eyebrow">${stageLabel(assessment.stage)}</p>
-        <h1>${resultDecision(result)}</h1>
+        <h1>${escapeHTML(result.decisionStatus?.label || resultDecision(result))}</h1>
+        <p class="lede">${escapeHTML(result.decisionStatus?.description || '')}</p>
       </div>
-      <div class="score-lockup" aria-label="Project score ${result.publicScore} out of 100, ${escapeHTML(plainBandLabel(result.band?.label || result.band))}">
+      <div class="score-lockup" aria-label="Operational support score ${result.publicScore} out of 100, ${escapeHTML(result.scoreBand || getBand(result.publicScore))}">
         <strong>${result.publicScore}</strong>
-        <span>/ 100 · ${escapeHTML(plainBandLabel(result.band?.label || result.band || getBand(result.publicScore)))}</span>
+        <span>/ 100 operational support</span>
       </div>
     </header>
 
     <div class="result-meta">
-      <span class="meta-chip">Proof behind this result: ${escapeHTML(result.evidenceConfidence)}</span>
+      <span class="meta-chip">Evidence Strength: ${escapeHTML(evidenceStrength.label)}</span>
       <span class="meta-chip">Real-use testing: ${escapeHTML(result.validationStatus)}</span>
-      <span class="meta-chip">AI role requested: ${escapeHTML(AUTHORITY_LABELS[p.proposedAuthority])}</span>
-      <span class="meta-chip">AI role supported: ${escapeHTML(AUTHORITY_LABELS[result.maxAuthority])}</span>
+      <span class="meta-chip">Requested role: ${escapeHTML(AUTHORITY_LABELS[p.proposedAuthority])}</span>
+      <span class="meta-chip">Largest role supported by current evidence: ${escapeHTML(AUTHORITY_LABELS[result.conclusionAuthority || result.maxAuthority])}</span>
       <span class="meta-chip">Method ${escapeHTML(METHOD_VERSION)}</span>
       <span class="meta-chip">${formatDate(date)}</span>
     </div>
 
     <section aria-labelledby="score-heading">
-      <h2 id="score-heading" class="sr-only">Score range</h2>
+      <h2 id="score-heading">What the number means</h2>
+      <p>The score describes operational support inside this arrangement. It is not a model rating, an accuracy probability, or a human versus AI percentage. Evidence Strength is reported separately and may limit how strong a conclusion the check can support.</p>
       <div class="score-band" aria-hidden="true">
-        <span></span><span></span><span></span><span></span><span></span><span></span>
+        <span></span><span></span><span></span><span></span>
         <i class="score-marker" style="left: ${Math.min(100, Math.max(0, result.publicScore))}%"></i>
       </div>
-      <div class="band-labels" aria-hidden="true"><span>Not supported</span><span>Very limited</span><span>Use with limits</span><span>Controlled</span><span>Strong</span><span>95–100</span></div>
-      <p class="helper-text">Score needed for the risk and AI role you selected: ${result.requiredScore}/100. This score is rounded to the nearest five. It is not the chance that AI is correct.</p>
+      <div class="band-labels band-labels-four" aria-hidden="true"><span>Not supported</span><span>Smaller role</span><span>Named conditions</span><span>Strong support</span></div>
+      <p class="helper-text">Operational score needed for the stakes and role selected: ${result.requiredScore}/100. The public score is rounded to avoid false precision. A gate can still make the decision more restrictive.</p>
     </section>
 
-    <section class="decision-grid" aria-label="What AI may and may not do">
-      ${decisionColumn('AI may do this now', 'supported', authorization.delegate || defaultDelegate(result), 'Uses supported by the current project setup.')}
-      ${decisionColumn('A person must check this', 'verify', authorization.verify || defaultVerify(), 'Checks that still need to happen before the work is used.')}
-      ${decisionColumn('AI should not do this yet', 'blocked', authorization.doNotAuthorize || gates.map(gateText), 'Uses that are not supported by the current proof, human ability, or safeguards.')}
+    <section class="decision-grid" aria-label="Current work boundary">
+      ${decisionColumn('Supported in this workflow', 'supported', authorization.delegate || defaultDelegate(result), 'Functions the current arrangement can support within the stated boundary.')}
+      ${decisionColumn('Needs capable review', 'verify', authorization.verify || defaultVerify(), 'Checks that require you or a named person with the needed knowledge, access, authority, and time.')}
+      ${decisionColumn('Not supported yet', 'blocked', authorization.doNotAuthorize || gates.map(gateText), 'Functions the current capacity, evidence, controls, or workflow cannot support yet.')}
     </section>
 
     <div class="grid-2">
       <section class="result-panel card">
-        <p class="kicker">Five parts of the score</p>
-        <h2>Why you received this score</h2>
+        <p class="kicker">Operational support</p>
+        <h2>How the arrangement scored</h2>
         <div class="dimension-list">
           ${Object.entries(dimensionLabels).map(([key, label]) => dimensionRow(label, result.dimensions?.[key] ?? 0)).join('')}
         </div>
+        ${result.capacityCeiling < 100 ? `<div class="callout callout-warning"><p><strong>Your capacity sets a current ceiling of ${result.capacityCeiling}/100.</strong> ${escapeHTML(result.capacityLimitReasons.join(' '))}</p></div>` : ''}
       </section>
       <section class="result-panel card">
-        <p class="kicker">Highest AI role supported</p>
-        <h2>${escapeHTML(AUTHORITY_LABELS[result.maxAuthority] || result.maxAuthority)}</h2>
+        <p class="kicker">Evidence and supported authority</p>
+        <h2>${escapeHTML(evidenceStrength.label)}</h2>
+        <p>${escapeHTML(evidenceStrength.description || 'Evidence is reported separately from operational performance.')}</p>
+        <p><strong>Largest operational role:</strong><br />${escapeHTML(AUTHORITY_LABELS[result.operationalMaxAuthority] || result.operationalMaxAuthority)}</p>
+        <p><strong>Largest role supported by current evidence:</strong><br />${escapeHTML(AUTHORITY_LABELS[result.conclusionAuthority] || result.conclusionAuthority)}</p>
         <p><strong>You may rely on:</strong></p>
         ${listHTML(authorization.relyOn || ['Only outputs reviewed under the conditions recorded in this check.'])}
-        <p class="helper-text">A lower score does not always mean “do not launch.” It may mean giving AI a smaller role.</p>
+        <p class="helper-text">A lower result does not always mean do not launch. It may mean giving AI a smaller role, adding capable human help, or holding back one unsupported function.</p>
       </section>
     </div>
 
-    ${gates.length ? `<section style="margin-top: 3rem"><p class="kicker">Problems to fix first</p><h2>These limits override the average score.</h2><ul class="gate-list">${gates.map((gate) => `<li><strong>${escapeHTML(gate.title || gate.id?.replaceAll('_', ' ') || 'Use limit')}</strong><br />${escapeHTML(gateText(gate))}</li>`).join('')}</ul></section>` : `<div class="callout" style="margin-top: 2rem"><p><strong>Your answers did not trigger a stop sign.</strong> The score and stated limits still apply.</p></div>`}
+    <section class="result-panel card review-load-card">
+      <p class="kicker">Human Review Load</p>
+      <h2>${escapeHTML(reviewLoad.label)}</h2>
+      <p>${escapeHTML(reviewLoad.description)}</p>
+    </section>
+
+    <section style="margin-top: 3rem">
+      <p class="kicker">Systems recorded</p>
+      <h2>The model matters in the role it was given.</h2>
+      <div class="grid-2">${p.systems.map((system) => `<article class="card"><h3>${escapeHTML(system.product || 'Unnamed system')} ${system.model ? `<span class="helper-text">${escapeHTML(system.model)}</span>` : ''}</h3><p>${escapeHTML(system.role || 'Role not described')}</p><p><strong>Assessment scope:</strong> ${system.id === p.primarySystemId ? 'Detailed performance questions answered for this role' : 'Recorded for workflow context only; run a separate Work Check to assess this role'}</p><p><strong>Requested authority:</strong> ${escapeHTML(AUTHORITY_LABELS[system.proposedAuthority] || system.proposedAuthority)}</p><p><strong>Access and permissions:</strong> ${system.connectedAccess === false ? 'No connected access reported' : system.permissionsConfirmed === true ? 'Connected access reported, permissions confirmed as limited' : 'Connected access or permission limits are not fully confirmed'}</p>${result.limitingSystemIds?.includes(system.id) ? '<span class="stamp stamp-warning">Limits this result</span>' : ''}</article>`).join('')}</div>
+      ${p.systems.length > 1 ? '<p class="helper-text">This check asks the detailed performance questions about the system marked most consequential. Run a separate Work Check for another consequential role when needed.</p>' : ''}
+    </section>
+
+    ${gates.length ? `<section style="margin-top: 3rem"><p class="kicker">Problems to fix first</p><h2>These limits override the average score.</h2><ul class="gate-list">${gates.map((gate) => `<li><strong>${escapeHTML(gate.title || gate.id?.replaceAll('_', ' ') || 'Use limit')}</strong><br />${escapeHTML(gateText(gate))}</li>`).join('')}</ul></section>` : `<div class="callout" style="margin-top: 2rem"><p><strong>Your answers did not trigger a stop condition.</strong> The score and named limits still apply.</p></div>`}
 
     <section style="margin-top: 4rem">
       <p class="kicker">Make this setup stronger</p>
-      <h2>What can raise the score?</h2>
-      <p class="lede">Doing an action changes the score only after you record what happened. Start with the fastest step that removes a stop sign or answers an important unknown.</p>
+      <h2>What can change the result?</h2>
+      <p class="lede">Each action shows its estimated effect. Planned actions add zero points. The score or Evidence Strength changes only after the action is completed, the result is recorded, and the check is run again.</p>
       <div class="action-timeline">
-        ${timeBlock('Now', actions.now)}
-        ${timeBlock('Within 24 hours', actions.within24h)}
-        ${timeBlock('Within days', actions.days)}
-        ${timeBlock('Within weeks', actions.weeks)}
+        ${timeBlock('Now', recommendations.filter((item) => item.timing === 'now'))}
+        ${timeBlock('Within 24 hours', recommendations.filter((item) => item.timing === 'within24h'))}
+        ${timeBlock('Within days', recommendations.filter((item) => item.timing === 'days'))}
+        ${timeBlock('Within weeks', recommendations.filter((item) => item.timing === 'weeks'))}
       </div>
     </section>
 
     <section class="reliance-card" id="reliance-card">
       <div class="reliance-card-header">
-        <div><p class="kicker">Human + AI Work Card · Self-assessed</p><h2>${escapeHTML(p.name || 'Untitled project')}</h2><p>${escapeHTML(p.task)}</p></div>
-        <div class="reliance-card-score">${result.publicScore}/100 · ${escapeHTML(plainBandLabel(result.band?.label || result.band))}</div>
+        <div><p class="kicker">Human + AI Work Check | Self-assessed</p><h2>${escapeHTML(p.name || 'Untitled project')}</h2><p>${escapeHTML(p.task)}</p></div>
+        <div class="reliance-card-score">${result.publicScore}/100 | ${escapeHTML(result.decisionStatus?.label || result.band)}</div>
       </div>
       <div class="grid-2" style="margin-top: 1.3rem">
-        <div><p class="meta-label">Project setup</p><p><strong>AI setup:</strong> ${escapeHTML(p.system)}</p><p><strong>Expected result:</strong> ${escapeHTML(p.intendedOutcome)}</p></div>
-        <div><p class="meta-label">Limits</p><p><strong>Highest AI role supported:</strong> ${escapeHTML(AUTHORITY_LABELS[result.maxAuthority] || result.maxAuthority)}</p><p><strong>Proof:</strong> ${escapeHTML(result.evidenceConfidence)} · <strong>Real-use testing:</strong> ${escapeHTML(result.validationStatus)}</p></div>
+        <div><p class="meta-label">Arrangement</p><p><strong>AI systems and roles:</strong> ${p.systems.map((system) => escapeHTML(systemSummary(system))).join('<br />')}</p><p><strong>Outcome wager:</strong> ${escapeHTML(p.intendedOutcome)}</p></div>
+        <div><p class="meta-label">Current boundary</p><p><strong>Largest role supported by evidence:</strong> ${escapeHTML(AUTHORITY_LABELS[result.conclusionAuthority] || result.conclusionAuthority)}</p><p><strong>Evidence Strength:</strong> ${escapeHTML(evidenceStrength.label)}<br /><strong>Real-use testing:</strong> ${escapeHTML(result.validationStatus)}</p></div>
       </div>
-      <p class="helper-text">Dated ${formatDate(date)} · Method ${escapeHTML(METHOD_VERSION)} · This is a task-specific decision record, not a certification or guarantee.</p>
+      <p class="helper-text">Dated ${formatDate(date)} | Method ${escapeHTML(METHOD_VERSION)} | This result applies only to the person, systems, roles, workflow, evidence, and stakes recorded here. It is not a certification or guarantee.</p>
     </section>
 
     <div class="result-actions no-print">
-      <button class="button" type="button" id="print-result">Print project card</button>
-      <button class="button button-secondary" type="button" id="export-result">Export project JSON</button>
-      <a class="button button-secondary" href="#/creation-record">Show how the work was made</a>
+      <button class="button" type="button" id="print-result">Print Work Check</button>
+      <button class="button button-secondary" type="button" id="export-result">Export Work Check</button>
+      <a class="button button-secondary" href="#/creation-record" id="start-record-from-result">Create a Work Record</a>
       <button class="button button-danger" type="button" id="new-check">Start a new check</button>
     </div>
   </div>`;
 
   document.querySelector('#print-result').addEventListener('click', () => printMode('printing-result'));
   document.querySelector('#export-result').addEventListener('click', () => {
-    downloadJSON(`${slug(p.name || 'human-ai-work-check')}.json`, { assessment, result });
+    downloadJSON(`${slug(p.name || 'human-ai-work-check')}.json`, {
+      kind: 'human-ai-work-check-assessment',
+      schemaVersion: SCHEMA_VERSION,
+      methodVersion: METHOD_VERSION,
+      exportedAt: new Date().toISOString(),
+      assessment,
+      result,
+    });
+  });
+  document.querySelector('#start-record-from-result').addEventListener('click', (event) => {
+    if (!prepareWorkRecordFromAssessment()) event.preventDefault();
   });
   document.querySelector('#new-check').addEventListener('click', () => {
     if (window.confirm('Start a new check? Export this project first if you want to keep a separate copy.')) {
       assessment = makeAssessment();
-      localStorage.removeItem(STORAGE_KEY);
+      saveAssessment();
       checkView = 'entry';
       currentQuestionIndex = 0;
       renderCheck();
@@ -979,21 +1356,55 @@ function resultDecision(result) {
   const proposed = authorityRank(assessment.project.proposedAuthority);
   const supported = authorityRank(result.maxAuthority);
   if (result.proposedAuthoritySupported && supported >= proposed && !(result.gates || []).length) {
-    return 'This project setup supports the AI role you selected—within the limits below.';
+    return 'This project setup supports the AI role you selected within the limits below.';
   }
   if (result.publicScore < 40) return 'Keep the system in a private, advisory role for now.';
   return 'Proceed only within a narrower, supervised boundary.';
 }
 
-function plainBandLabel(value) {
+function humanReviewLoad(result) {
+  const level = Number(result.itemScores?.HUM3?.level || 0);
+  if (level < 25) return {
+    label: 'Not sustainable',
+    description: 'The arrangement requires more review than you can maintain at the expected pace or volume. Reduce the role, pace, or volume, or add capable human coverage.',
+  };
+  if (level < 50) return {
+    label: 'High',
+    description: 'The required review will probably break down during normal use. The current arrangement needs a smaller AI role or additional capable review.',
+  };
+  if (level < 75) return {
+    label: 'Manageable only with limits',
+    description: 'The review load is supportable only while scope, pace, volume, or AI authority stays within the recorded limits.',
+  };
   return {
-    Unsupported: 'Not supported',
-    Limited: 'Use only in a small role',
-    Conditional: 'Use with limits',
-    Controlled: 'Supported with controls',
-    'Strong but bounded': 'Strong support with limits',
-    'Exceptional current assurance': 'Strongest current support',
-  }[value] || value || '';
+    label: level >= 100 ? 'Demonstrated as sustainable' : 'Sustainable under the stated conditions',
+    description: 'The available time, attention, authority, and coverage support the expected review load under the conditions recorded here.',
+  };
+}
+
+function prepareWorkRecordFromAssessment() {
+  const belongsToAnotherProject = creationRecord.title && creationRecord.projectId && creationRecord.projectId !== assessment.id;
+  if (belongsToAnotherProject && !window.confirm('Start a new Work Record for this project? Export the current Work Record first if you want to keep a separate copy.')) {
+    return false;
+  }
+  if (belongsToAnotherProject || !creationRecord.title) {
+    creationRecord = makeCreationRecord(assessment.id);
+    creationRecord.title = assessment.project.name || '';
+    creationRecord.description = assessment.project.task || '';
+    creationRecord.systems = assessment.project.systems.map((system) => makeSystem({
+      product: system.product,
+      model: system.model,
+      role: system.role,
+      setup: system.setup,
+      evidence: system.evidence,
+    }));
+    creationRecord.system = creationRecord.systems.map(systemSummary).join('; ');
+    saveCreationRecord();
+  } else {
+    creationRecord.projectId = assessment.id;
+    saveCreationRecord();
+  }
+  return true;
 }
 
 function authorityRank(value) {
@@ -1031,7 +1442,28 @@ function dimensionRow(label, value) {
 
 function timeBlock(label, items = []) {
   const normalized = Array.isArray(items) ? items : items ? [items] : [];
-  return `<article class="time-block"><h3>${label}</h3>${normalized.length ? `<ol>${normalized.slice(0, 2).map((item) => `<li>${escapeHTML(item)}</li>`).join('')}</ol>` : '<p class="helper-text">No additional action generated for this period.</p>'}</article>`;
+  return `<article class="time-block"><h3>${label}</h3>${normalized.length ? `<div class="recommendation-list">${normalized.slice(0, 4).map((item) => recommendationCard(item)).join('')}</div>` : '<p class="helper-text">No additional action generated for this period.</p>'}</article>`;
+}
+
+function recommendationCard(item) {
+  if (typeof item === 'string') return `<p class="recommendation-action">${escapeHTML(item)}</p>`;
+  const projectedChange = Number(item.scoreEffect?.projectedChange || 0);
+  const scoreEffect = item.modelChangeTest
+    ? 'Changing models adds 0 points now. Any projected change depends on passing the same comparison tests.'
+    : projectedChange > 0
+      ? `Adds 0 points now. Illustrative potential: up to ${item.scoreEffect.projectedScore} (+${projectedChange}) if this action closes the named gap and the check is recalculated.`
+      : item.scoreEffect?.condition || 'Adds 0 points until completed and evidenced.';
+  return `<div class="recommendation-card">
+    ${item.modelChangeTest ? '<span class="stamp stamp-warning">Model comparison</span>' : ''}
+    <p class="recommendation-action">${escapeHTML(item.action)}</p>
+    <p><strong>Projected effect:</strong> ${escapeHTML(scoreEffect)}</p>
+    <details><summary>Why this helps and what to record</summary>
+      <p><strong>Evidence effect:</strong> ${escapeHTML(item.evidenceEffect || 'No evidence change stated.')}</p>
+      <p><strong>Role effect:</strong> ${escapeHTML(item.roleEffect || 'No role change stated.')}</p>
+      ${item.blocker?.statement ? `<p><strong>Blocker:</strong> ${escapeHTML(item.blocker.statement)}</p>` : ''}
+      ${item.evidenceRequired ? `<p><strong>What to record:</strong> ${escapeHTML(item.evidenceRequired)}</p>` : ''}
+    </details>
+  </div>`;
 }
 
 function importAssessment(event) {
@@ -1043,6 +1475,7 @@ function importAssessment(event) {
       const parsed = JSON.parse(reader.result);
       const imported = parsed.assessment || parsed;
       assessment = normalizeImportedAssessment(imported);
+      currentQuestionIndex = resumeQuestionIndex(assessment);
       saveAssessment();
       checkView = assessment.completed ? 'result' : 'setup';
       showToast('Project imported.');
@@ -1058,15 +1491,20 @@ function normalizeImportedAssessment(imported) {
   if (!imported || typeof imported !== 'object' || !imported.project || typeof imported.answers !== 'object') {
     throw new Error('Missing assessment fields');
   }
-  if (imported.methodVersion && imported.methodVersion !== METHOD_VERSION) {
-    throw new Error('Unsupported method version');
-  }
   if (!['plan', 'release', 'live'].includes(imported.stage)) {
     throw new Error('Invalid stage');
   }
 
   const fallback = makeAssessment();
   const project = { ...fallback.project, ...imported.project };
+  project.systems = normalizeSystems(
+    imported.project.systems,
+    imported.project.system,
+    imported.project.proposedAuthority,
+  );
+  project.primarySystemId = project.systems.some((system) => system.id === imported.project.primarySystemId)
+    ? imported.project.primarySystemId
+    : project.systems[0].id;
   project.workTypes = Array.isArray(imported.project.workTypes)
     ? imported.project.workTypes.filter((value) => WORK_TYPES.some(([id]) => id === value))
     : [];
@@ -1084,79 +1522,119 @@ function normalizeImportedAssessment(imported) {
     return typeof id === 'string' && answer && typeof answer === 'object';
   }));
 
+  const isLegacy = imported.schemaVersion !== SCHEMA_VERSION || imported.methodVersion !== METHOD_VERSION;
   return {
     ...fallback,
     ...imported,
+    schemaVersion: SCHEMA_VERSION,
     methodVersion: METHOD_VERSION,
     stage: imported.stage,
     project,
-    answers,
-    completed: Boolean(imported.completed),
+    answers: isLegacy ? {} : answers,
+    completed: isLegacy ? false : Boolean(imported.completed),
+    currentQuestion: isLegacy ? 0 : Number(imported.currentQuestion || 0),
+    currentQuestionId: isLegacy ? '' : String(imported.currentQuestionId || ''),
+    needsReassessment: isLegacy,
+    legacySnapshot: isLegacy ? {
+      methodVersion: imported.methodVersion || '0.1',
+      completed: Boolean(imported.completed),
+      answers,
+      completedAt: imported.completedAt || '',
+    } : imported.legacySnapshot,
   };
 }
 
 function renderSample() {
-  document.title = 'Sample Result — Human + AI Work Check';
+  document.title = 'Sample Result | Human + AI Work Check';
   main.innerHTML = `<div class="page">
     <header class="result-header">
-      <div><p class="eyebrow">Sample result · Before release</p><h1>Use AI for drafting and supervised changes. Keep final checking and release approval with a person.</h1></div>
-      <div class="score-lockup"><strong>55</strong><span>/ 100 · Use with limits</span></div>
+      <div><p class="eyebrow">Sample Launch Support result</p><h1>Supported with named conditions</h1><p class="lede">Use AI for organizing, drafting, code suggestions, and named tests. Keep material review and the final release decision with a capable person.</p></div>
+      <div class="score-lockup"><strong>65</strong><span>/ 100 operational support</span></div>
     </header>
-    <div class="result-meta"><span class="meta-chip">Proof behind score: Medium</span><span class="meta-chip">Real-use testing: Untested</span><span class="meta-chip">AI role requested: Take a reversible approved action</span><span class="meta-chip">AI role supported: Produce for human approval</span></div>
+    <div class="result-meta"><span class="meta-chip">Evidence Strength: Partly documented</span><span class="meta-chip">Real-use testing: Untested</span><span class="meta-chip">Requested role: Publish approved changes</span><span class="meta-chip">Largest supported role: Produce for human approval</span></div>
     <div class="callout callout-warning"><p><strong>Project setup:</strong> A subject-matter creator uses conversational AI to organize, draft, research, edit, and help build a public learning website. The creator reviews selected content and approves publication.</p></div>
     <section class="decision-grid">
-      ${decisionColumn('AI may do this now', 'supported', ['Organize ideas and source material', 'Draft and edit language', 'Propose structure and code changes', 'Run named tests and report results'], 'Uses supported by this project setup.')}
-      ${decisionColumn('A person must check this', 'verify', ['Important facts and claims', 'Links and visible behavior', 'Phone and accessibility behavior', 'Code and deployment the creator cannot judge'], 'Human or independent checks still required.')}
-      ${decisionColumn('AI should not do this yet', 'blocked', ['Verify its own facts', 'Approve the final release', 'Change the live site without review', 'Claim that the website improves user performance'], 'Uses the current proof and safeguards do not support.')}
+      ${decisionColumn('Supported in this workflow', 'supported', ['Organize supplied material', 'Draft content and code', 'Propose site changes', 'Run named tests and report results'], 'Functions supported within the current boundary.')}
+      ${decisionColumn('Needs capable review', 'verify', ['Material claims and source use', 'Code, permissions, and deployment settings', 'Links, phone behavior, and accessibility', 'Final release decision'], 'Checks that require a capable person.')}
+      ${decisionColumn('Not supported yet', 'blocked', ['Treating the system’s own review as independent verification', 'Publishing without human approval', 'Claiming the website works for users without observing them', 'Expanding permissions without confirming their scope'], 'Functions the arrangement cannot support yet.')}
     </section>
-    <section><p class="kicker">Fastest improvements</p><h2>What would raise the score?</h2><div class="action-timeline">
-      ${timeBlock('Now', ['Give AI one wrong assumption and see whether it pushes back.', 'Check and narrow which tools, accounts, and files it can access.'])}
-      ${timeBlock('Within 24 hours', ['Save results from build, link, phone, accessibility, and deployment checks.', 'Have one intended user try the main task.'])}
-      ${timeBlock('Within days', ['Obtain targeted code or accessibility review.', 'Observe three intended users.'])}
-      ${timeBlock('Within weeks', ['Compare the results with the stated target.', 'Issue an updated project card.'])}
+    <section class="result-panel card review-load-card"><p class="kicker">Human Review Load</p><h2>High</h2><p>The arrangement depends on review in areas the project owner cannot fully inspect alone. That may be manageable for one launch, but it is not a sustainable control for repeated releases.</p></section>
+    <section><p class="kicker">Fastest improvements</p><h2>What could change the result?</h2><div class="action-timeline">
+      ${timeBlock('Now', [sampleRecommendation('Require approval before publishing and confirm repository permissions.', '0 points now. Removes a release blocker and limits AI to supportable authority.', 'Save the permission and approval record.', 'Supports release only with human approval.')])}
+      ${timeBlock('Within 24 hours', [sampleRecommendation('Run and save build, link, phone, and accessibility checks.', 'Up to 5 to 10 points after completed checks are recorded.', 'May move Evidence Strength from Partly documented to Key steps documented.', 'May support a larger technical production role.')])}
+      ${timeBlock('Within days', [sampleRecommendation('Add a capable reviewer for the code and accessibility areas the project owner cannot evaluate.', 'Up to 5 to 15 points after the review is completed and recorded.', 'Adds qualified human coverage.', 'May support a larger release role.')])}
+      ${timeBlock('Within weeks', [sampleRecommendation('Observe intended users completing the main tasks and record failures and outcomes.', 'Up to 5 to 10 points for a later Current-Use Support check.', 'Adds outcome evidence.', 'May support continued or expanded use.')])}
     </div></section>
+    <div class="callout"><p><strong>Model option:</strong> compare another model on the same representative tasks only if the current model appears to be the weak point. Changing models adds 0 points by itself.</p></div>
     <div class="button-row"><a class="button" href="#/check">Check your project</a><a class="button button-secondary" href="#/method">See how scoring works</a></div>
     <p class="helper-text" style="margin-top:2rem">Illustrative self-assessment only. This is not a certification or guarantee.</p>
   </div>`;
 }
 
+function sampleRecommendation(action, condition, evidenceEffect, roleEffect) {
+  return {
+    action,
+    scoreEffect: { projectedChange: 0, projectedScore: 65, condition },
+    evidenceEffect,
+    roleEffect,
+    blocker: { statement: condition },
+    evidenceRequired: evidenceEffect,
+    modelChangeTest: false,
+  };
+}
+
 function renderCreationRecord() {
-  document.title = 'How the Work Was Made — Human + AI Work Check';
+  document.title = 'Work Record | Human + AI Work Check';
   const r = creationRecord;
   main.innerHTML = `<div class="page">
     <header class="page-header">
-      <p class="eyebrow">How the work was made</p>
-      <h1>Show what the person did and what AI contributed.</h1>
-      <p>“Human-made” and “AI-made” hide the work in the middle. Record the person’s actions, AI’s role, what was checked, and who approved the final result.</p>
+      <p class="eyebrow">Work Record</p>
+      <h1>Show how this work was made.</h1>
+      <p>Record what you did, what each AI system contributed, what was checked, the supporting records available, and who made the final release decision.</p>
     </header>
-    <div class="callout"><p><strong>This is not a human-versus-AI percentage.</strong> Writing the words is not the same as choosing the purpose, shaping the meaning, checking the result, or approving the work.</p></div>
+    <div class="callout"><p><strong>This is not a human versus AI percentage or a certificate.</strong> It is an evidence-based alternative to judging AI involvement from the finished work alone.</p></div>
+    ${r.legacyNotes ? `<div class="callout callout-warning"><p><strong>Review information carried forward from an earlier version.</strong><br />${escapeHTML(r.legacyNotes).replaceAll('\n', '<br />')}</p></div>` : ''}
     <div class="record-grid" style="margin-top: 2rem">
       <form class="record-panel" id="creation-form">
+        <div class="field"><label for="record-ai-use">Was AI used in the documented workflow?</label><select id="record-ai-use" name="aiUse">${selectOptions([
+          ['yes', 'Yes, AI was used'],
+          ['no-ai-reported', 'No AI use reported in the documented workflow'],
+          ['uncertain', 'Uncertain or not fully documented'],
+        ], r.aiUse)}</select></div>
         <div class="field"><label for="record-title">Work or project title</label><input id="record-title" name="title" value="${escapeHTML(r.title)}" /></div>
-        <div class="field"><label for="record-description">What is it?</label><textarea id="record-description" name="description">${escapeHTML(r.description)}</textarea></div>
-        <div class="field"><label for="record-human-actions">What did the person do?</label><textarea id="record-human-actions" name="humanActions" placeholder="For example: chose the purpose, supplied source material, made decisions, rejected suggestions, rewrote sections, checked claims, and approved the final work">${escapeHTML(r.humanActions)}</textarea></div>
-        <div class="field"><label for="record-ai-contributions">What did AI contribute?</label><textarea id="record-ai-contributions" name="aiContributions" placeholder="For example: organized notes, suggested options, drafted language, found possible sources, wrote code, or ran named checks">${escapeHTML(r.aiContributions)}</textarea></div>
-        <div class="field"><label for="record-system">AI system(s) used</label><input id="record-system" name="system" value="${escapeHTML(r.system)}" /></div>
-        <div class="field"><label for="record-url">Public artifact link <span class="helper-text">Optional</span></label><input id="record-url" name="artifactUrl" type="url" value="${escapeHTML(r.artifactUrl)}" placeholder="https://" /></div>
-        <div class="field"><label for="record-accountability">Who approved and stands behind the final work?</label><input id="record-accountability" name="accountability" value="${escapeHTML(r.accountability)}" /></div>
-        <div class="field"><label for="evidence-level">Evidence level</label><select id="evidence-level" name="evidenceLevel">${selectOptions([
-          ['Declared', 'Declared — process described without linked records'],
-          ['Evidence-linked', 'Evidence-linked — relevant records are linked'],
-          ['Integrity-verified', 'Integrity-verified — records include timestamps or fingerprints'],
-          ['Independently reviewed', 'Independently reviewed — another person examined the record'],
-        ], r.evidenceLevel)}</select></div>
-        <div class="field"><label for="evidence-links">Evidence links or notes <span class="helper-text">One per line</span></label><textarea id="evidence-links" name="evidenceLinks" placeholder="Selected chats, notes, drafts, sources, commits, test results">${escapeHTML(r.evidenceLinks)}</textarea></div>
-        <p class="helper-text"><strong>Optional detail:</strong> Mark how each part of the work was handled.</p>
+        <div class="field"><label for="record-description">What is the work and what was its purpose?</label><textarea id="record-description" name="description">${escapeHTML(r.description)}</textarea></div>
+        <div class="field"><label for="record-idea-source">What is the first documented source of the main idea?</label><textarea id="record-idea-source" name="ideaSource" placeholder="For example: my notes dated..., a client request, an AI suggestion in the linked conversation, or unknown">${escapeHTML(r.ideaSource)}</textarea><small>This records the earliest source you can document. It does not prove what first occurred in someone’s mind.</small></div>
+        <div class="field"><label for="record-human-actions">What did you do?</label><textarea id="record-human-actions" name="humanActions" placeholder="For example: supplied sources, made decisions, challenged suggestions, rewrote sections, checked claims, or tested the result">${escapeHTML(r.humanActions)}</textarea></div>
+        ${r.aiUse !== 'no-ai-reported' ? `<div class="field"><label for="record-ai-contributions">What did AI contribute?</label><textarea id="record-ai-contributions" name="aiContributions" placeholder="For example: organized notes, proposed options, drafted language, found possible sources, wrote code, or ran named checks">${escapeHTML(r.aiContributions)}</textarea></div>
+        <fieldset class="fieldset"><legend>AI systems and roles</legend><div class="record-system-list">${r.systems.map((system, index) => recordSystemEditor(system, index, r.systems.length)).join('')}</div><button class="button button-secondary" type="button" id="add-record-system">Add another system</button></fieldset>` : ''}
+        <div class="field"><label for="record-url">Link to the finished work <span class="helper-text">Optional</span></label><input id="record-url" name="artifactUrl" type="url" value="${escapeHTML(r.artifactUrl)}" placeholder="https://" /></div>
+        ${r.aiUse !== 'no-ai-reported' ? `<div class="field"><label for="interaction-evidence">AI conversation or work records <span class="helper-text">One link or note per line</span></label><textarea id="interaction-evidence" name="interactionEvidence" placeholder="Public link, redacted export, screenshot, preserved transcript, or private reviewer access">${escapeHTML(r.interactionEvidence)}</textarea><small>A public chat is not required and does not prove the record is complete.</small></div>` : ''}
+        <div class="field"><label for="other-evidence">Other supporting records <span class="helper-text">One link or note per line</span></label><textarea id="other-evidence" name="otherEvidence" placeholder="Notes, drafts, source records, version history, commits, tests, or editor comments">${escapeHTML(r.otherEvidence)}</textarea></div>
+
+        <fieldset class="fieldset"><legend>Who made the final release decision?</legend><div class="field-grid">
+          <div class="field"><label for="final-name">Name</label><input id="final-name" name="finalDecisionName" value="${escapeHTML(r.finalDecisionName)}" /></div>
+          <div class="field"><label for="final-role">Role</label><input id="final-role" name="finalDecisionRole" value="${escapeHTML(r.finalDecisionRole)}" /></div>
+          <div class="field"><label for="final-date">Date</label><input id="final-date" name="finalDecisionDate" type="date" value="${escapeHTML(r.finalDecisionDate)}" /></div>
+        </div></fieldset>
+
+        <fieldset class="fieldset"><legend>Independent review <span class="helper-text">Optional</span></legend><p class="helper-text">Complete this only if another person examined the supporting records.</p><div class="field-grid">
+          <div class="field"><label for="reviewer-name">Reviewer name</label><input id="reviewer-name" name="reviewerName" value="${escapeHTML(r.reviewerName)}" /></div>
+          <div class="field"><label for="reviewer-role">Reviewer role</label><input id="reviewer-role" name="reviewerRole" value="${escapeHTML(r.reviewerRole)}" /></div>
+          <div class="field field-span-2"><label for="reviewer-scope">Records examined, scope, and limits</label><textarea id="reviewer-scope" name="reviewerScope">${escapeHTML(r.reviewerScope)}</textarea></div>
+          <div class="field"><label for="reviewer-date">Review date</label><input id="reviewer-date" name="reviewerDate" type="date" value="${escapeHTML(r.reviewerDate)}" /></div>
+        </div></fieldset>
+
+        <p class="helper-text"><strong>Contribution map:</strong> record how each part was handled. “AI did this, and I accepted it as given” is different from reviewing and changing it.</p>
         <table class="contribution-table">
           <thead><tr><th>Part of the work</th><th>How was it handled?</th></tr></thead>
-          <tbody>${CONTRIBUTIONS.map((item) => {
-            const id = `contribution-${slug(item)}`;
-            return `<tr><th scope="row" id="${id}" data-label="Part of the work">${escapeHTML(item)}</th><td data-label="How was it handled?"><select name="contribution:${escapeHTML(item)}" aria-labelledby="${id}">${CONTRIBUTION_OPTIONS.map(([value, label]) => `<option value="${value}" ${r.contributions[item] === value ? 'selected' : ''}>${label}</option>`).join('')}</select></td></tr>`;
+          <tbody>${CONTRIBUTIONS.map(([key, label]) => {
+            const id = `contribution-${key}`;
+            return `<tr><th scope="row" id="${id}" data-label="Part of the work">${escapeHTML(label)}</th><td data-label="How was it handled?"><select name="contribution:${key}" aria-labelledby="${id}">${contributionOptionsFor(r.aiUse).map(([value, optionLabel]) => `<option value="${value}" ${r.contributions[key] === value ? 'selected' : ''}>${optionLabel}</option>`).join('')}</select></td></tr>`;
           }).join('')}</tbody>
         </table>
         <div class="form-actions no-print">
           <button class="button" type="submit">Update record</button>
-          <button class="button button-secondary" type="button" id="export-record">Export JSON</button>
+          <button class="button button-secondary" type="button" id="export-record">Export Work Record</button>
         </div>
       </form>
       <aside class="record-preview" id="record-preview" aria-label="How the Work Was Made preview">
@@ -1164,10 +1642,10 @@ function renderCreationRecord() {
       </aside>
     </div>
     <div class="result-actions no-print">
-      <button class="button" type="button" id="print-record" ${recordIsComplete(r) ? '' : 'disabled'}>${recordIsComplete(r) ? 'Print record' : 'Complete approval to print'}</button>
-          <button class="button button-secondary" type="button" id="copy-disclosure" ${recordIsComplete(r) ? '' : 'disabled'}>${recordIsComplete(r) ? 'Copy short disclosure' : 'Complete approval to copy disclosure'}</button>
+      <button class="button" type="button" id="print-record" ${recordIsComplete(r) ? '' : 'disabled'}>${recordIsComplete(r) ? 'Print Work Record' : 'Complete the final decision to print'}</button>
+      <button class="button button-secondary" type="button" id="copy-disclosure" ${recordIsComplete(r) ? '' : 'disabled'}>${recordIsComplete(r) ? 'Copy short disclosure' : 'Complete the final decision to copy disclosure'}</button>
     </div>
-    <div class="callout callout-warning" style="margin-top: 2rem"><p><strong>Important limit:</strong> This record documents the disclosed process and supporting evidence. It cannot prove what first occurred inside someone’s mind, that no other tool was used, that every claim is correct, or that one person owns every legal right.</p></div>
+    <div class="callout callout-warning" style="margin-top: 2rem"><p><strong>Important limit:</strong> This record documents the disclosed workflow and available evidence. It cannot prove that undisclosed AI use never occurred, establish absolute idea ownership, guarantee every claim is correct, or require another organization to accept the record.</p></div>
   </div>`;
 
   const form = document.querySelector('#creation-form');
@@ -1182,13 +1660,46 @@ function renderCreationRecord() {
     document.querySelector('#record-preview').innerHTML = creationRecordPreview(creationRecord);
     updateCreationActions();
   });
-  document.querySelector('#export-record').addEventListener('click', () => downloadJSON(`${slug(r.title || 'how-the-work-was-made')}.json`, creationRecord));
+  document.querySelector('#record-ai-use').addEventListener('change', () => {
+    updateCreationRecord(new FormData(form));
+    if (creationRecord.aiUse === 'no-ai-reported') {
+      Object.entries(creationRecord.contributions).forEach(([key, value]) => {
+        if (['Shared', 'AI-reviewed', 'AI-accepted'].includes(value)) creationRecord.contributions[key] = 'Unknown';
+      });
+    }
+    if (creationRecord.aiUse !== 'no-ai-reported' && !creationRecord.systems.length) {
+      creationRecord.systems = [makeSystem()];
+    }
+    saveCreationRecord();
+    renderCreationRecord();
+  });
+  document.querySelector('#add-record-system')?.addEventListener('click', () => {
+    updateCreationRecord(new FormData(form));
+    creationRecord.systems.push(makeSystem());
+    saveCreationRecord();
+    renderCreationRecord();
+  });
+  document.querySelectorAll('[data-remove-record-system]').forEach((button) => {
+    button.addEventListener('click', () => {
+      updateCreationRecord(new FormData(form));
+      creationRecord.systems = creationRecord.systems.filter((system) => system.id !== button.dataset.removeRecordSystem);
+      if (!creationRecord.systems.length) creationRecord.systems = [makeSystem()];
+      saveCreationRecord();
+      renderCreationRecord();
+    });
+  });
+  document.querySelector('#export-record').addEventListener('click', () => downloadJSON(`${slug(r.title || 'work-record')}.json`, {
+    kind: 'human-ai-work-record',
+    schemaVersion: SCHEMA_VERSION,
+    exportedAt: new Date().toISOString(),
+    record: creationRecord,
+  }));
   document.querySelector('#print-record')?.addEventListener('click', () => {
     if (recordIsComplete(creationRecord)) printMode('printing-record');
   });
   document.querySelector('#copy-disclosure')?.addEventListener('click', async () => {
     if (!recordIsComplete(creationRecord)) return;
-    const text = `${recordHeadline(creationRecord)} I used ${creationRecord.system || 'AI'} to assist with this work. ${creationRecord.accountability} reviewed and approved the final result and remains accountable for what is presented.`;
+    const text = recordDisclosure(creationRecord);
     try {
       await navigator.clipboard.writeText(text);
       showToast('Short disclosure copied.');
@@ -1199,68 +1710,138 @@ function renderCreationRecord() {
   updateCreationActions();
 }
 
+function recordSystemEditor(system, index, count) {
+  return `<article class="system-editor">
+    <div class="system-editor-heading"><h2>System ${index + 1}</h2>${count > 1 ? `<button class="text-button" type="button" data-remove-record-system="${escapeHTML(system.id)}">Remove</button>` : ''}</div>
+    <input type="hidden" name="recordSystemId" value="${escapeHTML(system.id)}" />
+    <div class="field-grid">
+      <div class="field"><label for="record-system-product-${index}">AI product or tool</label><input id="record-system-product-${index}" name="recordSystemProduct" value="${escapeHTML(system.product)}" /></div>
+      <div class="field"><label for="record-system-model-${index}">Exact model or version</label><input id="record-system-model-${index}" name="recordSystemModel" value="${escapeHTML(system.model)}" placeholder="Unknown if not shown" /></div>
+      <div class="field field-span-2"><label for="record-system-role-${index}">Role in making the work</label><textarea id="record-system-role-${index}" name="recordSystemRole">${escapeHTML(system.role)}</textarea></div>
+      <div class="field field-span-2"><label for="record-system-evidence-${index}">System-specific record <span class="helper-text">Optional</span></label><textarea id="record-system-evidence-${index}" name="recordSystemEvidence" placeholder="Conversation, export, screenshot, version history, or private review note">${escapeHTML(system.evidence)}</textarea></div>
+    </div>
+  </article>`;
+}
+
 function updateCreationActions() {
   const complete = recordIsComplete(creationRecord);
   const copy = document.querySelector('#copy-disclosure');
   const print = document.querySelector('#print-record');
   if (copy) {
     copy.disabled = !complete;
-    copy.textContent = complete ? 'Copy short disclosure' : 'Complete approval to copy disclosure';
+    copy.textContent = complete ? 'Copy short disclosure' : 'Complete the final decision to copy disclosure';
   }
   if (print) {
     print.disabled = !complete;
-    print.textContent = complete ? 'Print record' : 'Complete approval to print';
+    print.textContent = complete ? 'Print Work Record' : 'Complete the final decision to print';
   }
 }
 
 function updateCreationRecord(form) {
-  ['title', 'description', 'humanActions', 'aiContributions', 'system', 'artifactUrl', 'accountability', 'evidenceLevel', 'evidenceLinks'].forEach((key) => {
+  ['aiUse', 'title', 'description', 'ideaSource', 'humanActions', 'aiContributions', 'artifactUrl', 'interactionEvidence', 'otherEvidence', 'reviewerName', 'reviewerRole', 'reviewerScope', 'reviewerDate', 'finalDecisionName', 'finalDecisionRole', 'finalDecisionDate'].forEach((key) => {
     creationRecord[key] = String(form.get(key) || '').trim();
   });
-  CONTRIBUTIONS.forEach((item) => {
-    creationRecord.contributions[item] = form.get(`contribution:${item}`) || 'Unknown';
+  if (creationRecord.aiUse !== 'no-ai-reported') {
+    const ids = form.getAll('recordSystemId');
+    const products = form.getAll('recordSystemProduct');
+    const models = form.getAll('recordSystemModel');
+    const roles = form.getAll('recordSystemRole');
+    const evidence = form.getAll('recordSystemEvidence');
+    creationRecord.systems = ids.map((id, index) => makeSystem({
+      id: String(id),
+      product: String(products[index] || '').trim(),
+      model: String(models[index] || '').trim(),
+      role: String(roles[index] || '').trim(),
+      evidence: String(evidence[index] || '').trim(),
+    }));
+  } else {
+    creationRecord.aiContributions = '';
+    creationRecord.systems = [];
+  }
+  creationRecord.system = creationRecord.systems.map(systemSummary).join('; ');
+  CONTRIBUTIONS.forEach(([key]) => {
+    creationRecord.contributions[key] = form.get(`contribution:${key}`) || 'Unknown';
   });
   saveCreationRecord();
 }
 
 function creationRecordPreview(record) {
-  return `<p class="kicker">How the Work Was Made · ${escapeHTML(record.evidenceLevel)}</p>
+  const strength = recordEvidenceStrength(record);
+  const finalDecision = [record.finalDecisionName, record.finalDecisionRole, record.finalDecisionDate].filter(Boolean).join(' | ');
+  return `<p class="kicker">Work Record | Evidence Strength: ${escapeHTML(strength)}</p>
     <h2>${escapeHTML(record.title || 'Untitled work')}</h2>
     <p>${escapeHTML(record.description || 'Describe the work to give this record context.')}</p>
     <p class="record-summary">${escapeHTML(recordHeadline(record))}</p>
     <div class="record-action-summary">
+      <p><strong>First documented source of the main idea</strong><br />${escapeHTML(record.ideaSource || 'Not yet described')}</p>
       <p><strong>What the person did</strong><br />${escapeHTML(record.humanActions || 'Not yet described')}</p>
-      <p><strong>What AI contributed</strong><br />${escapeHTML(record.aiContributions || 'Not yet described')}</p>
+      ${record.aiUse !== 'no-ai-reported' ? `<p><strong>What AI contributed</strong><br />${escapeHTML(record.aiContributions || 'Not yet described')}</p>` : ''}
     </div>
     <ul class="mini-record-list">
-      ${CONTRIBUTIONS.map((item) => `<li><span>${escapeHTML(item)}</span><strong>${escapeHTML(contributionLabel(record.contributions[item]))}</strong></li>`).join('')}
+      ${CONTRIBUTIONS.map(([key, label]) => `<li><span>${escapeHTML(label)}</span><strong>${escapeHTML(contributionLabel(record.contributions[key]))}</strong></li>`).join('')}
     </ul>
-    <p style="margin-top: 1rem"><strong>Final approval and accountability:</strong><br />${escapeHTML(record.accountability || 'Not yet named')}</p>
-    <p><strong>AI system(s):</strong><br />${escapeHTML(record.system || 'Not yet named')}</p>
-    ${safeLink(record.artifactUrl) ? `<p><strong>Artifact:</strong><br /><a href="${escapeHTML(safeLink(record.artifactUrl))}" target="_blank" rel="noreferrer">Open the documented work</a></p>` : ''}
-    ${renderEvidenceLinks(record.evidenceLinks)}
-    <p class="helper-text">Updated ${formatDate(record.updatedAt)} · Self-declared unless independent review is explicitly recorded.</p>`;
+    <p style="margin-top: 1rem"><strong>Final release decision:</strong><br />${escapeHTML(finalDecision || 'Not yet complete')}</p>
+    ${record.aiUse !== 'no-ai-reported' ? `<p><strong>AI systems and roles:</strong><br />${record.systems.length ? record.systems.map((system) => escapeHTML(systemSummary(system))).join('<br />') : 'Not yet named'}</p>` : ''}
+    ${safeLink(record.artifactUrl) ? `<p><strong>Finished work:</strong><br /><a href="${escapeHTML(safeLink(record.artifactUrl))}" target="_blank" rel="noreferrer">Open the documented work</a></p>` : ''}
+    ${renderEvidenceLinks(record.interactionEvidence, 'AI conversation or work records')}
+    ${renderEvidenceLinks(record.otherEvidence, 'Other supporting records')}
+    ${recordEvidenceReview(record)}
+    <p class="helper-text">Updated ${formatDate(record.updatedAt)}. Evidence Strength is calculated from this record; it is not selected by the person completing it.</p>`;
 }
 
 function recordHeadline(record) {
-  if (!recordIsComplete(record)) return 'Record incomplete · Final approval not established';
-  const values = Object.values(record.contributions || {});
-  const human = values.filter((item) => item === 'Human-led').length;
-  const ai = values.filter((item) => item === 'AI-led').length;
-  const shared = values.filter((item) => item === 'Shared').length;
-  if (human >= 5 && ai <= 2) return 'Human-originated · Human-directed · AI-assisted';
-  if (shared >= 4) return 'Human–AI collaborative · Human-approved';
-  if (ai >= 5) return 'AI-produced · Human-reviewed';
-  return 'Contribution documented by role · Human-approved';
+  if (!recordIsComplete(record)) return 'Record incomplete. Final release decision not established.';
+  if (record.aiUse === 'no-ai-reported') return 'No AI use was reported in the documented workflow.';
+  if (record.aiUse === 'uncertain') return 'AI use is uncertain or not fully documented.';
+  return 'AI use and contributions are documented by role.';
 }
 
 function contributionLabel(value) {
   return CONTRIBUTION_OPTIONS.find(([storedValue]) => storedValue === value)?.[1] || value || 'Unknown';
 }
 
+function contributionOptionsFor(aiUse) {
+  if (aiUse !== 'no-ai-reported') return CONTRIBUTION_OPTIONS;
+  return CONTRIBUTION_OPTIONS.filter(([value]) => !['Shared', 'AI-reviewed', 'AI-accepted'].includes(value));
+}
+
 function recordIsComplete(record) {
-  const approval = record.contributions?.['Final approval'];
-  return Boolean(record.accountability?.trim()) && ['Human-led', 'Shared'].includes(approval);
+  return Boolean(record.title?.trim() && record.finalDecisionName?.trim() && record.finalDecisionRole?.trim() && record.finalDecisionDate);
+}
+
+function recordEvidenceStrength(record) {
+  const interaction = evidenceEntries(record.interactionEvidence);
+  const other = evidenceEntries(record.otherEvidence);
+  const systemEvidence = (record.systems || []).filter((system) => system.evidence?.trim()).length;
+  const hasArtifact = Boolean(safeLink(record.artifactUrl));
+  const mapped = Object.values(record.contributions || {}).filter((value) => !['Unknown', 'Not applicable'].includes(value)).length;
+  const reviewerComplete = Boolean(record.reviewerName && record.reviewerRole && record.reviewerScope && record.reviewerDate);
+  const hasSupport = interaction.length + other.length + systemEvidence + Number(hasArtifact) > 0;
+  const keyEvidence = record.aiUse === 'no-ai-reported'
+    ? other.length > 0 && hasArtifact
+    : interaction.length > 0 && (other.length > 0 || systemEvidence > 0) && hasArtifact;
+  if (recordIsComplete(record) && reviewerComplete && keyEvidence && mapped >= 5) return 'Independently checked';
+  if (recordIsComplete(record) && keyEvidence && mapped >= 5) return 'Key steps documented';
+  if (hasSupport || record.ideaSource || mapped >= 3) return 'Partly documented';
+  if (record.title || record.description || record.humanActions) return 'Self-described';
+  return 'Not enough information';
+}
+
+function recordEvidenceReview(record) {
+  if (!(record.reviewerName || record.reviewerRole || record.reviewerScope || record.reviewerDate)) return '';
+  return `<p><strong>Independent review:</strong><br />${escapeHTML([record.reviewerName, record.reviewerRole, record.reviewerDate].filter(Boolean).join(' | ') || 'Incomplete')}<br />${escapeHTML(record.reviewerScope || 'Scope and limits not yet described')}</p>`;
+}
+
+function recordDisclosure(record) {
+  const decider = `${record.finalDecisionName} (${record.finalDecisionRole})`;
+  if (record.aiUse === 'no-ai-reported') {
+    return `Process note: No AI use was reported in the documented workflow for this work. ${decider} made the final release decision on ${record.finalDecisionDate} and remains accountable for that decision.`;
+  }
+  if (record.aiUse === 'uncertain') {
+    return `AI disclosure: AI use in this workflow is uncertain or not fully documented. ${decider} made the final release decision on ${record.finalDecisionDate} and remains accountable for that decision.`;
+  }
+  const systems = record.systems.map((system) => `${system.product || 'AI'}${system.model ? ` ${system.model}` : ''}`).join(', ') || 'AI';
+  return `AI disclosure: I used ${systems} to assist with this work. The attached Work Record describes what I did, what AI contributed, and the review performed. ${decider} made the final release decision on ${record.finalDecisionDate} and remains accountable for that decision.`;
 }
 
 function safeLink(value) {
@@ -1272,10 +1853,14 @@ function safeLink(value) {
   }
 }
 
-function renderEvidenceLinks(value) {
-  const entries = String(value || '').split('\n').map((item) => item.trim()).filter(Boolean);
+function evidenceEntries(value) {
+  return String(value || '').split('\n').map((item) => item.trim()).filter(Boolean);
+}
+
+function renderEvidenceLinks(value, heading = 'Supporting evidence') {
+  const entries = evidenceEntries(value);
   if (!entries.length) return '';
-  return `<div><strong>Supporting evidence:</strong><ul>${entries.map((item) => {
+  return `<div><strong>${escapeHTML(heading)}:</strong><ul>${entries.map((item) => {
     const link = safeLink(item);
     return link
       ? `<li><a href="${escapeHTML(link)}" target="_blank" rel="noreferrer">${escapeHTML(item)}</a></li>`
@@ -1301,106 +1886,118 @@ function focusCurrentStep() {
 }
 
 function renderMethod() {
-  document.title = 'How It Works — Human + AI Work Check';
+  document.title = 'How It Works | Human + AI Work Check';
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">AI Reliance Check method ${escapeHTML(METHOD_VERSION)}</p><h1>How the project score works.</h1><p>The score looks at five parts of one real project. It also checks the proof behind your answers and serious gaps that can limit AI’s role even when the average score is high.</p></header>
+    <header class="page-header"><p class="eyebrow">AI Reliance Check method ${escapeHTML(METHOD_VERSION)}</p><h1>How the Work Check reaches a result.</h1><p>The model is only one part of the arrangement. The method starts with your capacity, then weighs the exact AI setup and role, workflow controls, and the outcome you are betting on.</p></header>
     <div class="prose">
-      <h2>The question</h2>
-      <blockquote class="callout"><p><strong>For this person, AI setup, job, work process, and expected result: what may AI do, what must a person check, and what should wait?</strong></p></blockquote>
-      <h2>The five things being scored</h2>
-      <table><thead><tr><th>Plain-language question</th><th>Method term</th></tr></thead><tbody>
-        <tr><td><strong>Can this AI setup do this job?</strong><br />Has it handled normal work and likely failure cases?</td><td>Capability Fit</td></tr>
-        <tr><td><strong>Does it behave the way this role requires?</strong><br />Can it follow, compare, challenge, verify, test, express uncertainty, or stop when needed?</td><td>Behavioral Fit</td></tr>
-        <tr><td><strong>Can the person catch and correct a serious error?</strong><br />Do they have the knowledge, access, authority, and time?</td><td>Human Assurance</td></tr>
-        <tr><td><strong>Are the right limits and checks in the process?</strong><br />This includes access, approvals, records, monitoring, stopping, and recovery.</td><td>Workflow Control</td></tr>
-        <tr><td><strong>Can you tell whether the result worked?</strong><br />Are success and harm clear enough to observe and revisit?</td><td>Outcome Testability</td></tr>
+      <h2>Central question</h2>
+      <blockquote class="callout"><p><strong>Is the trust I am placing in this human and AI work arrangement supported?</strong></p></blockquote>
+      <h2>The five questions being scored</h2>
+      <table><thead><tr><th>Question</th><th>Method term</th></tr></thead><tbody>
+        <tr><td><strong>Can I catch and correct a serious problem?</strong><br />Do I have the knowledge, access, authority, time, attention, and stamina this review requires?</td><td>Your Capacity</td></tr>
+        <tr><td><strong>Can this exact AI setup perform its assigned role?</strong><br />Has it been tested on normal work and important failure cases?</td><td>AI Role Fit</td></tr>
+        <tr><td><strong>Does the system behave as this relationship requires?</strong><br />Can it challenge, qualify, identify uncertainty, test, and stop when needed?</td><td>Working Relationship</td></tr>
+        <tr><td><strong>Does the workflow keep control in the right places?</strong><br />Are access, permissions, records, checks, approvals, stopping, and recovery matched to the consequences?</td><td>Workflow and Controls</td></tr>
+        <tr><td><strong>Can I tell whether the outcome I am betting on was achieved?</strong><br />The evidence needed changes from a plan, to launch, to real use.</td><td>Outcome and Stakes</td></tr>
       </tbody></table>
-      <h2>How a score is calculated</h2>
+      <h2>How the score works</h2>
       <ol>
-        <li>Each answer begins with a transparent rubric value from 0 to 100.</li>
-        <li>An answer you can confirm keeps its full value. Something only reported receives 75%. An unknown receives no proof credit.</li>
-        <li>The active questions are combined into five scores. Each of the five parts contributes 20%.</li>
-        <li>The public score is rounded to the nearest five to avoid false precision.</li>
-        <li>What is at stake and the AI role you want determine how high the score needs to be. They do not change the score you earned.</li>
-        <li>Serious problems can limit AI’s role even when the average score is high.</li>
+        <li>Each answer has a transparent rubric value.</li>
+        <li>The operational score describes support within the current arrangement. It is not the probability that AI is correct.</li>
+        <li>Evidence Strength is reported separately. Thin evidence creates uncertainty, but it does not automatically turn reported ability into poor ability.</li>
+        <li>The stakes and the authority assigned to AI determine how much support the arrangement needs.</li>
+        <li>Serious gaps can limit the supported role even when the average score is high.</li>
+        <li>Planned improvements do not change the current result. They count only after they are completed and evidenced.</li>
+        <li>A different model may be suggested for comparison when model behavior is the weak point. A newer or larger model receives no automatic credit.</li>
       </ol>
-      <h2>Score bands</h2>
+      <p>If several systems are involved, record each one and identify the most consequential role. The detailed questions focus on that role. Run a separate Work Check when another consequential system needs its own evaluation.</p>
+      <h2>Four working score ranges</h2>
+      <p>The scope statement applies to every range: <strong>your current capacity, evidence, controls, and workflow for this project and proposed AI role.</strong></p>
       <table><thead><tr><th>Score</th><th>Result</th><th>Meaning</th></tr></thead><tbody>
-        <tr><td>0–19</td><td>Not supported</td><td>There is little proof for giving AI the proposed role.</td></tr>
-        <tr><td>20–39</td><td>Use only in a small role</td><td>AI is suitable only for narrow help with low consequences.</td></tr>
-        <tr><td>40–59</td><td>Use with limits</td><td>You may continue within stated limits and with added checks.</td></tr>
-        <tr><td>60–79</td><td>Supported with controls</td><td>The proof and work process support a defined AI role.</td></tr>
-        <tr><td>80–94</td><td>Strong support with limits</td><td>There is strong current support for this job and these conditions.</td></tr>
-        <tr><td>95–100</td><td>Strongest current support</td><td>The strongest current criteria are shown, but the result still applies only to this project setup.</td></tr>
+        <tr><td>0 to 39</td><td>Not supported for proposed role</td><td>The current arrangement does not support relying on AI in the role proposed.</td></tr>
+        <tr><td>40 to 59</td><td>Supported only in a smaller role</td><td>A narrower function or lower authority may be supported.</td></tr>
+        <tr><td>60 to 79</td><td>Supported with named conditions</td><td>The role depends on stated reviews, limits, tests, or approvals.</td></tr>
+        <tr><td>80 to 100</td><td>Strongly supported under current conditions</td><td>The current arrangement provides strong support for the proposed role under the documented conditions.</td></tr>
       </tbody></table>
-      <h2>Proof and real-use testing are separate</h2>
-      <p><strong>How solid the score is</strong> (evidence confidence) describes how much the result rests on things you confirmed instead of reports and unknowns. <strong>Real-use testing</strong> (validation status) describes whether the project setup is untested, observed in a pilot, repeated, or sustained in real use.</p>
-      <p>A project can have a high projected score and still be untested.</p>
-      <h2>Problems that override the score</h2>
-      <p>The method calls these <strong>hard gates</strong>.</p>
+      <p>A gate, unsupported authority, or weak evidence can produce a more restrictive decision than the numeric range suggests.</p>
+      <h2>What 0 and 100 mean</h2>
+      <p>A score of <strong>0</strong> means the current answers provide no operational support for relying on AI in the proposed role. It does not prove that the person or system has no ability.</p>
+      <p>A score of <strong>100</strong> means the recorded capacity, system behavior, workflow controls, and outcome checks strongly support the proposed role under the stated conditions. It is not a guarantee of accuracy, safety, success, or future performance.</p>
+      <h2>Evidence Strength and real-use testing</h2>
+      <p><strong>Evidence Strength</strong> describes how well the answers are supported by records or direct observations. <strong>Real-use testing</strong> describes whether the arrangement is planned, checked for launch, piloted, repeated, or sustained in actual use.</p>
+      <p>A project can have a strong operational arrangement and weak documentation. It can also be thoroughly documented and perform poorly. The result shows both.</p>
+      <h2>Problems that can override the average</h2>
       <ul>
         <li>Unknown permissions block sensitive, external, or autonomous action.</li>
         <li>Unverified material claims cannot be presented as verified.</li>
         <li>Production changes without relevant technical checks cannot receive unsupervised release authority.</li>
         <li>High-consequence decisions without capable human review cannot be delegated solely to AI.</li>
+        <li>A review process that cannot be sustained limits the supported role.</li>
         <li>A project without outcome evidence may be piloted but cannot claim demonstrated effectiveness.</li>
       </ul>
+      <h2>What recommendations mean</h2>
+      <p>Recommendations are grouped by what can be done now, within 24 hours, within days, or within weeks. Each one explains whether it could raise operational support, strengthen evidence, remove a blocker, add human capacity, or support a smaller AI role. A numeric projection is an illustrative maximum based on closing the named gap, not a guaranteed increase. Nothing changes until the action is completed, recorded, and the check is recalculated.</p>
       <h2>Accountability</h2>
       <p>AI can produce recommendations, influence decisions, and initiate actions when connected to tools. It cannot absorb the accountability that follows human agency. The person who can authorize, reject, limit, stop, or correct an action remains accountable for how that agency is used.</p>
       <h2>When to refresh</h2>
       <p>Repeat the check when the model, instructions, memory, tools, data, permissions, human reviewer, task, audience, stakes, acceptance criteria, workflow, or observed outcomes materially change.</p>
-      <div class="callout callout-warning"><p><strong>Current status:</strong> Method v0.1 is a transparent, practice-based working method. It has not been independently validated as a scientific instrument.</p></div>
+      <div class="callout callout-warning"><p><strong>Current status:</strong> Method ${escapeHTML(METHOD_VERSION)} is a transparent, practice-based working method. It has not been independently validated as a scientific instrument. Its ranges and recommendations are working guidance that should improve through testing and real use.</p></div>
     </div>
   </div>`;
 }
 
 function renderExamples() {
-  document.title = 'Examples — Human + AI Work Check';
+  document.title = 'Examples | Human + AI Work Check';
   const examples = [
-    ['Create an article or report', 'AI may organize, challenge, research, draft, or edit. The check identifies who controls the argument, which claims require verification, and whether the creator can explain and defend the result.', 'Project card + How the Work Was Made record'],
-    ['Build a website', 'AI may propose structure, write code, create content, and run tests. The check separates visible review from security, accessibility, code, or deployment areas the creator cannot inspect.', 'Release boundary + test plan'],
-    ['Use an agent to take actions', 'An agent may send messages, change files, operate accounts, or trigger its next step. Permissions, reversibility, monitoring, and approval gates receive more weight than fluent responses.', 'AI role limits + problems to fix first'],
-    ['Develop training content', 'Content accuracy does not prove that people can learn from or use it. The check separates subject review, instructional flow, learner testing, and observed outcomes.', 'Pilot plan + validation status'],
-    ['Review a completed project', 'A polished result may still have weak evidence about what worked. The Outcome Check compares the intended wager with observed use, errors, and consequences.', 'Updated boundary + next review'],
+    ['Create an article or report', 'AI may organize, challenge, research, draft, or edit. The Work Check identifies the supported role and required verification. The Work Record documents the creator’s actions and each AI contribution.', 'Work Check + Work Record'],
+    ['Build a website', 'AI may propose structure, write code, create content, run tests, or publish. The check separates visible review from security, accessibility, code, permissions, and deployment areas the creator cannot inspect.', 'Launch boundary + test plan'],
+    ['Use an agent to take actions', 'An agent may send messages, change files, operate accounts, or use its own output to trigger a next step. Permissions, reversibility, monitoring, and approval gates matter more than fluent responses.', 'Authority boundary + blockers'],
+    ['Develop training content', 'Content accuracy does not prove that people can learn from or use it. The check separates subject review, instructional flow, learner testing, and observed outcomes.', 'Pilot plan + Evidence Strength'],
+    ['Review a project already in use', 'A polished result may still have weak evidence about what worked. Current-Use Support compares the intended wager with observed use, errors, and consequences.', 'Updated boundary + next review'],
   ];
   main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">Examples</p><h1>Different projects require different reliance.</h1><p>The same system can deserve very different authority in two tasks. Start with the situation where a consequential choice is being made.</p></header><div class="grid-2">${examples.map(([title, copy, output], index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${title}</h3><p>${copy}</p><p class="kicker">Useful output</p><p><strong>${output}</strong></p></article>`).join('')}</div><div class="button-row"><a class="button" href="#/check">Check a real project</a><a class="button button-secondary" href="#/sample">View the website example</a></div></div>`;
 }
 
 function renderPricing() {
-  document.title = 'Pricing — Human + AI Work Check';
+  document.title = 'Pricing | Human + AI Work Check';
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">Pricing</p><h1>Start free. Pay for continuity and review—not a better score.</h1><p>The first public release is a browser-based preview. No payment is collected on this GitHub-hosted version.</p></header>
+    <header class="page-header"><p class="eyebrow">Pricing</p><h1>Start free. Pay later for continuity, collaboration, or human review. Never for a better result.</h1><p>This GitHub-hosted preview is free. No payment is collected on this version.</p></header>
     <div class="grid-2">
-      <article class="card pricing-card featured"><span class="stamp">Available in preview</span><h2>Free Preview</h2><p class="price">$0</p><ul><li>Checks before, during, or after a project</li><li>Project score and how solid it is</li><li>What AI may and may not do</li><li>Problems to fix first</li><li>Steps to take now or later</li><li>Printable project card</li><li>How the Work Was Made record</li><li>Local browser save and JSON export</li></ul><a class="button" href="#/check">Check a project for free</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned</span><h2>Project Record</h2><p class="price">Coming later</p><ul><li>Secure project storage</li><li>Plan-to-release comparison</li><li>Evidence management</li><li>Dated refreshes</li><li>Public, unlisted, or private records</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned</span><h2>Individual &amp; Team</h2><p class="price">Coming later</p><ul><li>Multiple projects and score history</li><li>Reusable templates</li><li>Reviewer assignments</li><li>Approval gates and activity history</li><li>Embeddable project cards</li></ul><a class="button button-secondary" href="#/examples">See use cases</a></article>
-      <article class="card pricing-card"><span class="stamp">Human service</span><h2>Guided Review</h2><p class="price">Contact</p><p>A facilitated review for projects that need outside examination or lack needed human capacity.</p><ul><li>Scope and authority review</li><li>Evidence-gap identification</li><li>Independent challenge</li><li>Documented findings</li></ul><span class="button button-secondary" aria-disabled="true">Contact option coming later</span></article>
+      <article class="card pricing-card featured"><span class="stamp">Available in preview</span><h2>Free Preview</h2><p class="price">$0</p><ul><li>Plan Readiness, Launch Support, and Current-Use Support</li><li>Project-specific score and decision</li><li>Evidence Strength</li><li>Supported role, review needs, and current limits</li><li>Actions for now, 24 hours, days, and weeks</li><li>Printable Work Check result</li><li>Work Record</li><li>Local browser save and JSON export</li></ul><a class="button" href="#/check">Check a project for free</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned</span><h2>Project Record</h2><p class="price">Coming later</p><ul><li>Secure project storage</li><li>Dated updates</li><li>Plan-to-launch comparisons</li><li>Evidence management</li><li>Public, unlisted, or private records</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned</span><h2>Individual and Team</h2><p class="price">Coming later</p><ul><li>Multiple projects</li><li>Score and decision history</li><li>Reviewer assignments</li><li>Approval records</li><li>Reusable workflows</li><li>Shareable project cards</li></ul><a class="button button-secondary" href="#/examples">See use cases</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned human service</span><h2>Guided Review</h2><p class="price">Coming later</p><p>A facilitated review for projects that need outside examination or additional human capacity.</p><ul><li>Capacity and authority review</li><li>Evidence-gap review</li><li>Independent challenge</li><li>Documented findings</li></ul><span class="button button-secondary" aria-disabled="true">Contact option coming later</span></article>
     </div>
-    <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> You pay for saved records, collaboration, integrations, and human review—not for a more favorable score.</p></div>
+    <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> Payment may add storage, teamwork, integrations, or qualified human review. It never purchases a higher score or a more favorable decision.</p></div>
   </div>`;
 }
 
 function renderFAQ() {
-  document.title = 'FAQ — Human + AI Work Check';
+  document.title = 'FAQ | Human + AI Work Check';
   const faqs = [
-    ['What exactly does this tool score?', 'One real project: the person, AI setup, job, steps and checks, and what is at stake. It does not score the model by itself.'],
-    ['How does this tool define trust?', 'Trust means your capacity, evidence, and workflow can support the reliance you are placing on the system for this task. Distrust means they currently cannot. Uncertainty means there is not enough evidence to decide.'],
-    ['Is this an AI detector?', 'No. It does not examine a finished artifact and guess whether AI produced it.'],
-    ['Is the score the probability that the AI is correct?', 'No. The score shows how strongly the person, proof, and checks support this use of AI. It is not an accuracy percentage.'],
-    ['Does a more powerful model automatically raise the score?', 'No. A stronger model may improve capability fit, but it does not automatically improve human review, permissions, testing, recovery, or outcome measurement.'],
-    ['Do I have to use the tool before starting?', 'No. Use it before starting, before release, or after a project is complete or live.'],
-    ['Does a lower score mean I cannot publish or launch?', 'Not always. It means the proposed reliance should be limited. You may release low-risk parts while keeping untested or high-authority functions inactive.'],
-    ['Can this record prove that work is a certain percentage human?', 'No. A percentage cannot honestly describe the different actions a person took and the different things AI contributed. The record shows those parts separately, along with any supporting evidence.'],
-    ['Is the project card a certificate?', 'No. It is a dated record for one project. It does not certify that an AI system is safe, accurate, or generally trustworthy.'],
-    ['Who remains accountable?', 'Accountability follows agency. A person remains accountable for choices they had the authority and capacity to make, including how much authority they gave the system.'],
-    ['Why does the result need to be refreshed?', 'Models, instructions, permissions, people, workflows, audiences, and consequences change. A result applies only to the project setup that was checked.'],
-    ['Where is my information stored in this preview?', 'Project information is stored only in this browser unless you export it. Do not enter confidential, regulated, or sensitive information.'],
+    ['What does this tool check?', 'It checks one real human and AI work arrangement: your capacity, one consequential AI system and role, the work, the workflow, and the outcome you are betting on. Other systems can be recorded for context, but each consequential role needs its own Work Check. It does not rate a model by itself.'],
+    ['How does this tool define trust?', 'Trust is the decision to rely on a system for a defined role. The Work Check asks whether your current capacity, evidence, controls, and workflow support that reliance.'],
+    ['Is having a human in the loop enough?', 'No. The person needs the knowledge, access, authority, time, attention, and stamina to recognize a serious problem, correct it, or stop the work. A named reviewer counts only if that person is actually in the workflow and has what the role requires.'],
+    ['Is this an AI detector?', 'No. Detectors guess from the finished product. This tool examines the documented working relationship and process.'],
+    ['Can the Work Record prove authorship?', 'No. It can preserve dated evidence of what the person did, what AI contributed, and how decisions were made. It is an evidence-based alternative to judging AI involvement from the finished work alone, not proof or a certificate.'],
+    ['Does the score show how much of the work is human?', 'No. A single percentage cannot honestly represent originating an idea, supplying context, drafting, revising, checking, deciding, and approving. The Work Record shows those actions separately.'],
+    ['Is the score the probability that AI is correct?', 'No. It shows how strongly the current arrangement supports relying on AI in the proposed role.'],
+    ['What is Evidence Strength?', 'Evidence Strength shows how well the answers are documented. It is separate from the operational relationship score. Missing evidence creates uncertainty, not automatic proof of poor ability.'],
+    ['Does a newer or more powerful model automatically improve the result?', 'No. Another model may perform better in a specific role, but it needs to be compared on the same representative tasks. A model change does not improve human capacity, permissions, workflow controls, or outcome evidence.'],
+    ['What if several AI systems were used?', 'Record each tool, model or version, setup, and role. Identify the most consequential role for this Work Check. Run another check if a second consequential role needs separate evaluation.'],
+    ['Do I have to make my AI conversations public?', 'No. Evidence may be public, private, redacted, exported, or reviewed by another person. If key records are unavailable, the Work Record will show lower Evidence Strength.'],
+    ['What if I did not use AI?', 'The Work Record can state: “No AI use reported in the documented workflow.” That is a bounded statement, not proof that no AI was used anywhere.'],
+    ['Does a lower score mean I cannot publish or launch?', 'Not always. It may mean giving AI a smaller role, adding capable human review, or keeping an untested function inactive. A hard gate can still block the proposed authority.'],
+    ['Who remains accountable?', 'Accountability follows agency. You remain accountable for choices you had the authority and capacity to make, including how much authority you gave the system.'],
+    ['When should I repeat the check?', 'Repeat it when the model, instructions, memory, tools, permissions, task, reviewer, audience, stakes, workflow, or observed results materially change.'],
+    ['Where is my information stored?', 'In this preview, information stays in the current browser unless you export it. Do not enter confidential, regulated, or sensitive information.'],
+    ['Is this scientifically validated?', 'No. It is a transparent, practice-based working method. Its ranges and recommendations are working guidance that should improve through testing and real use.'],
   ];
-  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">FAQ</p><h1>Plain answers about what this tool can—and cannot—say.</h1></header><div class="faq-list">${faqs.map(([question, answer]) => `<details><summary>${question}</summary><p>${answer}</p></details>`).join('')}</div><div class="button-row"><a class="button" href="#/check">Check a project</a><a class="button button-secondary" href="#/method">See the full method</a></div></div>`;
+  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">FAQ</p><h1>Plain answers about what this tool can and cannot say.</h1></header><div class="faq-list">${faqs.map(([question, answer]) => `<details><summary>${question}</summary><p>${answer}</p></details>`).join('')}</div><div class="button-row"><a class="button" href="#/check">Check a project</a><a class="button button-secondary" href="#/method">See the full method</a></div></div>`;
 }
 
 function renderNotFound() {
-  document.title = 'Page not found — Human + AI Work Check';
+  document.title = 'Page not found | Human + AI Work Check';
   main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">404</p><h1>This page is outside the current boundary.</h1><p>The link may be outdated or incomplete.</p></header><a class="button" href="#/">Return home</a></div>`;
 }
 
