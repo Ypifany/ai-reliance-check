@@ -175,7 +175,7 @@ for (const [step, expected] of [
   [2, 'What should this record support?'],
   [3, 'Give the credits.'],
   [4, 'Connect claims to evidence.'],
-  [5, 'Map how each part was handled.'],
+  [5, 'Create the detailed credits.'],
   [6, 'Review the record and name the release decision.'],
   [7, 'Your credits and evidence are ready to review.'],
 ]) {

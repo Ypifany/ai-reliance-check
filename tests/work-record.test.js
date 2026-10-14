@@ -448,11 +448,30 @@ test("credits and disclosure name human and AI roles without a false contributio
   assert.equal(credits.headline, "Here are the credits and the evidence.");
   assert.equal(credits.human[0].name, "Cheryl Abram");
   assert.equal(credits.ai[0].name, "ChatGPT 5.6 Sol Ultra");
+  assert.equal(credits.roles.length, 9);
+  assert.equal(credits.roles.find(({ key }) => key === "idea").label, "Originating idea and purpose");
+  assert.match(credits.roles.find(({ key }) => key === "idea").credit, /Cheryl Abram led this/i);
+  assert.match(credits.roles.find(({ key }) => key === "structure").credit, /Cheryl Abram and ChatGPT 5\.6 Sol Ultra worked on this together/i);
+  assert.match(credits.roles.find(({ key }) => key === "verification").credit, /not established/i);
   assert.match(credits.modelHistoryNote, /has not been verified/i);
   assert.match(disclosure, /ChatGPT 5\.6 Sol Ultra assisted with research, drafting, code, and testing/i);
   assert.match(disclosure, /Cheryl Abram records the human contribution/i);
   assert.match(disclosure, /made the final release decision/i);
   assert.doesNotMatch(JSON.stringify({ credits, disclosure }), /\d+%/);
+});
+
+test("role credits do not guess which listed person handled an other-person contribution", () => {
+  const record = publishableRecord({
+    contributions: { production: "Other-person" },
+    contributors: [
+      { id: "person-1", name: "Developer One", role: "Developer", contribution: "Built the interface", visibility: "public" },
+      { id: "person-2", name: "Developer Two", role: "Reviewer", contribution: "Reviewed the code", visibility: "public" },
+    ],
+  });
+  const production = buildCredits(record, deterministicOptions()).roles.find(({ key }) => key === "production");
+
+  assert.match(production.credit, /another human contributor/i);
+  assert.doesNotMatch(production.credit, /Developer One|Developer Two/);
 });
 
 test("safeHttpUrl rejects unsafe and non-web protocols", () => {

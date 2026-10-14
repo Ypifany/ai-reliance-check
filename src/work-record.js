@@ -16,13 +16,13 @@ export const AI_USE_OPTIONS = Object.freeze([
 ]);
 
 export const CONTRIBUTIONS = Object.freeze([
-  Object.freeze(["idea", "Originating idea"]),
-  Object.freeze(["method", "Core method, argument, or design"]),
-  Object.freeze(["sources", "Sources and context"]),
-  Object.freeze(["structure", "Structure and organization"]),
-  Object.freeze(["production", "Draft or technical production"]),
-  Object.freeze(["review", "Reviewed suggestions and decided what to keep, change, or leave out"]),
-  Object.freeze(["revision", "Revision and final meaning"]),
+  Object.freeze(["idea", "Originating idea and purpose"]),
+  Object.freeze(["method", "Source material and core method"]),
+  Object.freeze(["sources", "Research and source checking"]),
+  Object.freeze(["structure", "Product direction and requirements"]),
+  Object.freeze(["review", "Evaluation, challenge, and selection"]),
+  Object.freeze(["revision", "Writing, editing, and final meaning"]),
+  Object.freeze(["production", "Implementation and production"]),
   Object.freeze(["verification", "Verification and testing"]),
   Object.freeze(["release", "Final release decision"]),
 ]);
@@ -90,13 +90,13 @@ const EVIDENCE_RELATIONSHIPS = new Set(EVIDENCE_RELATIONSHIP_OPTIONS.map(([value
 const REVIEW_STATUSES = new Set(REVIEW_STATUS_OPTIONS.map(([value]) => value));
 
 const LEGACY_CONTRIBUTION_KEYS = Object.freeze({
-  idea: ["idea", "Originating idea", "Main idea and purpose", "Purpose and originating idea"],
-  method: ["method", "Core method, argument, or design", "Concept development"],
-  sources: ["sources", "Sources and context"],
-  structure: ["structure", "Structure and organization"],
-  production: ["production", "Draft or technical production"],
-  review: ["review", "Reviewed suggestions and decided what to keep, change, or leave out", "Evaluation and rejection"],
-  revision: ["revision", "Revision and final meaning"],
+  idea: ["idea", "Originating idea", "Originating idea and purpose", "Main idea and purpose", "Purpose and originating idea"],
+  method: ["method", "Core method, argument, or design", "Concept development", "Source material and core method"],
+  sources: ["sources", "Sources and context", "Research and source checking"],
+  structure: ["structure", "Structure and organization", "Product direction and requirements"],
+  production: ["production", "Draft or technical production", "Implementation and production"],
+  review: ["review", "Reviewed suggestions and decided what to keep, change, or leave out", "Evaluation and rejection", "Evaluation, challenge, and selection"],
+  revision: ["revision", "Revision and final meaning", "Writing, editing, and final meaning"],
   verification: ["verification", "Verification and testing"],
   release: ["release", "Final release decision", "Final approval"],
 });
@@ -572,7 +572,7 @@ export function getWorkRecordCompleteness(recordInput, options = {}) {
   if (!record.humanActions) minimumMissing.push("What the human did");
   if (!record.claims.some(({ statement }) => statement)) minimumMissing.push("At least one claim");
   if (!Object.values(record.contributions).some((value) => !["Unknown", "Not applicable"].includes(value))) {
-    minimumMissing.push("Contribution map");
+    minimumMissing.push("Detailed credits");
   }
   if (record.aiUse === "unknown") {
     minimumMissing.push("Whether AI was used");
@@ -731,6 +731,24 @@ export function buildCredits(recordInput, options = {}) {
     ai.push({ name: "AI system not fully identified", role: record.aiContributions || "AI contribution not yet described.", evidenceBasis: "unknown" });
   }
 
+  const creatorName = record.creator.name || "The human creator";
+  const aiName = ai.map(({ name }) => name).filter(Boolean).join(", ") || "The AI system";
+  const roleCredit = (handling) => {
+    if (handling === "Human-led") return `${creatorName} led this.`;
+    if (handling === "Shared") return `${creatorName} and ${aiName} worked on this together.`;
+    if (handling === "AI-reviewed") return `${aiName} produced this; ${creatorName} reviewed and materially changed it.`;
+    if (handling === "AI-accepted") return `${aiName} produced this; ${creatorName} accepted it without material change.`;
+    if (handling === "Other-person") return "Another human contributor handled this. See the contributor descriptions for the recorded detail.";
+    if (handling === "Not applicable") return "Not applicable to this work.";
+    return "Who handled this is not established in this record.";
+  };
+  const roles = CONTRIBUTIONS.map(([key, label]) => ({
+    key,
+    label,
+    handling: record.contributions[key],
+    credit: roleCredit(record.contributions[key]),
+  }));
+
   return {
     headline: record.aiUse === "no-ai-reported"
       ? "No AI use was reported. Here are the credits and the evidence."
@@ -741,6 +759,7 @@ export function buildCredits(recordInput, options = {}) {
           : "Here are the credits and the evidence.",
     human,
     ai,
+    roles,
     finalAuthority: { ...record.finalDecision },
     modelHistoryNote: record.modelHistoryCompleteness === "complete"
       ? "The known AI model history is reported as complete."
