@@ -365,6 +365,7 @@ function route() {
     '/research': renderResearch,
     '/examples': renderExamples,
     '/pricing': renderPricing,
+    '/copyright': renderCopyright,
     '/faq': renderFAQ,
   };
 
@@ -2594,6 +2595,25 @@ function renderPricing() {
       <article class="card pricing-card"><span class="stamp stamp-warning">Planned human service</span><h2>Guided Review</h2><p class="price">Coming later</p><p>A facilitated review for projects that need outside examination or additional human capacity.</p><ul><li>Capacity and authority review</li><li>Evidence-gap review</li><li>Independent challenge</li><li>Documented findings</li></ul><p class="availability-note">Contact option coming later</p></article>
     </div>
     <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> Payment may later add secure storage, collaboration, integrations, public or private sharing, and qualified review. It will never buy a stronger finding, higher score, or more favorable result.</p></div>
+  </div>`;
+}
+
+function renderCopyright() {
+  document.title = 'Copyright and use | Human + AI Work Check';
+  main.innerHTML = `<div class="page">
+    <header class="page-header"><p class="eyebrow">Copyright and use</p><h1>Copyright protects the expression, not the method.</h1><p><strong>© 2026 Cheryl Abram. All rights reserved.</strong></p></header>
+    <section class="prose">
+      <h2>What this notice covers</h2>
+      <p>This notice applies to the original human-authored writing, examples, explanations, interface content, code, and creative selection and arrangement of material on this site, to the extent copyright law protects them.</p>
+      <h2>What it does not claim</h2>
+      <p>It does not claim copyright in ideas, facts, systems, methods of operation, scoring rules, algorithms, third-party material, user-supplied content, or material that is not eligible for copyright protection.</p>
+      <h2>AI-assisted material</h2>
+      <p>The copyright claim is limited to protectable human-authored expression and human selection, arrangement, and modification. AI tools are not identified as authors.</p>
+      <h2>Permission and reuse</h2>
+      <p>This repository is public for inspection, but no open-source license has been granted. Public access does not grant permission to copy, redistribute, modify, or sell protected material. Uses allowed by law remain allowed.</p>
+      <h2>Official guidance</h2>
+      <p>See the U.S. Copyright Office guidance on <a href="https://www.copyright.gov/circs/circ01.pdf" target="_blank" rel="noreferrer">copyright basics <span class="new-tab-note">(opens in a new tab)</span></a>, <a href="https://www.copyright.gov/circs/circ66.pdf" target="_blank" rel="noreferrer">websites and website content <span class="new-tab-note">(opens in a new tab)</span></a>, and <a href="https://www.copyright.gov/ai/" target="_blank" rel="noreferrer">copyright and artificial intelligence <span class="new-tab-note">(opens in a new tab)</span></a>.</p>
+    </section>
   </div>`;
 }
 
