@@ -386,11 +386,14 @@ function homepageCreditsSequence(duplicate = false) {
   return `<div class="credits-sequence"${duplicate ? ' aria-hidden="true"' : ''}>
     <p class="credits-overline">A Work Record for</p>
     <h2${duplicate ? '' : ' id="credits-screen-title"'}>Human + AI Work Check</h2>
-    <div class="credits-entry"><p>Purpose and main idea</p><strong>Human</strong><span>Originated the problem, purpose, and core method.</span></div>
-    <div class="credits-entry"><p>Structure and meaning</p><strong>Human + AI tool</strong><span>The human directed the structure and final meaning. The AI tool organized ideas and drafted language.</span></div>
-    <div class="credits-entry"><p>Challenge and research</p><strong>AI tool</strong><span>Compared alternatives, challenged selected ideas, and checked outside sources.</span></div>
-    <div class="credits-entry"><p>Code and testing</p><strong>AI tool</strong><span>Wrote and revised code, ran automated checks, and published approved changes.</span></div>
-    <div class="credits-entry"><p>Judgment and release</p><strong>Human</strong><span>Reviewed, questioned, revised, approved, and made the final decision to publish.</span></div>
+    <div class="credits-entry"><p>Originating idea and purpose</p><strong>Human</strong><span>Identified the problem and decided what the product should accomplish.</span></div>
+    <div class="credits-entry"><p>Source material and core method</p><strong>Human</strong><span>Supplied the experience, examples, principles, and method behind the product.</span></div>
+    <div class="credits-entry"><p>Product direction and requirements</p><strong>Human</strong><span>Defined the audience, boundaries, features, and changes to keep or reject.</span></div>
+    <div class="credits-entry"><p>Research and source checking</p><strong>Human + AI tool</strong><span>The AI tool located and compared sources. The human judged what belonged in the method.</span></div>
+    <div class="credits-entry"><p>Writing, editing, and user flow</p><strong>Human + AI tool</strong><span>The AI tool organized and drafted. The human questioned, revised, and decided the final meaning.</span></div>
+    <div class="credits-entry"><p>Implementation and production</p><strong>AI tool</strong><span>Wrote and revised code and executed approved publication changes.</span></div>
+    <div class="credits-entry"><p>Verification and testing</p><strong>Human + AI tool</strong><span>The AI tool ran automated checks. The human reviewed visible behavior. Independent technical review is not claimed.</span></div>
+    <div class="credits-entry"><p>Final release decision</p><strong>Human</strong><span>Approved the documented version and decided it was ready to publish.</span></div>
     <div class="credits-entry credits-evidence"><p>Evidence connected</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
     <p class="credits-end">End of example credits</p>
   </div>`;
@@ -463,7 +466,17 @@ function renderHome() {
       </div>
       <div class="grid-2">
         <article class="card"><span class="card-number">01</span><h3>Work Record</h3><p><strong>How was this work made?</strong></p><p>Document the exact artifact, what each participant did, which AI systems were involved, what the evidence supports, and who made the final decision.</p><a class="button" href="#/creation-record">Create a Work Record</a></article>
-        <article class="card"><span class="card-number">02</span><h3>Work Check</h3><p><strong>Does this arrangement support relying on AI in this role?</strong></p><p>Use it before starting, before launch, or during real use when an AI output or action could create meaningful consequences.</p><a class="button button-secondary" href="#/check">Run a Work Check</a></article>
+        <article class="card"><span class="card-number">02</span><h3>Work Check</h3><p><strong>Does this exact arrangement support the role you are giving AI, in relation to your current capacity?</strong></p><p>Use it before starting, before launch, or during real use when an AI output or action could create meaningful consequences.</p><a class="button button-secondary" href="#/check">Run a Work Check</a></article>
+      </div>
+    </section>
+
+    <section class="section section-compact" aria-labelledby="fluency-capacity-heading">
+      <div class="callout">
+        <p class="kicker">A different question</p>
+        <h2 id="fluency-capacity-heading">Fluency is not the same as capacity.</h2>
+        <p><strong>AI fluency helps you work with AI.</strong> The Work Check asks something more specific: Does this exact arrangement support the role you are giving AI, in relation to your current capacity?</p>
+        <p>Your result considers what you can currently judge, inspect, change, stop, and sustain in this task, not only how well you can prompt or collaborate.</p>
+        <p><a href="#/method">See the difference in the method.</a></p>
       </div>
     </section>
 
@@ -477,7 +490,7 @@ function renderHome() {
         ${featureCard('02', 'Claim support', 'What the evidence documents, contradicts, or does not establish.')}
         ${featureCard('03', 'Evidence profile', 'How evidence is connected to the work, preserved, and reviewed.')}
         ${featureCard('04', 'Selected evidence', 'Public, redacted, or privately reviewed records without forcing every conversation into public view.')}
-        ${featureCard('05', 'Contribution map', 'How the idea, method, drafting, revision, checking, and release decision were handled.')}
+        ${featureCard('05', 'Detailed credits', 'Who handled the originating idea, source material and method, product direction, research, writing, implementation, testing, and release.')}
         ${featureCard('06', 'Short disclosure', 'Clear language that can travel with the finished work.')}
       </div>
       <div class="button-row">
@@ -562,6 +575,18 @@ function renderCheckEntry() {
         ${stageCard('02', 'I am ready to publish, send, or launch', 'Launch Support', 'Check what actually happened and whether the reliance is supported before release.', 'release', 'Check before launch')}
         ${stageCard('03', 'People are already using the work', 'Current-Use Support', 'Review results, errors, and consequences before continuing, expanding, limiting, or stopping.', 'live', 'Review current use')}
       </div>
+    </section>
+    <section class="section section-compact" aria-labelledby="check-output-heading">
+      <div class="section-heading">
+        <div><p class="kicker">Your result</p><h2 id="check-output-heading">You will not get only a score.</h2></div>
+        <p class="lede">The result shows what role is supported now and what could make the arrangement stronger.</p>
+      </div>
+      <div class="grid-3">
+        ${featureCard('01', 'Supported AI role', 'The highest role and authority the current arrangement supports.')}
+        ${featureCard('02', 'Capacity and workflow gaps', 'What you cannot yet judge, inspect, control, stop, or sustain.')}
+        ${featureCard('03', 'How to raise support', 'Actions you can take now, within 24 hours, within days, or within weeks, with the possible score effect shown.')}
+      </div>
+      <p class="helper-text">Some actions raise operational support. Others strengthen the evidence or reduce the AI role so less reliance is required. Planned actions count only after they are completed, recorded, and checked again.</p>
     </section>
     <div class="button-row no-print">
       <button class="button button-secondary" type="button" id="import-trigger">Import a saved project</button>
@@ -1326,6 +1351,11 @@ function renderResult() {
   const authorization = result.authorization || {};
   const gates = result.gates || [];
   const recommendations = result.recommendations || [];
+  const scoreRaiser = [...recommendations]
+    .filter((item) => Number(item.scoreEffect?.projectedChange || 0) > 0)
+    .sort((a, b) => Number(b.scoreEffect?.projectedChange || 0) - Number(a.scoreEffect?.projectedChange || 0))[0];
+  const roleBoundary = recommendations.find((item) => item.category === 'role_adjustment');
+  const evidenceRaiser = recommendations.find((item) => item.category === 'evidence');
   const date = assessment.completedAt || assessment.updatedAt;
   const evidenceStrength = result.evidenceStrength || { label: result.evidenceConfidence || 'Unknown', description: '' };
   const reviewLoad = humanReviewLoad(result);
@@ -1340,7 +1370,7 @@ function renderResult() {
     <header class="page-header result-page-intro">
       <p class="eyebrow">${stageLabel(assessment.stage)} result</p>
       <h1>${escapeHTML(p.name || 'Your project result')}</h1>
-      <p>This result asks whether the arrangement described below supports giving ${escapeHTML(primarySystem?.product || 'the AI system')} the requested role and authority.</p>
+      <p>This result asks whether this exact arrangement supports the role you are giving ${escapeHTML(primarySystem?.product || 'the AI system')}, in relation to your current capacity.</p>
     </header>
 
     <section class="project-context card" aria-labelledby="result-context-heading">
@@ -1377,6 +1407,15 @@ function renderResult() {
         ${resultFact('Human Review Load', reviewLoad.label)}
       </dl>
       <div class="callout"><p><strong>What ${result.publicScore} means:</strong> This score describes support inside this specific human and AI arrangement. It is not a model rating, an accuracy probability, or a human versus AI percentage. A serious gap or unsupported authority can make the decision more restrictive than the number alone.</p></div>
+      <div class="quick-result-actions" aria-labelledby="quick-actions-heading">
+        <h3 id="quick-actions-heading">Three ways the result can change</h3>
+        <div class="grid-3">
+          <article class="card"><p class="kicker">Raise operational support</p><p>${scoreRaiser ? escapeHTML(scoreRaiser.action) : 'No additional score-raising action was generated from the current answers.'}</p>${scoreRaiser ? `<p><strong>If completed and confirmed:</strong> up to ${scoreRaiser.scoreEffect.projectedScore} (+${scoreRaiser.scoreEffect.projectedChange}).</p>` : ''}</article>
+          <article class="card"><p class="kicker">Reduce the reliance required</p><p>${escapeHTML(roleBoundary?.action || 'Keep the AI inside the highest role currently supported and do not expand its authority without another check.')}</p><p class="helper-text">This changes the boundary, not the score.</p></article>
+          <article class="card"><p class="kicker">Strengthen the evidence</p><p>${escapeHTML(evidenceRaiser?.action || 'Preserve the tests, decisions, approvals, and outcome records that support this arrangement.')}</p><p class="helper-text">This can strengthen Evidence Strength without changing operational performance.</p></article>
+        </div>
+      </div>
+      <p class="result-next-link"><a href="#raise-score">See what could raise this score or reduce the reliance required <span aria-hidden="true">↓</span></a></p>
     </section>
 
     <section class="decision-grid" aria-label="Current work boundary">
@@ -1431,10 +1470,11 @@ function renderResult() {
 
     ${gates.length ? `<section style="margin-top: 3rem"><p class="kicker">Problems to fix first</p><h2>These limits override the average score.</h2><ul class="gate-list">${gates.map((gate) => `<li><strong>${escapeHTML(gate.title || gate.id?.replaceAll('_', ' ') || 'Use limit')}</strong><br />${escapeHTML(gateText(gate))}</li>`).join('')}</ul></section>` : `<div class="callout" style="margin-top: 2rem"><p><strong>Your answers did not trigger a stop condition.</strong> The score and named limits still apply.</p></div>`}
 
-    <section style="margin-top: 4rem">
+    <section id="raise-score" style="margin-top: 4rem" tabindex="-1">
       <p class="kicker">Make this setup stronger</p>
-      <h2>What can change the result?</h2>
-      <p class="lede">Each action shows its estimated effect. Planned actions add zero points. The score or Evidence Strength changes only after the action is completed, the result is recorded, and the check is run again.</p>
+      <h2>What could raise this score?</h2>
+      <p class="lede">Each action shows its possible effect. Some actions can raise operational support. Others strengthen the evidence, remove a blocker, add capable human help, or reduce the AI role so less reliance is required.</p>
+      <p>Planning an action changes nothing. Complete it, record what happened, and run the check again before the score or Evidence Strength changes.</p>
       <div class="action-timeline">
         ${timeBlock('Now', recommendations.filter((item) => item.timing === 'now'))}
         ${timeBlock('Within 24 hours', recommendations.filter((item) => item.timing === 'within24h'))}
@@ -1610,10 +1650,10 @@ function recommendationCard(item) {
   if (typeof item === 'string') return `<p class="recommendation-action">${escapeHTML(item)}</p>`;
   const projectedChange = Number(item.scoreEffect?.projectedChange || 0);
   const scoreEffect = item.modelChangeTest
-    ? 'Changing models adds 0 points now. Any projected change depends on passing the same comparison tests.'
+    ? 'A model change earns no increase by itself. Any improvement depends on the new model passing the same comparison tests.'
     : projectedChange > 0
-      ? `Adds 0 points now. Illustrative potential: up to ${item.scoreEffect.projectedScore} (+${projectedChange}) if this action closes the named gap and the check is recalculated.`
-      : item.scoreEffect?.condition || 'Adds 0 points until completed and evidenced.';
+      ? `If completed and confirmed: up to ${item.scoreEffect.projectedScore} (+${projectedChange}). This is an illustrative maximum, not a promised increase.`
+      : item.scoreEffect?.condition || 'No increase until this is completed and supported by evidence.';
   return `<div class="recommendation-card">
     ${item.modelChangeTest ? '<span class="stamp stamp-warning">Model comparison</span>' : ''}
     <p class="recommendation-action">${escapeHTML(item.action)}</p>
@@ -1717,7 +1757,24 @@ function renderSample() {
     <article class="record-preview public-record">
       <header class="public-record-header"><p class="kicker">Human + AI Work Record · Public prototype v0.3</p><h2>Human + AI Work Check website and method</h2><p class="record-summary">Here are the credits and evidence for this version.</p><p>A public website that documents human and AI contributions and optionally checks whether a consequential AI role is supported by the person’s capacity, workflow, evidence, and stakes.</p></header>
       <section class="record-output-section"><h3>Artifact documented</h3><dl class="record-facts"><div><dt>Status</dt><dd>Public prototype, unfinished</dd></div><div><dt>Version</dt><dd>v0.3 provenance-first revision</dd></div><div><dt>Creator</dt><dd>Cheryl Abram</dd></div><div><dt>Other human contributors</dt><dd>None reported</dd></div></dl><p><a href="https://ypifany.github.io/ai-reliance-check/" target="_blank" rel="noreferrer">Open the public website <span class="new-tab-note">(opens in a new tab)</span></a></p></section>
-      <section class="record-output-section"><h3>Credits</h3><div class="credit-row"><strong>Cheryl Abram</strong><span> (creator and final authority)</span><p>Originated the problem and purpose; developed the core concepts and method; supplied experience, examples, and sources; defined the audience and requirements; evaluated, challenged, rejected, and rewrote suggestions; reviewed the live site; and approved changes for publication.</p></div><div class="credit-row"><strong>ChatGPT</strong><p>Assisted with organizing and challenging the method, comparing alternatives, checking outside information, drafting and revising public wording, designing the user flow, writing and modifying code, running tests, identifying problems, and publishing approved changes.</p></div><p class="helper-text"><strong>Known model:</strong> ChatGPT 5.6 Sol Ultra. The complete model history has not been verified.</p></section>
+      <section class="record-output-section"><h3>Credits</h3>
+        <h4>People and systems involved</h4>
+        <div class="credit-row"><strong>Cheryl Abram</strong><span> (creator and final authority)</span><p>Originated the product, supplied the method and experience behind it, directed the work, evaluated alternatives, rewrote public language, reviewed the live site, and made the final release decisions.</p></div>
+        <div class="credit-row"><strong>ChatGPT</strong><p>Organized and challenged the method, compared alternatives, checked outside information, drafted and revised wording, proposed user flow, wrote and modified code, ran automated tests, identified problems, and executed approved publication changes.</p></div>
+        <p class="helper-text"><strong>Known model:</strong> ChatGPT 5.6 Sol Ultra. The complete model history has not been verified.</p>
+        <h4>Detailed credits</h4>
+        <ul class="mini-record-list credit-role-list">
+          <li><span><strong>Originating idea and purpose</strong><small>Identified the problem and decided what the product should accomplish.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Source material and core method</strong><small>Supplied experience, examples, principles, and the developing method.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Product direction and requirements</strong><small>Defined the audience, boundaries, features, and final decisions.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Research and source checking</strong><small>Located and compared outside material; the human judged what belonged in the method.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Evaluation, challenge, and selection</strong><small>ChatGPT challenged selected ideas. Cheryl accepted, rejected, or redirected the work.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Writing, editing, and final meaning</strong><small>ChatGPT organized and drafted. Cheryl revised and decided the final public meaning.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Implementation and production</strong><small>Wrote and revised the website code and carried out approved publication changes.</small></span><strong>ChatGPT</strong></li>
+          <li><span><strong>Verification and testing</strong><small>ChatGPT ran automated checks. Cheryl reviewed visible behavior. No independent technical review is claimed.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Final release decision</strong><small>Approved the documented version for publication.</small></span><strong>Cheryl Abram</strong></li>
+        </ul>
+      </section>
       <section class="record-output-section"><h3>What the record supports</h3><ul class="claim-support-list"><li><span>Cheryl Abram originated and developed the method.</span><strong class="status-pill">Documented</strong></li><li><span>Cheryl Abram can direct and evaluate AI-assisted work.</span><strong class="status-pill">Documented</strong></li><li><span>Cheryl Abram made the final decisions about the public product.</span><strong class="status-pill">Documented</strong></li></ul></section>
       <section class="record-output-section"><h3>What is not established</h3><ul><li>Cheryl personally wrote the website source code.</li><li>Cheryl independently evaluated the technical architecture.</li><li>The method has been scientifically validated.</li><li>The site is production-grade or independently confirmed as accessibility-conformant.</li></ul></section>
       <section class="record-output-section"><h3>Selected evidence</h3><ul><li>ChatGPT conversation history from the original idea through development. Detailed excerpts remain private.</li><li><a href="https://github.com/Ypifany/ai-reliance-check" target="_blank" rel="noreferrer">GitHub repository, commits, and pull requests <span class="new-tab-note">(opens in a new tab)</span></a></li><li>Source documents, examples, screenshots, review notes, and approval decisions preserved in the working history.</li><li>The live site and its version history.</li></ul></section>
@@ -1738,8 +1795,16 @@ function resultFact(term, description) {
   return `<div><dt>${escapeHTML(term)}</dt><dd>${escapeHTML(description)}</dd></div>`;
 }
 
-function contributionLabel(value) {
-  return CONTRIBUTION_OPTIONS.find(([storedValue]) => storedValue === value)?.[1] || value || 'Unknown';
+function creditHandlingLabel(value) {
+  return ({
+    'Human-led': 'Human-led',
+    Shared: 'Human + AI',
+    'AI-reviewed': 'AI produced, human materially revised',
+    'AI-accepted': 'AI produced, human accepted',
+    'Other-person': 'Other human contributor',
+    Unknown: 'Not established',
+    'Not applicable': 'Not applicable',
+  })[value] || 'Not established';
 }
 
 function renderCreationRecord(focusId = '', errors = []) {
@@ -1934,7 +1999,7 @@ function renderRecordEvidenceStep(record, errors = []) {
 }
 
 function renderRecordHandlingStep(record, errors = []) {
-  return `<div class="record-step-intro"><p class="eyebrow">Step 5</p><h2 id="record-step-heading">Map how each part was handled.</h2><p>“AI produced it, then I reviewed and changed it” is different from accepting AI output without material change.</p></div>
+  return `<div class="record-step-intro"><p class="eyebrow">Step 5</p><h2 id="record-step-heading">Create the detailed credits.</h2><p>For each part of the work, record who led it and how AI output was handled. “AI produced it, then I reviewed and changed it” is different from accepting AI output without material change.</p></div>
     <div class="contribution-card-list" id="contribution-map" role="group" aria-label="Contribution handling, choose at least one" ${groupErrorAttributes(errors, 'contribution-map')}>${CONTRIBUTIONS.map(([key, label]) => `<div class="contribution-card"><label for="contribution-${key}">${escapeHTML(label)}</label><select id="contribution-${key}" name="contribution:${key}" aria-label="How was ${escapeHTML(label)} handled?">${selectOptions(CONTRIBUTION_OPTIONS, record.contributions[key])}</select></div>`).join('')}</div>${fieldError(errors, 'contribution-map')}`;
 }
 
@@ -2323,16 +2388,16 @@ function workRecordPreview(recordInput, options = {}) {
       <div><dt>Possible impact</dt><dd>${escapeHTML(record.outcome?.failureImpact || 'Not recorded')}</dd></div>
       <div><dt>Readiness decision</dt><dd>${escapeHTML(record.readiness?.decision || 'Work Check not completed')}</dd></div>
     </dl></section>` : ''}
-    <section class="record-output-section"><h3>Credits</h3>
+    <section class="record-output-section"><h3>Credits</h3><h4>People and systems involved</h4>
       ${credits.human.map((item) => `<div class="credit-row"><strong>${escapeHTML(item.name)}</strong>${item.role ? ` <span>(${escapeHTML(item.role)})</span>` : ''}<p>${escapeHTML(item.credit)}</p></div>`).join('') || '<p>No human creator named.</p>'}
       ${record.aiUse === 'unknown'
         ? '<p>Whether AI was used has not been answered or established.</p>'
         : record.aiUse === 'no-ai-reported'
           ? '<p>No AI use was reported in the documented workflow.</p>'
           : `<h4>AI systems</h4>${credits.ai.map((item) => `<div class="credit-row"><strong>${escapeHTML(item.name)}</strong><p>${escapeHTML(item.role)}</p></div>`).join('')}<p class="helper-text">${escapeHTML(credits.modelHistoryNote)}</p>`}
+      <h4>Detailed credits</h4><ul class="mini-record-list credit-role-list">${credits.roles.map((item) => `<li><span><strong>${escapeHTML(item.label)}</strong><small>${escapeHTML(item.credit)}</small></span><strong>${escapeHTML(creditHandlingLabel(item.handling))}</strong></li>`).join('')}</ul>
     </section>
     <section class="record-output-section"><h3>What this record supports</h3><ul class="claim-support-list">${claimRows.map(({ claim, support }) => `<li><span>${escapeHTML(claim.statement)}</span><strong class="status-pill">${escapeHTML(support.label)}</strong></li>`).join('') || '<li>No claims selected.</li>'}</ul></section>
-    <section class="record-output-section"><h3>How each part was handled</h3><ul class="mini-record-list">${CONTRIBUTIONS.map(([key, label]) => `<li><span>${escapeHTML(label)}</span><strong>${escapeHTML(contributionLabel(record.contributions[key]))}</strong></li>`).join('')}</ul></section>
     <section class="record-output-section"><h3>Evidence profile</h3><dl class="record-facts">
       <div><dt>Reported evidence connection</dt><dd>${escapeHTML(integrity.label)}</dd></div>
       <div><dt>Review status</dt><dd>${escapeHTML(review.label)}</dd></div>
@@ -2374,7 +2439,7 @@ function downloadText(filename, textValue, type = 'text/plain') {
 function downloadPublicWorkRecord(publicRecord, draft = false) {
   const title = escapeHTML(publicRecord.title || 'Human + AI Work Record');
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>
-    body{max-width:850px;margin:0 auto;padding:40px 24px;color:#18211d;font:16px/1.55 system-ui,sans-serif}h1,h2,h3,h4{font-family:Georgia,serif;line-height:1.15}h1{font-size:2.4rem}.draft-stamp{padding:.7rem;border:2px solid #963e38;color:#963e38;font-weight:800;text-transform:uppercase}.kicker,dt{font:700 .75rem ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#0e5b50}.record-summary{padding:1rem 0;border-block:2px solid #18211d;font:600 1.4rem Georgia,serif}.record-output-section{padding:1.25rem 0;border-bottom:1px solid #cbd3cd}.record-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}.record-facts div{padding:.75rem;background:#f6f2e9}.record-facts dd{margin:.25rem 0 0}.claim-support-list,.mini-record-list{padding:0;list-style:none}.claim-support-list li,.mini-record-list li{display:flex;justify-content:space-between;gap:1rem;padding:.65rem 0;border-bottom:1px solid #cbd3cd}.status-pill{white-space:nowrap}.credit-row{padding:.75rem 0;border-bottom:1px solid #cbd3cd}.credit-row p{margin:.25rem 0}.helper-text,.public-record-footer{color:#59645e;font-size:.88rem}.disclosure-box{background:#dce8df;padding:1rem}.new-tab-note{font-size:.8em}@media(max-width:600px){.record-facts{grid-template-columns:1fr}.claim-support-list li,.mini-record-list li{display:block}.status-pill{display:block;margin-top:.3rem}}@media print{body{padding:0}.record-output-section{break-inside:auto}.credit-row,.record-facts div,.claim-support-list li,.mini-record-list li{break-inside:avoid}}
+    body{max-width:850px;margin:0 auto;padding:40px 24px;color:#18211d;font:16px/1.55 system-ui,sans-serif}h1,h2,h3,h4{font-family:Georgia,serif;line-height:1.15}h1{font-size:2.4rem}.draft-stamp{padding:.7rem;border:2px solid #963e38;color:#963e38;font-weight:800;text-transform:uppercase}.kicker,dt{font:700 .75rem ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#0e5b50}.record-summary{padding:1rem 0;border-block:2px solid #18211d;font:600 1.4rem Georgia,serif}.record-output-section{padding:1.25rem 0;border-bottom:1px solid #cbd3cd}.record-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}.record-facts div{padding:.75rem;background:#f6f2e9}.record-facts dd{margin:.25rem 0 0}.claim-support-list,.mini-record-list{padding:0;list-style:none}.claim-support-list li,.mini-record-list li{display:flex;justify-content:space-between;gap:1rem;padding:.65rem 0;border-bottom:1px solid #cbd3cd}.credit-role-list small{display:block;margin-top:.2rem;color:#59645e}.status-pill{white-space:nowrap}.credit-row{padding:.75rem 0;border-bottom:1px solid #cbd3cd}.credit-row p{margin:.25rem 0}.helper-text,.public-record-footer{color:#59645e;font-size:.88rem}.disclosure-box{background:#dce8df;padding:1rem}.new-tab-note{font-size:.8em}@media(max-width:600px){.record-facts{grid-template-columns:1fr}.claim-support-list li,.mini-record-list li{display:block}.status-pill{display:block;margin-top:.3rem}}@media print{body{padding:0}.record-output-section{break-inside:auto}.credit-row,.record-facts div,.claim-support-list li,.mini-record-list li{break-inside:avoid}}
   </style></head><body><main>${workRecordPreview(publicRecord, { standalone: true, draft })}</main></body></html>`;
   downloadText(`${slug(publicRecord.title || 'work-record')}-${draft ? 'draft-record' : 'public-record'}.html`, html, 'text/html');
 }
@@ -2482,10 +2547,13 @@ function renderMethod() {
       <h3>1. Work Record: How was this work made?</h3>
       <p>The Work Record identifies one artifact and version, records human and AI actions, maps each part of the work, and connects claims to evidence. It reports claim support, evidence integrity, and review status separately.</p>
       <p>Claim support can be self-described, documented, corroborated, independently reviewed, not established, or contradicted. A positive label is calculated from linked evidence and review. The person filling out the record does not simply select it.</p>
-      <h3>2. Work Check: Does this arrangement support relying on AI in this role?</h3>
+      <h3>2. Work Check: Does this exact arrangement support the role you are giving AI?</h3>
       <p>The model is only one part of the arrangement. The Work Check starts with your capacity, then weighs the exact AI setup and role, workflow controls, and the outcome you are betting on.</p>
+      <h2>AI fluency and this tool answer different questions</h2>
+      <p><a href="https://aifluencyframework.org/" target="_blank" rel="noreferrer">The AI Fluency Framework <span class="new-tab-note">(opens in a new tab)</span></a> develops broad human competencies for deciding how to use AI, describing what is needed, evaluating what comes back, and using AI responsibly.</p>
+      <p>Fluency matters, but it does not establish that you can catch a serious error in this task, inspect the important work, control the system’s access, stop a harmful action, or sustain the required review. The Work Check examines those conditions in one real arrangement.</p>
       <h2>Work Check central question</h2>
-      <blockquote class="callout"><p><strong>Is the trust I am placing in this human and AI work arrangement supported?</strong></p></blockquote>
+      <blockquote class="callout"><p><strong>Does this exact arrangement support the role you are giving AI, in relation to your current capacity?</strong></p></blockquote>
       <h2>The five questions being scored</h2>
       <div class="table-scroll" role="region" aria-label="Five questions scored by the method" tabindex="0"><table><thead><tr><th scope="col">Question</th><th scope="col">Method term</th></tr></thead><tbody>
         <tr><td><strong>Can I catch and correct a serious problem?</strong><br />Do I have the knowledge, access, authority, time, attention, and stamina this review requires?</td><td>Your Capacity</td></tr>
@@ -2546,6 +2614,7 @@ function renderMethod() {
 function renderResearch() {
   document.title = 'Research Basis | Human + AI Work Check';
   const sources = [
+    ['AI Fluency Framework', 'https://aifluencyframework.org/', 'AI fluency includes human competencies for deciding how to use AI, describing the work, judging AI outputs and behavior, and using AI responsibly.', 'This tool asks a narrower project question: whether one exact arrangement supports the assigned AI role in relation to the person’s current capacity. The framework has not validated this tool or its score.'],
     ['NIST AI Risk Management Framework', 'https://www.nist.gov/itl/ai-risk-management-framework', 'AI risk depends on the system, its use, the people involved, the operating context, and possible consequences.', 'The Work Check examines the person, AI system, assigned role, workflow, controls, and outcome together.'],
     ['Levels of automation', 'https://doi.org/10.1109/3468.844354', 'Automation can support information gathering, analysis, decision selection, and action. The right level can differ at each stage.', 'The tool does not treat AI authority as one all-or-nothing choice.'],
     ['Appropriate reliance in human-AI decision-making', 'https://doi.org/10.1145/3544548.3581058', 'Appropriate reliance depends on more than the chance that AI is right. The person’s ability also matters.', 'The Work Check considers the person’s capacity alongside the AI setup.'],
@@ -2582,7 +2651,7 @@ function renderPricing() {
   main.innerHTML = `<div class="page">
     <header class="page-header"><p class="eyebrow">Pricing</p><h1>Full access is open during the Founding Preview.</h1><p>Use every current tool free while the product is being tested. The permanent free option will help people find their credibility gap. Paid options will create, preserve, and maintain complete Work Records.</p></header>
     <div class="grid-2">
-      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Complete prototype access for early users who help test the method.</p><ul><li>Full Work Record</li><li>Multiple people and AI systems</li><li>Contribution map, claims, and evidence</li><li>Public record and short disclosure</li><li>Print, public HTML, and private backup</li><li>Complete Work Check</li></ul><a class="button" href="#/creation-record">Use the Founding Preview</a></article>
+      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Complete prototype access for early users who help test the method.</p><ul><li>Full Work Record</li><li>Multiple people and AI systems</li><li>Detailed role-based credits, claims, and evidence</li><li>Public record and short disclosure</li><li>Print, public HTML, and private backup</li><li>Complete Work Check</li></ul><a class="button" href="#/creation-record">Use the Founding Preview</a></article>
       <article class="card pricing-card"><span class="stamp stamp-warning">Planned one-time purchase</span><h2>Project Record</h2><p class="price">Price to be announced</p><p>Build a complete record for one work product you plan to publish, submit, deliver, or defend.</p><ul><li>Complete evidence-linked Work Record</li><li>Exact artifact and version</li><li>Full Work Check and recommendations</li><li>Downloadable and shareable record</li><li>One later record update</li></ul><a class="button button-secondary" href="#/sample">See a complete record</a></article>
       <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Creator</h2><p class="price">Monthly pricing to be announced</p><p>Maintain evidence as your work develops instead of rebuilding the record after someone questions it.</p><ul><li>Multiple active projects</li><li>Version and decision history</li><li>Reusable creator and AI profiles</li><li>Evidence library</li><li>Public, unlisted, or private records</li><li>Recheck and update reminders</li></ul><a class="button button-secondary" href="#/examples">See when to use it</a></article>
       <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Team</h2><p class="price">Pricing to be announced</p><p>Document who contributed, who was capable of checking the work, and who approved its release.</p><ul><li>Contributor confirmations</li><li>Reviewer assignments</li><li>Approval records</li><li>Reusable team workflows</li><li>Organization history and audit export</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>

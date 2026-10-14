@@ -461,7 +461,7 @@ main [role="alert"] {
 
 .credits-track {
   text-align: center;
-  animation: credits-roll 42s linear infinite;
+  animation: credits-roll 64s linear infinite;
   will-change: transform;
 }
 
@@ -1531,6 +1531,32 @@ fieldset[aria-invalid="true"] {
   margin-bottom: 2.5rem;
 }
 
+.result-next-link {
+  margin: 1rem 0 0;
+  font-weight: 800;
+}
+
+.result-next-link a {
+  display: inline-block;
+  padding: 0.7rem 0;
+}
+
+.quick-result-actions {
+  margin-top: 1.5rem;
+}
+
+.quick-result-actions h3 {
+  margin-bottom: 0.9rem;
+}
+
+.quick-result-actions .card {
+  padding: 1rem;
+}
+
+.quick-result-actions .card p:last-child {
+  margin-bottom: 0;
+}
+
 .result-facts {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2031,6 +2057,17 @@ fieldset[aria-invalid="true"] {
 
 .mini-record-list strong {
   text-align: right;
+}
+
+.credit-role-list > li > span {
+  max-width: 68ch;
+}
+
+.credit-role-list small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .record-page-header {

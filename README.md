@@ -6,8 +6,8 @@ Human + AI Work Check is a provenance-first public prototype. Its primary tool c
 
 The site provides two connected tools:
 
-- **Work Record:** Documents the exact artifact, human and AI contributions, claims, evidence, contribution handling, review, and final release decision.
-- **Work Check:** Shows whether the current relationship supports relying on AI in its proposed role, the largest role supported now, and what could strengthen the arrangement.
+- **Work Record:** Documents the exact artifact, detailed role-based credits, claims, evidence, review, and final release decision.
+- **Work Check:** Asks whether the exact arrangement supports the role being given to AI in relation to the person’s current capacity, then shows the largest role supported now and what could strengthen the arrangement.
 
 The Work Check produces a transparent project result, a separate evidence-strength result, supported roles and limits, problems that need to be fixed first, and practical actions that can strengthen the relationship now, within 24 hours, within days, or within weeks.
 
@@ -59,7 +59,7 @@ The included GitHub Actions workflow builds and deploys the `dist` directory to 
 
 The Work Record follows the work instead of guessing from its surface. It records what the person did, what each AI system did, which evidence supports each claim, how each part was handled, and which artifact version the record describes. It never invents a human-versus-AI percentage.
 
-The Work Check asks whether the person's current capacity, the AI setup and assigned role, the workflow and controls, and what is at stake support the trust being placed in the relationship.
+The Work Check asks whether the person's current capacity, the AI setup and assigned role, the workflow and controls, and what is at stake support the role and authority being given to AI.
 
 - **Reliance Support** describes the largest AI role the current arrangement supports.
 - **Evidence Strength** describes how well the available records support that conclusion.
