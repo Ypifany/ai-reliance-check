@@ -382,6 +382,20 @@ function setActiveNav(path) {
   });
 }
 
+function homepageCreditsSequence(duplicate = false) {
+  return `<div class="credits-sequence"${duplicate ? ' aria-hidden="true"' : ''}>
+    <p class="credits-overline">A Work Record for</p>
+    <h2${duplicate ? '' : ' id="credits-screen-title"'}>Human + AI Work Check</h2>
+    <div class="credits-entry"><p>Purpose and main idea</p><strong>Human</strong><span>Originated the problem, purpose, and core method.</span></div>
+    <div class="credits-entry"><p>Structure and meaning</p><strong>Human + AI tool</strong><span>The human directed the structure and final meaning. The AI tool organized ideas and drafted language.</span></div>
+    <div class="credits-entry"><p>Challenge and research</p><strong>AI tool</strong><span>Compared alternatives, challenged selected ideas, and checked outside sources.</span></div>
+    <div class="credits-entry"><p>Code and testing</p><strong>AI tool</strong><span>Wrote and revised code, ran automated checks, and published approved changes.</span></div>
+    <div class="credits-entry"><p>Judgment and release</p><strong>Human</strong><span>Reviewed, questioned, revised, approved, and made the final decision to publish.</span></div>
+    <div class="credits-entry credits-evidence"><p>Evidence connected</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
+    <p class="credits-end">End of example credits</p>
+  </div>`;
+}
+
 function renderHome() {
   document.title = 'Home | Human + AI Work Check';
   main.innerHTML = `
@@ -403,6 +417,7 @@ function renderHome() {
           <a class="button" href="#/creation-record">Create my Work Record <span aria-hidden="true">→</span></a>
           <a class="button button-secondary" href="#/sample">See an example</a>
         </div>
+        <p class="hero-limit"><strong>Founding Preview:</strong> Use the complete prototype free while the method and product are being tested.</p>
       </div>
       <aside class="credits-screen" aria-labelledby="credits-screen-title">
         <div class="credits-screen-toolbar">
@@ -411,15 +426,8 @@ function renderHome() {
         </div>
         <div class="credits-viewport">
           <div class="credits-track" id="credits-track">
-            <p class="credits-overline">A Work Record for</p>
-            <h2 id="credits-screen-title">Human + AI Work Check</h2>
-            <div class="credits-entry"><p>Purpose and main idea</p><strong>Human</strong><span>Originated the problem, purpose, and core method.</span></div>
-            <div class="credits-entry"><p>Structure and meaning</p><strong>Human + AI tool</strong><span>The human directed the structure and final meaning. The AI tool organized ideas and drafted language.</span></div>
-            <div class="credits-entry"><p>Challenge and research</p><strong>AI tool</strong><span>Compared alternatives, challenged selected ideas, and checked outside sources.</span></div>
-            <div class="credits-entry"><p>Code and testing</p><strong>AI tool</strong><span>Wrote and revised code, ran automated checks, and published approved changes.</span></div>
-            <div class="credits-entry"><p>Judgment and release</p><strong>Human</strong><span>Reviewed, questioned, revised, approved, and made the final decision to publish.</span></div>
-            <div class="credits-entry credits-evidence"><p>Evidence connected</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
-            <p class="credits-end">End of example credits</p>
+            ${homepageCreditsSequence()}
+            ${homepageCreditsSequence(true)}
           </div>
         </div>
         <p class="credits-screen-caption">The Work Record connects each credit to evidence instead of asking the finished page to prove how it was made. <a href="#/sample">View this site’s full Work Record.</a></p>
@@ -480,25 +488,10 @@ function renderHome() {
   `;
 
   const creditsScreen = document.querySelector('.credits-screen');
-  const creditsTrack = document.querySelector('.credits-track');
   const creditsToggle = document.querySelector('#credits-motion-toggle');
   creditsToggle?.addEventListener('click', () => {
-    if (creditsScreen.classList.contains('credits-finished')) {
-      creditsScreen.classList.remove('credits-finished', 'credits-paused');
-      creditsTrack.style.animation = 'none';
-      void creditsTrack.offsetHeight;
-      creditsTrack.style.animation = '';
-      creditsToggle.textContent = 'Pause credits';
-      return;
-    }
-
     const paused = creditsScreen.classList.toggle('credits-paused');
     creditsToggle.textContent = paused ? 'Resume credits' : 'Pause credits';
-  });
-
-  creditsTrack?.addEventListener('animationend', () => {
-    creditsScreen.classList.add('credits-finished');
-    creditsToggle.textContent = 'Replay credits';
   });
 }
 
@@ -2587,14 +2580,14 @@ function renderExamples() {
 function renderPricing() {
   document.title = 'Pricing | Human + AI Work Check';
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">Pricing</p><h1>Create a Work Record free.</h1><p>The public prototype is free and does not collect payment. Your entries stay in this browser unless you export them.</p></header>
+    <header class="page-header"><p class="eyebrow">Pricing</p><h1>Full access is open during the Founding Preview.</h1><p>Use every current tool free while the product is being tested. The permanent free option will help people find their credibility gap. Paid options will create, preserve, and maintain complete Work Records.</p></header>
     <div class="grid-2">
-      <article class="card pricing-card featured"><span class="stamp">Available in preview</span><h2>Free Preview</h2><p class="price">$0</p><ul><li>Work Record for one project at a time</li><li>Multiple people and AI systems</li><li>Contribution map and credits</li><li>Claims and supporting evidence</li><li>Privacy-aware public record</li><li>Short disclosure</li><li>Print, public HTML download, and private JSON backup</li><li>Optional Work Check</li></ul><a class="button" href="#/creation-record">Create a free Work Record</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned</span><h2>Project Record</h2><p class="price">Coming later</p><ul><li>Secure project storage</li><li>Dated updates</li><li>Plan-to-launch comparisons</li><li>Evidence management</li><li>Public, unlisted, or private records</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned</span><h2>Individual and Team</h2><p class="price">Coming later</p><ul><li>Multiple projects</li><li>Score and decision history</li><li>Reviewer assignments</li><li>Approval records</li><li>Reusable workflows</li><li>Shareable project cards</li></ul><a class="button button-secondary" href="#/examples">See use cases</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned human service</span><h2>Guided Review</h2><p class="price">Coming later</p><p>A facilitated review for projects that need outside examination or additional human capacity.</p><ul><li>Capacity and authority review</li><li>Evidence-gap review</li><li>Independent challenge</li><li>Documented findings</li></ul><p class="availability-note">Contact option coming later</p></article>
+      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Complete prototype access for early users who help test the method.</p><ul><li>Full Work Record</li><li>Multiple people and AI systems</li><li>Contribution map, claims, and evidence</li><li>Public record and short disclosure</li><li>Print, public HTML, and private backup</li><li>Complete Work Check</li></ul><a class="button" href="#/creation-record">Use the Founding Preview</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned one-time purchase</span><h2>Project Record</h2><p class="price">Price to be announced</p><p>Build a complete record for one work product you plan to publish, submit, deliver, or defend.</p><ul><li>Complete evidence-linked Work Record</li><li>Exact artifact and version</li><li>Full Work Check and recommendations</li><li>Downloadable and shareable record</li><li>One later record update</li></ul><a class="button button-secondary" href="#/sample">See a complete record</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Creator</h2><p class="price">Monthly pricing to be announced</p><p>Maintain evidence as your work develops instead of rebuilding the record after someone questions it.</p><ul><li>Multiple active projects</li><li>Version and decision history</li><li>Reusable creator and AI profiles</li><li>Evidence library</li><li>Public, unlisted, or private records</li><li>Recheck and update reminders</li></ul><a class="button button-secondary" href="#/examples">See when to use it</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Team</h2><p class="price">Pricing to be announced</p><p>Document who contributed, who was capable of checking the work, and who approved its release.</p><ul><li>Contributor confirmations</li><li>Reviewer assignments</li><li>Approval records</li><li>Reusable team workflows</li><li>Organization history and audit export</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
     </div>
-    <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> Payment may later add secure storage, collaboration, integrations, public or private sharing, and qualified review. It will never buy a stronger finding, higher score, or more favorable result.</p></div>
+    <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> Free access will reveal the gap. Paid options will create, preserve, share, and maintain the complete evidence record. Payment will never buy a stronger finding, higher score, or more favorable result.</p></div>
   </div>`;
 }
 
