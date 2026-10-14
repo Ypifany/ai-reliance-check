@@ -405,11 +405,11 @@ function renderHome() {
           <div class="credits-track">
             <p class="credits-overline">A Work Record for</p>
             <h2 id="credits-screen-title">Human + AI Work Check</h2>
-            <div class="credits-entry"><p>Purpose and main idea</p><strong>Cheryl Abram</strong><span>Originated the problem, purpose, and core method.</span></div>
-            <div class="credits-entry"><p>Structure and meaning</p><strong>Cheryl Abram + ChatGPT</strong><span>Cheryl directed the structure and final meaning. ChatGPT organized ideas and drafted language.</span></div>
-            <div class="credits-entry"><p>Challenge and research</p><strong>ChatGPT</strong><span>Compared alternatives, challenged selected ideas, and checked outside sources.</span></div>
-            <div class="credits-entry"><p>Code and testing</p><strong>ChatGPT</strong><span>Wrote and revised code, ran automated checks, and published approved changes.</span></div>
-            <div class="credits-entry"><p>Judgment and release</p><strong>Cheryl Abram</strong><span>Reviewed, questioned, revised, approved, and made the final decision to publish.</span></div>
+            <div class="credits-entry"><p>Purpose and main idea</p><strong>Human</strong><span>Originated the problem, purpose, and core method.</span></div>
+            <div class="credits-entry"><p>Structure and meaning</p><strong>Human + AI tool</strong><span>The human directed the structure and final meaning. The AI tool organized ideas and drafted language.</span></div>
+            <div class="credits-entry"><p>Challenge and research</p><strong>AI tool</strong><span>Compared alternatives, challenged selected ideas, and checked outside sources.</span></div>
+            <div class="credits-entry"><p>Code and testing</p><strong>AI tool</strong><span>Wrote and revised code, ran automated checks, and published approved changes.</span></div>
+            <div class="credits-entry"><p>Judgment and release</p><strong>Human</strong><span>Reviewed, questioned, revised, approved, and made the final decision to publish.</span></div>
             <div class="credits-entry credits-evidence"><p>Evidence connected</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
             <p class="credits-end">End of example credits</p>
           </div>
