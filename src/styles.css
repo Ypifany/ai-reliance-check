@@ -460,11 +460,18 @@ main [role="alert"] {
 }
 
 .credits-track {
+  text-align: center;
+  animation: credits-roll 42s linear infinite;
+  will-change: transform;
+}
+
+.credits-sequence {
   display: grid;
   gap: 2.6rem;
-  text-align: center;
-  animation: credits-roll 34s linear 1 forwards;
-  will-change: transform;
+}
+
+.credits-sequence + .credits-sequence {
+  margin-top: 2.6rem;
 }
 
 .credits-paused .credits-track {
@@ -537,14 +544,12 @@ main [role="alert"] {
 }
 
 @keyframes credits-roll {
-  0%,
-  7% {
+  from {
     transform: translateY(0);
   }
 
-  93%,
-  100% {
-    transform: translateY(calc(-100% + 350px));
+  to {
+    transform: translateY(calc(-50% - 1.3rem));
   }
 }
 
@@ -2794,6 +2799,10 @@ fieldset[aria-invalid="true"] {
     animation: none !important;
     transform: none !important;
     will-change: auto;
+  }
+
+  .credits-sequence[aria-hidden="true"] {
+    display: none;
   }
 }
 
