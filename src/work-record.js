@@ -738,7 +738,7 @@ export function buildCredits(recordInput, options = {}) {
         ? "AI use was not answered or established. Here are the credits and the evidence."
         : record.aiUse === "uncertain"
           ? "AI use is uncertain or incompletely documented. Here are the credits and the evidence."
-          : "AI was involved. Here are the credits and the evidence.",
+          : "Here are the credits and the evidence.",
     human,
     ai,
     finalAuthority: { ...record.finalDecision },

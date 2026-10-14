@@ -410,10 +410,10 @@ test("AI use has an internal unknown state and must be answered for completeness
   assert.match(buildDisclosure(record, deterministicOptions()), /has not been answered or established/i);
 });
 
-test("uncertain AI use does not assert that AI was involved", () => {
+test("uncertain AI use stays distinct from a documented AI contribution", () => {
   const record = publishableRecord({ aiUse: "uncertain" });
   assert.match(buildCredits(record, deterministicOptions()).headline, /uncertain or incompletely documented/i);
-  assert.doesNotMatch(buildCredits(record, deterministicOptions()).headline, /^AI was involved/i);
+  assert.doesNotMatch(buildCredits(record, deterministicOptions()).headline, /^Here are the credits/i);
 });
 
 test("privacy, evidence relationship, and system evidence basis use conservative defaults", () => {
@@ -445,7 +445,7 @@ test("credits and disclosure name human and AI roles without a false contributio
   const credits = buildCredits(record, deterministicOptions());
   const disclosure = buildDisclosure(record, deterministicOptions());
 
-  assert.equal(credits.headline, "AI was involved. Here are the credits and the evidence.");
+  assert.equal(credits.headline, "Here are the credits and the evidence.");
   assert.equal(credits.human[0].name, "Cheryl Abram");
   assert.equal(credits.ai[0].name, "ChatGPT 5.6 Sol Ultra");
   assert.match(credits.modelHistoryNote, /has not been verified/i);

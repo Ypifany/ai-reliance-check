@@ -1,6 +1,6 @@
 # Human + AI Work Check
 
-**AI was involved. Here are the credits and the evidence.**
+**Show how the work was made.**
 
 Human + AI Work Check is a provenance-first public prototype. Its primary tool creates an evidence-backed Work Record for one artifact version. Its optional Work Check examines whether a person’s capacity, an AI system and role, the workflow, and the stakes support relying on AI in that role.
 
