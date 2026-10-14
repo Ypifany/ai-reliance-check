@@ -99,7 +99,7 @@ function renderRoute(hash, initial = {}) {
 }
 
 const routes = [
-  { name: 'home', route: '#/', expected: 'Show how the work was made.' },
+  { name: 'home', route: '#/', expected: 'Your credibility is being questioned.' },
   { name: 'record-step-1', route: '#/creation-record', expected: 'Identify the work and its exact version.' },
   { name: 'sample', route: '#/sample', expected: 'How this website was made.' },
   { name: 'check', route: '#/check', expected: 'What decision are you making now?' },
