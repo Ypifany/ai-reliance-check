@@ -386,23 +386,30 @@ function renderHome() {
   main.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">Credits and evidence for human + AI work</p>
-        <h1>Show how the work was made.</h1>
-        <p class="hero-definition">Create a Work Record showing what you did, what each AI system did, and what evidence supports that account.</p>
-        <p class="hero-promise"><strong>The Work Record creates a dated account of human origination, contribution, judgment, decisions, and AI involvement, and it can connect evidence to a specific artifact version.</strong> It supports an authorship claim and makes that claim examinable.</p>
+        <p class="hero-kicker">The problem</p>
+        <h1>Your credibility is being questioned.</h1>
+        <ul class="hero-problem-list">
+          <li>An AI checker says the work is not yours.</li>
+          <li>“AI helped” becomes “AI did everything.”</li>
+          <li>Your contribution disappears.</li>
+        </ul>
+        <div class="hero-solution">
+          <p class="hero-solution-label">The solution</p>
+          <h2>Show how the work was made.</h2>
+          <p>Create a Work Record showing what the human did, what the AI tool did, and the evidence behind both.</p>
+        </div>
         <div class="hero-actions">
           <a class="button" href="#/creation-record">Create my Work Record <span aria-hidden="true">→</span></a>
-          <a class="button button-secondary" href="#/sample">See this site’s Work Record</a>
+          <a class="button button-secondary" href="#/sample">See an example</a>
         </div>
-        <p class="hero-limit"><strong>Not an AI detector. No human-versus-AI percentage.</strong> The record follows the work instead of guessing from the finished product.</p>
       </div>
       <aside class="credits-screen" aria-labelledby="credits-screen-title">
         <div class="credits-screen-toolbar">
           <span>Example credits for this website</span>
-          <button class="credits-motion-toggle" id="credits-motion-toggle" type="button" aria-pressed="false">Pause credits</button>
+          <button class="credits-motion-toggle" id="credits-motion-toggle" type="button" aria-controls="credits-track">Pause credits</button>
         </div>
         <div class="credits-viewport">
-          <div class="credits-track">
+          <div class="credits-track" id="credits-track">
             <p class="credits-overline">A Work Record for</p>
             <h2 id="credits-screen-title">Human + AI Work Check</h2>
             <div class="credits-entry"><p>Purpose and main idea</p><strong>Human</strong><span>Originated the problem, purpose, and core method.</span></div>
@@ -422,7 +429,7 @@ function renderHome() {
       <div class="section-heading">
         <div>
           <p class="kicker">The missing middle</p>
-          <h2>The finished work cannot tell the whole story.</h2>
+          <h2>The result hides the process.</h2>
         </div>
         <p class="lede">The answer should come from records of the work, not a guess about how the final product sounds.</p>
       </div>
@@ -480,19 +487,16 @@ function renderHome() {
       creditsTrack.style.animation = 'none';
       void creditsTrack.offsetHeight;
       creditsTrack.style.animation = '';
-      creditsToggle.setAttribute('aria-pressed', 'false');
       creditsToggle.textContent = 'Pause credits';
       return;
     }
 
     const paused = creditsScreen.classList.toggle('credits-paused');
-    creditsToggle.setAttribute('aria-pressed', String(paused));
-    creditsToggle.textContent = paused ? 'Continue credits' : 'Pause credits';
+    creditsToggle.textContent = paused ? 'Resume credits' : 'Pause credits';
   });
 
   creditsTrack?.addEventListener('animationend', () => {
     creditsScreen.classList.add('credits-finished');
-    creditsToggle.setAttribute('aria-pressed', 'false');
     creditsToggle.textContent = 'Replay credits';
   });
 }
