@@ -142,7 +142,7 @@ const routes = [
   { name: 'method', route: '#/method', expected: 'Follow the work, not the writing style.' },
   { name: 'research', route: '#/research', expected: 'Practice-based, then compared with established work.' },
   { name: 'examples', route: '#/examples', expected: 'Different work needs different records and boundaries.' },
-  { name: 'pricing', route: '#/pricing', expected: 'Create a Work Record free.' },
+  { name: 'pricing', route: '#/pricing', expected: 'Full access is open during the Founding Preview.' },
   { name: 'faq', route: '#/faq', expected: 'Plain answers about what this tool can and cannot say.' },
 ];
 
