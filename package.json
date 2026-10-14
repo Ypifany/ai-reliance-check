@@ -1,11 +1,12 @@
 {
   "name": "ai-reliance-check",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "smoke": "node scripts/smoke-built.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test",
     "validate": "html-validate index.html"
