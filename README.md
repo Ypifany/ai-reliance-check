@@ -71,4 +71,4 @@ See the in-product **How it works** page for the complete explanation.
 
 ## License and reuse
 
-No open-source license has been assigned yet. Until one is added, all rights are reserved by the repository owner.
+© 2026 Cheryl Abram. All rights reserved. No open-source license has been granted. See [COPYRIGHT.md](COPYRIGHT.md) for the scope of the copyright claim and reuse notice.

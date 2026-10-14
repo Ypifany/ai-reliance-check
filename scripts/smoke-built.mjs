@@ -103,6 +103,7 @@ const routes = [
   { name: 'record-step-1', route: '#/creation-record', expected: 'Identify the work and its exact version.' },
   { name: 'sample', route: '#/sample', expected: 'How this website was made.' },
   { name: 'check', route: '#/check', expected: 'What decision are you making now?' },
+  { name: 'copyright', route: '#/copyright', expected: 'Copyright protects the expression, not the method.' },
   {
     name: 'check-missing-legacy-authority',
     route: '#/check',
