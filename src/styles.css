@@ -352,6 +352,146 @@ main [role="alert"] {
   font-size: 0.88rem;
 }
 
+.credits-screen {
+  overflow: hidden;
+  border: 1px solid #38524a;
+  border-radius: var(--radius);
+  background: #10221d;
+  color: #f8f1e3;
+  box-shadow: 0 18px 46px rgba(16, 34, 29, 0.2);
+}
+
+.credits-screen-toolbar {
+  display: flex;
+  min-height: 48px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid rgba(248, 241, 227, 0.18);
+  background: rgba(255, 255, 255, 0.05);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.credits-motion-toggle {
+  min-height: 34px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid rgba(248, 241, 227, 0.6);
+  border-radius: 5px;
+  background: transparent;
+  color: #f8f1e3;
+  cursor: pointer;
+  font-family: var(--sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.credits-motion-toggle:hover {
+  background: rgba(248, 241, 227, 0.12);
+}
+
+.credits-viewport {
+  height: 430px;
+  overflow: hidden;
+  padding: 2.25rem 1.5rem;
+  mask-image: linear-gradient(to bottom, transparent 0, black 8%, black 92%, transparent 100%);
+}
+
+.credits-track {
+  display: grid;
+  gap: 2.6rem;
+  text-align: center;
+  animation: credits-roll 34s linear 1 forwards;
+  will-change: transform;
+}
+
+.credits-paused .credits-track {
+  animation-play-state: paused;
+}
+
+.credits-overline,
+.credits-end,
+.credits-entry p {
+  margin: 0;
+  color: #e8bc68;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 750;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.credits-track h2 {
+  max-width: 15ch;
+  margin: -1.65rem auto 0;
+  color: #fffaf0;
+  font-family: var(--serif);
+  font-size: clamp(1.8rem, 3vw, 2.5rem);
+}
+
+.credits-entry {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.credits-entry strong {
+  color: #fffaf0;
+  font-family: var(--serif);
+  font-size: 1.25rem;
+}
+
+.credits-entry span {
+  max-width: 38ch;
+  margin-inline: auto;
+  color: #d8e2dc;
+  font-size: 0.92rem;
+}
+
+.credits-evidence strong {
+  max-width: 32ch;
+  margin-inline: auto;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+
+.credits-end {
+  padding-bottom: 2rem;
+  color: #d8e2dc;
+}
+
+.credits-screen-caption {
+  margin: 0;
+  padding: 0.9rem 1rem 1rem;
+  border-top: 1px solid rgba(248, 241, 227, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d8e2dc;
+  font-size: 0.82rem;
+}
+
+.credits-screen-caption a {
+  color: #fffaf0;
+  font-weight: 700;
+}
+
+@keyframes credits-roll {
+  0%,
+  7% {
+    transform: translateY(0);
+  }
+
+  93%,
+  100% {
+    transform: translateY(calc(-100% + 350px));
+  }
+}
+
 .kitchen-figure {
   margin: 0;
   overflow: hidden;
@@ -389,6 +529,17 @@ main [role="alert"] {
 
 .situations-section {
   border-top: 1px solid var(--border);
+}
+
+.missing-middle-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(0, 1.1fr);
+  gap: clamp(1.5rem, 4vw, 3rem);
+  align-items: start;
+}
+
+.missing-middle-grid .situation-list {
+  grid-template-columns: 1fr;
 }
 
 .eyebrow,
@@ -2255,6 +2406,7 @@ fieldset[aria-invalid="true"] {
 @media (max-width: 900px) {
   .hero,
   .section-heading,
+  .missing-middle-grid,
   .sample-result,
   .assessment-shell,
   .result-header,
@@ -2267,8 +2419,13 @@ fieldset[aria-invalid="true"] {
   }
 
   .hero .sample-card,
+  .credits-screen,
   .kitchen-figure {
     max-width: 600px;
+  }
+
+  .credits-screen {
+    width: 100%;
   }
 
   .kitchen-figure {
@@ -2550,6 +2707,21 @@ fieldset[aria-invalid="true"] {
     transition-duration: 0.01ms !important;
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
+  }
+
+  .credits-motion-toggle {
+    display: none;
+  }
+
+  .credits-viewport {
+    overflow-y: auto;
+    mask-image: none;
+  }
+
+  .credits-track {
+    animation: none !important;
+    transform: none !important;
+    will-change: auto;
   }
 }
 

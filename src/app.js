@@ -396,10 +396,26 @@ function renderHome() {
         </div>
         <p class="hero-limit"><strong>Not an AI detector. No human-versus-AI percentage.</strong> The record follows the work instead of guessing from the finished product.</p>
       </div>
-      <figure class="kitchen-figure">
-        <img src="${homeBakingPhoto}" alt="A woman in a kitchen smiles at a finished chocolate cake beside an open recipe notebook." />
-        <figcaption><strong>The finished cake cannot show who developed the recipe, made the choices, corrected mistakes, or decided it was ready.</strong> Finished work cannot either.</figcaption>
-      </figure>
+      <aside class="credits-screen" aria-labelledby="credits-screen-title">
+        <div class="credits-screen-toolbar">
+          <span>Example credits for this website</span>
+          <button class="credits-motion-toggle" id="credits-motion-toggle" type="button" aria-pressed="false">Pause credits</button>
+        </div>
+        <div class="credits-viewport">
+          <div class="credits-track">
+            <p class="credits-overline">A Work Record for</p>
+            <h2 id="credits-screen-title">Human + AI Work Check</h2>
+            <div class="credits-entry"><p>Purpose and main idea</p><strong>Cheryl Abram</strong><span>Originated the problem, purpose, and core method.</span></div>
+            <div class="credits-entry"><p>Structure and meaning</p><strong>Cheryl Abram + ChatGPT</strong><span>Cheryl directed the structure and final meaning. ChatGPT organized ideas and drafted language.</span></div>
+            <div class="credits-entry"><p>Challenge and research</p><strong>ChatGPT</strong><span>Compared alternatives, challenged selected ideas, and checked outside sources.</span></div>
+            <div class="credits-entry"><p>Code and testing</p><strong>ChatGPT</strong><span>Wrote and revised code, ran automated checks, and published approved changes.</span></div>
+            <div class="credits-entry"><p>Judgment and release</p><strong>Cheryl Abram</strong><span>Reviewed, questioned, revised, approved, and made the final decision to publish.</span></div>
+            <div class="credits-entry credits-evidence"><p>Evidence connected</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
+            <p class="credits-end">End of example credits</p>
+          </div>
+        </div>
+        <p class="credits-screen-caption">The Work Record connects each credit to evidence instead of asking the finished page to prove how it was made. <a href="#/sample">View this site’s full Work Record.</a></p>
+      </aside>
     </section>
 
     <section class="section section-compact situations-section">
@@ -410,12 +426,18 @@ function renderHome() {
         </div>
         <p class="lede">The answer should come from records of the work, not a guess about how the final product sounds.</p>
       </div>
-      <ul class="situation-list" aria-label="Common situations involving AI">
-        <li><span>Question</span><q>This sounds like AI wrote it.</q></li>
-        <li><span>Question</span><q>Tell me what AI actually did.</q></li>
-        <li><span>Question</span><q>Does this polished work show what the person can really do?</q></li>
-        <li><span>Question</span><q>Who checked the AI before this was published?</q></li>
-      </ul>
+      <div class="missing-middle-grid">
+        <figure class="kitchen-figure">
+          <img src="${homeBakingPhoto}" alt="A woman in a kitchen smiles at a finished chocolate cake beside an open recipe notebook." />
+          <figcaption><strong>The finished cake cannot show who developed the recipe, made the choices, corrected mistakes, or decided it was ready.</strong> Finished work cannot either.</figcaption>
+        </figure>
+        <ul class="situation-list" aria-label="Common situations involving AI">
+          <li><span>Question</span><q>This sounds like AI wrote it.</q></li>
+          <li><span>Question</span><q>Tell me what AI actually did.</q></li>
+          <li><span>Question</span><q>Does this polished work show what the person can really do?</q></li>
+          <li><span>Question</span><q>Who checked the AI before this was published?</q></li>
+        </ul>
+      </div>
     </section>
 
     <section class="section">
@@ -448,6 +470,31 @@ function renderHome() {
       </div>
     </section>
   `;
+
+  const creditsScreen = document.querySelector('.credits-screen');
+  const creditsTrack = document.querySelector('.credits-track');
+  const creditsToggle = document.querySelector('#credits-motion-toggle');
+  creditsToggle?.addEventListener('click', () => {
+    if (creditsScreen.classList.contains('credits-finished')) {
+      creditsScreen.classList.remove('credits-finished', 'credits-paused');
+      creditsTrack.style.animation = 'none';
+      void creditsTrack.offsetHeight;
+      creditsTrack.style.animation = '';
+      creditsToggle.setAttribute('aria-pressed', 'false');
+      creditsToggle.textContent = 'Pause credits';
+      return;
+    }
+
+    const paused = creditsScreen.classList.toggle('credits-paused');
+    creditsToggle.setAttribute('aria-pressed', String(paused));
+    creditsToggle.textContent = paused ? 'Continue credits' : 'Pause credits';
+  });
+
+  creditsTrack?.addEventListener('animationend', () => {
+    creditsScreen.classList.add('credits-finished');
+    creditsToggle.setAttribute('aria-pressed', 'false');
+    creditsToggle.textContent = 'Replay credits';
+  });
 }
 
 function stageCard(number, eyebrow, title, copy, stage, label) {
