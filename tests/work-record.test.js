@@ -34,7 +34,7 @@ function publishableRecord(overrides = {}) {
     schemaVersion: 3,
     id: "record-1",
     status: "public-prototype",
-    title: "Human + AI Work Check",
+    title: "Human + AI Work",
     description: "A public prototype.",
     creator: { name: "Cheryl Abram", role: "Creator" },
     artifact: { url: "https://example.com/work", version: "abc123", date: "2026-10-14" },
@@ -501,7 +501,7 @@ test("summary-only and private public records do not expose evidence details", (
   assert.doesNotMatch(JSON.stringify(projected), /SECRET_LABEL|SECRET_DESCRIPTION|private-token/);
 });
 
-test("Work Check outcome and readiness context survive normalization and public projection", () => {
+test("Load Test outcome and readiness context survive normalization and public projection", () => {
   const record = publishableRecord({
     outcome: { intended: "Useful learning", failureScenario: "Bad guidance", failureImpact: "Wasted time", severity: "moderate" },
     readiness: { workCheckId: "check-1", stage: "release", decision: "Supported with named conditions", checkedAt: NOW },

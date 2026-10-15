@@ -291,7 +291,7 @@ function saveAssessment() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(assessment));
     return true;
   } catch {
-    showToast('Unable to save this Work Check in your browser. Export it before leaving this page.');
+    showToast('Unable to save this Load Test in your browser. Export it before leaving this page.');
     return false;
   }
 }
@@ -359,6 +359,7 @@ function route() {
   const routes = {
     '/': renderHome,
     '/check': renderCheck,
+    '/load-test': renderCheck,
     '/sample': renderSample,
     '/creation-record': renderCreationRecord,
     '/method': renderMethod,
@@ -375,8 +376,9 @@ function route() {
 }
 
 function setActiveNav(path) {
+  const activePath = path === '/check' ? '/load-test' : path;
   document.querySelectorAll('.site-nav a').forEach((link) => {
-    const current = link.getAttribute('href') === `#${path}`;
+    const current = link.getAttribute('href') === `#${activePath}`;
     if (current) link.setAttribute('aria-current', 'page');
     else link.removeAttribute('aria-current');
   });
@@ -385,7 +387,7 @@ function setActiveNav(path) {
 function homepageCreditsSequence(duplicate = false) {
   return `<div class="credits-sequence"${duplicate ? ' aria-hidden="true"' : ''}>
     <p class="credits-overline">A Work Record for</p>
-    <h2${duplicate ? '' : ' id="credits-screen-title"'}>Human + AI Work Check</h2>
+    <h2${duplicate ? '' : ' id="credits-screen-title"'}>Human + AI Work</h2>
     <div class="credits-entry"><p>Originating idea and purpose</p><strong>Human</strong><span>Identified the problem and decided what the product should accomplish.</span></div>
     <div class="credits-entry"><p>Source material and core method</p><strong>Human</strong><span>Supplied the experience, examples, principles, and method behind the product.</span></div>
     <div class="credits-entry"><p>Product direction and requirements</p><strong>Human</strong><span>Defined the audience, boundaries, features, and changes to keep or reject.</span></div>
@@ -400,7 +402,7 @@ function homepageCreditsSequence(duplicate = false) {
 }
 
 function renderHome() {
-  document.title = 'Home | Human + AI Work Check';
+  document.title = 'Home | Human + AI Work';
   main.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
@@ -420,6 +422,7 @@ function renderHome() {
           <a class="button" href="#/creation-record">Create my Work Record <span aria-hidden="true">→</span></a>
           <a class="button button-secondary" href="#/sample">See an example</a>
         </div>
+        <p class="hero-limit"><strong>Not an AI detector.</strong> It does not scan writing style, assign a human-versus-AI percentage, or rewrite work to bypass detection. It documents the process and links claims to evidence.</p>
         <p class="hero-limit"><strong>Founding Preview:</strong> Use the complete prototype free while the method and product are being tested.</p>
       </div>
       <aside class="credits-screen" aria-labelledby="credits-screen-title">
@@ -441,9 +444,9 @@ function renderHome() {
       <div class="section-heading">
         <div>
           <p class="kicker">The missing middle</p>
-          <h2>The result hides the process.</h2>
+          <h2>AI detectors guess from the finished work.</h2>
         </div>
-        <p class="lede">The answer should come from records of the work, not a guess about how the final product sounds.</p>
+        <p class="lede">A Work Record documents the work behind it, using records of the process instead of a guess about how the final product sounds.</p>
       </div>
       <div class="missing-middle-grid">
         <figure class="kitchen-figure">
@@ -461,12 +464,12 @@ function renderHome() {
 
     <section class="section">
       <div class="section-heading">
-        <div><p class="kicker">Two connected tools</p><h2>Start with the record. Add the check when reliance matters.</h2></div>
-        <p class="lede">Use either tool by itself, or connect them when you need both a record of contribution and a decision about the AI role.</p>
+        <div><p class="kicker">Two connected tools</p><h2>Document the work. Test the arrangement.</h2></div>
+        <p class="lede">The Work Record shows how the work was made. The Load Test checks whether the arrangement can carry it. Use either tool by itself, or connect them.</p>
       </div>
       <div class="grid-2">
-        <article class="card"><span class="card-number">01</span><h3>Work Record</h3><p><strong>How was this work made?</strong></p><p>Document the exact artifact, what each participant did, which AI systems were involved, what the evidence supports, and who made the final decision.</p><a class="button" href="#/creation-record">Create a Work Record</a></article>
-        <article class="card"><span class="card-number">02</span><h3>Work Check</h3><p><strong>Does this exact arrangement support the role you are giving AI, in relation to your current capacity?</strong></p><p>Use it before starting, before launch, or during real use when an AI output or action could create meaningful consequences.</p><a class="button button-secondary" href="#/check">Run a Work Check</a></article>
+        <article class="card"><span class="card-number">01</span><h3>Work Record</h3><p><strong>Who did what?</strong></p><p>Create a dated receipt and set of credits for one finished product. Record what the human did, what each AI system did, who made the final decisions, and what evidence supports the account.</p><a class="button" href="#/creation-record">Create a Work Record</a></article>
+        <article class="card"><span class="card-number">02</span><h3>Load Test</h3><p><strong>Can this arrangement carry the work?</strong></p><p>Check whether your current capacity, the role assigned to AI, the workflow and controls, and what is at stake support relying on this arrangement.</p><a class="button button-secondary" href="#/load-test">Run a Load Test</a></article>
       </div>
     </section>
 
@@ -474,8 +477,7 @@ function renderHome() {
       <div class="callout">
         <p class="kicker">A different question</p>
         <h2 id="fluency-capacity-heading">Fluency is not the same as capacity.</h2>
-        <p><strong>AI fluency helps you work with AI.</strong> The Work Check asks something more specific: Does this exact arrangement support the role you are giving AI, in relation to your current capacity?</p>
-        <p>Your result considers what you can currently judge, inspect, change, stop, and sustain in this task, not only how well you can prompt or collaborate.</p>
+        <p><strong>AI fluency helps you work with AI.</strong> A Load Test asks whether this exact arrangement can carry this particular work. It considers what you can currently judge, inspect, change, stop, and sustain.</p>
         <p><a href="#/method">See the difference in the method.</a></p>
       </div>
     </section>
@@ -514,7 +516,7 @@ function stageCard(number, eyebrow, title, copy, stage, label) {
     <p class="kicker">${eyebrow}</p>
     <h3>${title}</h3>
     <p>${copy}</p>
-    <a class="button button-secondary" href="#/check" data-start-stage="${stage}">${label}</a>
+    <a class="button button-secondary" href="#/load-test" data-start-stage="${stage}">${label}</a>
   </article>`;
 }
 
@@ -527,14 +529,14 @@ function bindStageLinks() {
     link.addEventListener('click', (event) => {
       event.preventDefault();
       if (!startAssessment(link.dataset.startStage)) return;
-      if (location.hash === '#/check') renderCheck();
-      else location.hash = '#/check';
+      if (location.hash === '#/load-test' || location.hash === '#/check') renderCheck();
+      else location.hash = '#/load-test';
     });
   });
 }
 
 function startAssessment(stage) {
-  if (assessment.project?.task && !window.confirm('Start a new check? Export the saved project first if you want to keep a separate copy.')) {
+  if (assessment.project?.task && !window.confirm('Start a new Load Test? Export the saved project first if you want to keep a separate copy.')) {
     return false;
   }
   assessment = makeAssessment();
@@ -546,7 +548,7 @@ function startAssessment(stage) {
 }
 
 function renderCheck() {
-  document.title = 'Check a Project | Human + AI Work Check';
+  document.title = 'Load Test | Human + AI Work';
   if (checkView === 'setup') renderSetup();
   else if (checkView === 'questions') renderQuestion();
   else if (checkView === 'review') renderReview();
@@ -558,23 +560,24 @@ function renderCheckEntry() {
   const savedNotice = assessment.needsReassessment
     ? `<div class="callout callout-warning"><p><strong>Your saved project used an earlier method.</strong> The project setup was preserved, but its old answers will not be silently rescored under method ${escapeHTML(METHOD_VERSION)}.</p><button class="text-button" id="resume-check" type="button">Reassess this project</button></div>`
     : assessment.project?.task && !assessment.completed
-    ? `<div class="callout"><p><strong>You have a saved check in this browser.</strong> ${escapeHTML(assessment.project.task)}</p><button class="text-button" id="resume-check" type="button">Resume where you left off</button></div>`
+    ? `<div class="callout"><p><strong>You have a saved Load Test in this browser.</strong> ${escapeHTML(assessment.project.task)}</p><button class="text-button" id="resume-check" type="button">Resume where you left off</button></div>`
     : '';
 
   main.innerHTML = `<div class="page">
     <header class="page-header">
-      <p class="eyebrow">Check a project</p>
-      <h1>What decision are you making now?</h1>
-      <p>The questions change depending on whether you are planning the work, ready to launch it, or reviewing what happened in real use.</p>
+      <p class="eyebrow">Load Test</p>
+      <h1>When are you checking the arrangement?</h1>
+      <p>Choose before the work starts, before release, or after people begin using it. The questions change with the stage.</p>
     </header>
     ${savedNotice}
     <section aria-labelledby="choose-check-heading">
-      <h2 class="sr-only" id="choose-check-heading">Choose when you are checking the project</h2>
+      <h2 class="sr-only" id="choose-check-heading">Choose when to run the Load Test</h2>
       <div class="grid-3">
-        ${stageCard('01', 'I am planning work that may use AI', 'Plan Readiness', 'See what role the proposed arrangement can support before the work begins.', 'plan', 'Plan the work')}
-        ${stageCard('02', 'I am ready to publish, send, or launch', 'Launch Support', 'Check what actually happened and whether the reliance is supported before release.', 'release', 'Check before launch')}
-        ${stageCard('03', 'People are already using the work', 'Current-Use Support', 'Review results, errors, and consequences before continuing, expanding, limiting, or stopping.', 'live', 'Review current use')}
+        ${stageCard('01', 'Before the work starts', 'Plan Readiness', 'Test whether the proposed arrangement can support the AI role.', 'plan', 'Plan the work')}
+        ${stageCard('02', 'Before I publish, send, or launch', 'Launch Support', 'Test what actually happened before you rely on the result.', 'release', 'Test before launch')}
+        ${stageCard('03', 'People are already using it', 'Current-Use Support', 'Compare the arrangement with actual results, errors, and consequences.', 'live', 'Review current use')}
       </div>
+      <p class="helper-text">A Load Test does not rate you or the model in general. It tests one arrangement for one job.</p>
     </section>
     <section class="section section-compact" aria-labelledby="check-output-heading">
       <div class="section-heading">
@@ -611,12 +614,12 @@ function renderSetup(error = [], focusId = '') {
   const p = assessment.project;
   const stage = stagePrompts(assessment.stage);
   const errors = normalizeFormErrors(error);
-  document.title = `${errors.length ? 'Error: ' : ''}Check a Project | Human + AI Work Check`;
+  document.title = `${errors.length ? 'Error: ' : ''}Load Test | Human + AI Work`;
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
       <section class="assessment-main setup-card">
-        <div class="progress-row"><span>PROJECT SETUP</span><span>Setup takes about 2 minutes; the full check depends on your project</span></div>
-        <div class="progress-track" role="progressbar" aria-label="Project check progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8" aria-valuetext="Project setup"><span style="width: 8%"></span></div>
+        <div class="progress-row"><span>PROJECT SETUP</span><span>Setup takes about 2 minutes; the full Load Test depends on your project</span></div>
+        <div class="progress-track" role="progressbar" aria-label="Load Test progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="8" aria-valuetext="Project setup"><span style="width: 8%"></span></div>
         <p class="eyebrow">${stageLabel(assessment.stage)}</p>
         <h1>${escapeHTML(stage.setupHeading)}</h1>
         <p class="question-why">${escapeHTML(stage.setupIntro)}</p>
@@ -673,7 +676,7 @@ function renderSetup(error = [], focusId = '') {
               ${p.systems.map((system, index) => systemEditor(system, index, p.systems.length, errors)).join('')}
             </div>
             <fieldset class="fieldset consequential-system-group">
-              <legend>Which system has the most consequential role in this check?</legend>
+              <legend>Which system has the most consequential role in this Load Test?</legend>
               <div class="choice-grid">${p.systems.map((system, index) => `<label class="choice"><input type="radio" name="primarySystemId" value="${escapeHTML(system.id)}" ${system.id === p.primarySystemId ? 'checked' : ''} required /><span><strong>${escapeHTML(system.product || `System ${index + 1}`)}</strong><span>The detailed performance questions will focus on this system and role.</span></span></label>`).join('')}</div>
             </fieldset>
             ${fieldError(errors, 'systems-group')}
@@ -949,13 +952,13 @@ function renderQuestion(error = [], draftAnswer = null) {
   const answer = draftAnswer || assessment.answers[question.id] || {};
   const progress = Math.round(((currentQuestionIndex + 1) / (questions.length + 1)) * 100);
   const errors = normalizeFormErrors(error);
-  document.title = `${errors.length ? 'Error: ' : ''}Check a Project | Human + AI Work Check`;
+  document.title = `${errors.length ? 'Error: ' : ''}Load Test | Human + AI Work`;
 
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
       <section class="assessment-main question-card">
         <div class="progress-row"><span>${escapeHTML(DIMENSIONS[question.dimension]?.label || question.dimension || 'EVIDENCE')}</span><span>Question ${currentQuestionIndex + 1} of ${questions.length}</span></div>
-        <div class="progress-track" role="progressbar" aria-label="Project check progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}" aria-valuetext="Question ${currentQuestionIndex + 1} of ${questions.length}"><span style="width: ${progress}%"></span></div>
+        <div class="progress-track" role="progressbar" aria-label="Load Test progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${progress}" aria-valuetext="Question ${currentQuestionIndex + 1} of ${questions.length}"><span style="width: ${progress}%"></span></div>
         <p class="eyebrow">${stageLabel(assessment.stage)}</p>
         <h1>${escapeHTML(question.prompt)}</h1>
         <p class="question-why">${escapeHTML(question.why || 'Choose the answer that best describes what is true now, not what you intend to do later.')}</p>
@@ -1086,7 +1089,7 @@ function stageLabel(stage) {
     plan: 'Plan Readiness',
     release: 'Launch Support',
     live: 'Current-Use Support',
-  }[stage] || 'Project check';
+  }[stage] || 'Load Test';
 }
 
 function stagePrompts(stage) {
@@ -1138,8 +1141,8 @@ function renderReview(error = '') {
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
       <section class="assessment-main setup-card">
-        <div class="progress-row"><span>FINAL CHECK</span><span>Review before your result</span></div>
-        <div class="progress-track" role="progressbar" aria-label="Project check progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="94" aria-valuetext="Final review before result"><span style="width: 94%"></span></div>
+        <div class="progress-row"><span>LOAD TEST REVIEW</span><span>Review before your result</span></div>
+        <div class="progress-track" role="progressbar" aria-label="Load Test progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="94" aria-valuetext="Final review before result"><span style="width: 94%"></span></div>
         <p class="eyebrow">${stageLabel(assessment.stage)}</p>
         <h1>${assessment.stage === 'plan' ? 'Confirm the planned boundaries.' : assessment.stage === 'release' ? 'Confirm the launch boundaries.' : 'Confirm the current operating boundaries.'}</h1>
         <p class="question-why">Some gaps limit the supported role even when other answers are strong. That includes unknown access, missing approval, or a serious problem that has not been fixed.</p>
@@ -1345,7 +1348,7 @@ function submitReview(event) {
 function renderResult() {
   const result = scoreAssessment(assessment);
   const p = assessment.project;
-  document.title = `${p.name || stageLabel(assessment.stage)} Result | Human + AI Work Check`;
+  document.title = `${p.name || stageLabel(assessment.stage)} Load Test Result | Human + AI Work`;
   const primarySystem = p.systems.find((system) => system.id === p.primarySystemId) || p.systems[0];
   const dimensionLabels = Object.fromEntries(Object.entries(DIMENSIONS).map(([key, value]) => [key, value.label]));
   const authorization = result.authorization || {};
@@ -1374,7 +1377,7 @@ function renderResult() {
     </header>
 
     <section class="project-context card" aria-labelledby="result-context-heading">
-      <div class="section-heading-compact"><p class="kicker">Your recorded arrangement</p><h2 id="result-context-heading">What was checked?</h2></div>
+      <div class="section-heading-compact"><p class="kicker">Your recorded arrangement</p><h2 id="result-context-heading">What did this Load Test cover?</h2></div>
       <dl class="context-list">
         ${contextItem('Work', p.task || 'Not recorded')}
         ${contextItem('Person assessed', 'You, plus any capable reviewer actually included in the recorded workflow')}
@@ -1385,7 +1388,7 @@ function renderResult() {
         ${contextItem('Serious failure', p.failureScenario || 'Not recorded')}
         ${contextItem('Possible impact', p.failureImpact || 'Not recorded')}
         ${contextItem('Impact level', consequenceLabel)}
-        ${contextItem('Check completed', `${formatDate(date)} using method ${METHOD_VERSION}`)}
+        ${contextItem('Load Test completed', `${formatDate(date)} using method ${METHOD_VERSION}`)}
       </dl>
     </section>
 
@@ -1411,7 +1414,7 @@ function renderResult() {
         <h3 id="quick-actions-heading">Three ways the result can change</h3>
         <div class="grid-3">
           <article class="card"><p class="kicker">Raise operational support</p><p>${scoreRaiser ? escapeHTML(scoreRaiser.action) : 'No additional score-raising action was generated from the current answers.'}</p>${scoreRaiser ? `<p><strong>If completed and confirmed:</strong> up to ${scoreRaiser.scoreEffect.projectedScore} (+${scoreRaiser.scoreEffect.projectedChange}).</p>` : ''}</article>
-          <article class="card"><p class="kicker">Reduce the reliance required</p><p>${escapeHTML(roleBoundary?.action || 'Keep the AI inside the highest role currently supported and do not expand its authority without another check.')}</p><p class="helper-text">This changes the boundary, not the score.</p></article>
+          <article class="card"><p class="kicker">Reduce the reliance required</p><p>${escapeHTML(roleBoundary?.action || 'Keep the AI inside the highest role currently supported and do not expand its authority without another Load Test.')}</p><p class="helper-text">This changes the boundary, not the score.</p></article>
           <article class="card"><p class="kicker">Strengthen the evidence</p><p>${escapeHTML(evidenceRaiser?.action || 'Preserve the tests, decisions, approvals, and outcome records that support this arrangement.')}</p><p class="helper-text">This can strengthen Evidence Strength without changing operational performance.</p></article>
         </div>
       </div>
@@ -1427,7 +1430,7 @@ function renderResult() {
     <details class="result-disclosure">
       <summary>See the score breakdown and evidence limits</summary>
       <div class="score-explanation">
-        <p>The operational score needed for the stakes and role selected is ${result.requiredScore}/100. Evidence Strength is reported separately and may limit how strong a conclusion the check can support.</p>
+        <p>The operational score needed for the stakes and role selected is ${result.requiredScore}/100. Evidence Strength is reported separately and may limit how strong a conclusion the Load Test can support.</p>
         <div class="score-band" aria-hidden="true">
           <span></span><span></span><span></span><span></span>
           <i class="score-marker" style="left: ${Math.min(100, Math.max(0, result.publicScore))}%"></i>
@@ -1450,7 +1453,7 @@ function renderResult() {
         <p><strong>Highest operational AI authority:</strong><br />${escapeHTML(AUTHORITY_LABELS[result.operationalMaxAuthority] || result.operationalMaxAuthority)}</p>
         <p><strong>Highest AI authority supported by current evidence:</strong><br />${escapeHTML(AUTHORITY_LABELS[result.conclusionAuthority] || result.conclusionAuthority)}</p>
         <p><strong>You may rely on:</strong></p>
-        ${listHTML(authorization.relyOn || ['Only outputs reviewed under the conditions recorded in this check.'])}
+        ${listHTML(authorization.relyOn || ['Only outputs reviewed under the conditions recorded in this Load Test.'])}
         <p class="helper-text">A lower result does not always mean do not launch. It may mean giving AI a smaller role, adding capable human help, or holding back one unsupported function.</p>
       </section>
       </div>
@@ -1464,8 +1467,8 @@ function renderResult() {
 
     <details class="result-disclosure">
       <summary>See the AI systems and roles recorded</summary>
-      <div class="result-disclosure-body"><p>The model matters in the role it was given.</p><div class="grid-2">${p.systems.map((system) => `<article class="card"><h3>${escapeHTML(system.product || 'Unnamed system')} ${system.model ? `<span class="helper-text">${escapeHTML(system.model)}</span>` : ''}</h3><p>${escapeHTML(system.role || 'Role not described')}</p><p><strong>Assessment scope:</strong> ${system.id === p.primarySystemId ? 'Detailed performance questions answered for this role' : 'Recorded for workflow context only; run a separate Work Check to assess this role'}</p><p><strong>Requested authority:</strong> ${escapeHTML(AUTHORITY_LABELS[system.proposedAuthority] || system.proposedAuthority)}</p><p><strong>Access and permissions:</strong> ${system.connectedAccess === false ? 'No connected access reported' : system.permissionsConfirmed === true ? 'Connected access reported, permissions confirmed as limited' : 'Connected access or permission limits are not fully confirmed'}</p>${result.limitingSystemIds?.includes(system.id) ? '<span class="stamp stamp-warning">Limits this result</span>' : ''}</article>`).join('')}</div>
-      ${p.systems.length > 1 ? '<p class="helper-text">This check asks the detailed performance questions about the system marked most consequential. Run a separate Work Check for another consequential role when needed.</p>' : ''}</div>
+      <div class="result-disclosure-body"><p>The model matters in the role it was given.</p><div class="grid-2">${p.systems.map((system) => `<article class="card"><h3>${escapeHTML(system.product || 'Unnamed system')} ${system.model ? `<span class="helper-text">${escapeHTML(system.model)}</span>` : ''}</h3><p>${escapeHTML(system.role || 'Role not described')}</p><p><strong>Assessment scope:</strong> ${system.id === p.primarySystemId ? 'Detailed performance questions answered for this role' : 'Recorded for workflow context only; run a separate Load Test to assess this role'}</p><p><strong>Requested authority:</strong> ${escapeHTML(AUTHORITY_LABELS[system.proposedAuthority] || system.proposedAuthority)}</p><p><strong>Access and permissions:</strong> ${system.connectedAccess === false ? 'No connected access reported' : system.permissionsConfirmed === true ? 'Connected access reported, permissions confirmed as limited' : 'Connected access or permission limits are not fully confirmed'}</p>${result.limitingSystemIds?.includes(system.id) ? '<span class="stamp stamp-warning">Limits this result</span>' : ''}</article>`).join('')}</div>
+      ${p.systems.length > 1 ? '<p class="helper-text">This Load Test asks the detailed performance questions about the system marked most consequential. Run a separate Load Test for another consequential role when needed.</p>' : ''}</div>
     </details>
 
     ${gates.length ? `<section style="margin-top: 3rem"><p class="kicker">Problems to fix first</p><h2>These limits override the average score.</h2><ul class="gate-list">${gates.map((gate) => `<li><strong>${escapeHTML(gate.title || gate.id?.replaceAll('_', ' ') || 'Use limit')}</strong><br />${escapeHTML(gateText(gate))}</li>`).join('')}</ul></section>` : `<div class="callout" style="margin-top: 2rem"><p><strong>Your answers did not trigger a stop condition.</strong> The score and named limits still apply.</p></div>`}
@@ -1474,7 +1477,7 @@ function renderResult() {
       <p class="kicker">Make this setup stronger</p>
       <h2>What could raise this score?</h2>
       <p class="lede">Each action shows its possible effect. Some actions can raise operational support. Others strengthen the evidence, remove a blocker, add capable human help, or reduce the AI role so less reliance is required.</p>
-      <p>Planning an action changes nothing. Complete it, record what happened, and run the check again before the score or Evidence Strength changes.</p>
+      <p>Planning an action changes nothing. Complete it, record what happened, and run the Load Test again before the score or Evidence Strength changes.</p>
       <div class="action-timeline">
         ${timeBlock('Now', recommendations.filter((item) => item.timing === 'now'))}
         ${timeBlock('Within 24 hours', recommendations.filter((item) => item.timing === 'within24h'))}
@@ -1484,9 +1487,9 @@ function renderResult() {
     </section>
 
     <section class="reliance-card" id="reliance-card">
-      <h1 class="print-only">Human + AI Work Check result</h1>
+      <h1 class="print-only">Human + AI Load Test result</h1>
       <div class="reliance-card-header">
-        <div><p class="kicker">Human + AI Work Check | Self-assessed</p><h2>${escapeHTML(p.name || 'Untitled project')}</h2><p>${escapeHTML(p.task)}</p></div>
+        <div><p class="kicker">Load Test | Self-assessed</p><h2>${escapeHTML(p.name || 'Untitled project')}</h2><p>${escapeHTML(p.task)}</p></div>
         <div class="reliance-card-score">${result.publicScore}/100 | ${escapeHTML(result.decisionStatus?.label || result.band)}</div>
       </div>
       <div class="grid-2" style="margin-top: 1.3rem">
@@ -1497,16 +1500,16 @@ function renderResult() {
     </section>
 
     <div class="result-actions no-print">
-      <button class="button" type="button" id="print-result">Print Work Check</button>
-      <button class="button button-secondary" type="button" id="export-result">Export Work Check</button>
+      <button class="button" type="button" id="print-result">Print Load Test</button>
+      <button class="button button-secondary" type="button" id="export-result">Export Load Test</button>
       <a class="button button-secondary" href="#/creation-record" id="start-record-from-result">Create a Work Record</a>
-      <button class="button button-danger" type="button" id="new-check">Start a new check</button>
+      <button class="button button-danger" type="button" id="new-check">Start a new Load Test</button>
     </div>
   </div>`;
 
   document.querySelector('#print-result').addEventListener('click', () => printMode('printing-result'));
   document.querySelector('#export-result').addEventListener('click', () => {
-    downloadJSON(`${slug(p.name || 'human-ai-work-check')}.json`, {
+    downloadJSON(`${slug(p.name || 'human-ai-load-test')}.json`, {
       kind: 'human-ai-work-check-assessment',
       schemaVersion: ASSESSMENT_SCHEMA_VERSION,
       methodVersion: METHOD_VERSION,
@@ -1519,7 +1522,7 @@ function renderResult() {
     if (!prepareWorkRecordFromAssessment()) event.preventDefault();
   });
   document.querySelector('#new-check').addEventListener('click', () => {
-    if (window.confirm('Start a new check? Export this project first if you want to keep a separate copy.')) {
+    if (window.confirm('Start a new Load Test? Export this project first if you want to keep a separate copy.')) {
       assessment = makeAssessment();
       saveAssessment();
       checkView = 'entry';
@@ -1682,7 +1685,7 @@ function importAssessment(event) {
       showToast('Project imported.');
       renderCheck();
     } catch {
-      showToast('That file is not a valid Human + AI Work Check project.');
+      showToast('That file is not a valid Load Test project.');
     }
   };
   reader.readAsText(file);
@@ -1746,7 +1749,7 @@ function normalizeImportedAssessment(imported) {
 }
 
 function renderSample() {
-  document.title = 'Real Work Record | Human + AI Work Check';
+  document.title = 'Real Work Record | Human + AI Work';
   main.innerHTML = `<div class="page sample-record-page">
     <header class="page-header">
       <p class="eyebrow">Real Work Record</p>
@@ -1755,7 +1758,7 @@ function renderSample() {
       <p class="stage-label"><strong>Status:</strong> Public prototype, unfinished</p>
     </header>
     <article class="record-preview public-record">
-      <header class="public-record-header"><p class="kicker">Human + AI Work Record · Public prototype v0.3</p><h2>Human + AI Work Check website and method</h2><p class="record-summary">Here are the credits and evidence for this version.</p><p>A public website that documents human and AI contributions and optionally checks whether a consequential AI role is supported by the person’s capacity, workflow, evidence, and stakes.</p></header>
+      <header class="public-record-header"><p class="kicker">Human + AI Work Record · Public prototype v0.3</p><h2>Human + AI Work website and methods</h2><p class="record-summary">Here are the credits and evidence for this version.</p><p>A public website that documents human and AI contributions and optionally checks whether a consequential AI role is supported by the person’s capacity, workflow, evidence, and stakes.</p></header>
       <section class="record-output-section"><h3>Artifact documented</h3><dl class="record-facts"><div><dt>Status</dt><dd>Public prototype, unfinished</dd></div><div><dt>Version</dt><dd>v0.3 provenance-first revision</dd></div><div><dt>Creator</dt><dd>Cheryl Abram</dd></div><div><dt>Other human contributors</dt><dd>None reported</dd></div></dl><p><a href="https://ypifany.github.io/ai-reliance-check/" target="_blank" rel="noreferrer">Open the public website <span class="new-tab-note">(opens in a new tab)</span></a></p></section>
       <section class="record-output-section"><h3>Credits</h3>
         <h4>People and systems involved</h4>
@@ -1783,7 +1786,7 @@ function renderSample() {
       <section class="record-output-section disclosure-box"><h3>Short disclosure</h3><p><strong>Human + AI disclosure:</strong> Cheryl Abram originated and directed this work. ChatGPT assisted with research, organization, challenge, public wording, user flow, code, testing, and publishing approved changes. Cheryl reviewed the documented version and made the final release decision.</p></section>
       <footer class="public-record-footer"><p>The Work Record creates a dated account of human origination, contribution, judgment, decisions, and AI involvement, and it can connect evidence to a specific artifact version. It supports an authorship claim and makes that claim examinable.</p><p>This record is self-reported and remains open to correction as additional evidence is classified.</p></footer>
     </article>
-    <div class="button-row"><a class="button" href="#/creation-record">Create your Work Record</a><a class="button button-secondary" href="#/check">Run a Work Check</a></div>
+    <div class="button-row"><a class="button" href="#/creation-record">Create your Work Record</a><a class="button button-secondary" href="#/load-test">Run a Load Test</a></div>
   </div>`;
 }
 
@@ -1811,7 +1814,7 @@ function renderCreationRecord(focusId = '', errors = []) {
   if (recordStep > RECORD_STEPS.length) return renderWorkRecordResult();
   recordStep = Math.min(Math.max(Number(recordStep) || 1, 1), RECORD_STEPS.length);
   saveRecordStep();
-  document.title = 'Create a Work Record | Human + AI Work Check';
+  document.title = 'Create a Work Record | Human + AI Work';
   const normalizedErrors = normalizeFormErrors(errors);
   const [stepId, stepLabel] = RECORD_STEPS[recordStep - 1];
   main.innerHTML = `<div class="page work-record-page">
@@ -2302,7 +2305,7 @@ function bindWorkRecordDynamicActions(form, stepId) {
 }
 
 function renderWorkRecordResult() {
-  document.title = `${creationRecord.title || 'Work Record'} | Human + AI Work Check`;
+  document.title = `${creationRecord.title || 'Work Record'} | Human + AI Work`;
   const publicRecord = toPublicWorkRecord(creationRecord);
   const completeness = getWorkRecordCompleteness(creationRecord);
   main.innerHTML = `<div class="page work-record-result-page">
@@ -2323,8 +2326,8 @@ function renderWorkRecordResult() {
     <section class="optional-next-step card">
       <p class="eyebrow">Optional next step</p>
       <h2>Did this work depend on AI being right or acting correctly?</h2>
-      <p>Run a Work Check if AI influenced a consequential decision, handled work you could not fully judge, used tools or permissions, published or deployed anything, or could affect another person if wrong.</p>
-      <a class="button button-secondary" id="work-check-from-record" href="#/check">Run a Work Check for this project</a>
+      <p>Run a Load Test if AI influenced a consequential decision, handled work you could not fully judge, used tools or permissions, published or deployed anything, or could affect another person if wrong.</p>
+      <a class="button button-secondary" id="work-check-from-record" href="#/load-test">Run a Load Test for this project</a>
     </section>
   </div>`;
   document.querySelector('#print-record-v03').addEventListener('click', () => printMode('printing-record-v03'));
@@ -2382,11 +2385,11 @@ function workRecordPreview(recordInput, options = {}) {
       <div><dt>Recognizable voice needed</dt><dd>${escapeHTML(voiceLabel)}</dd></div>
       <div><dt>Used to demonstrate capability</dt><dd>${escapeHTML(capabilityLabel)}</dd></div>
     </dl>${record.artifact?.url ? `<p><a href="${escapeHTML(record.artifact.url)}" target="_blank" rel="noreferrer">Open the documented artifact <span class="new-tab-note">(opens in a new tab)</span></a></p>` : ''}</section>
-    ${record.readiness?.workCheckId || record.outcome?.intended ? `<section class="record-output-section"><h3>Linked Work Check context</h3><dl class="record-facts">
+    ${record.readiness?.workCheckId || record.outcome?.intended ? `<section class="record-output-section"><h3>Linked Load Test context</h3><dl class="record-facts">
       <div><dt>Outcome wager</dt><dd>${escapeHTML(record.outcome?.intended || 'Not recorded')}</dd></div>
       <div><dt>Serious failure</dt><dd>${escapeHTML(record.outcome?.failureScenario || 'Not recorded')}</dd></div>
       <div><dt>Possible impact</dt><dd>${escapeHTML(record.outcome?.failureImpact || 'Not recorded')}</dd></div>
-      <div><dt>Readiness decision</dt><dd>${escapeHTML(record.readiness?.decision || 'Work Check not completed')}</dd></div>
+      <div><dt>Readiness decision</dt><dd>${escapeHTML(record.readiness?.decision || 'Load Test not completed')}</dd></div>
     </dl></section>` : ''}
     <section class="record-output-section"><h3>Credits</h3><h4>People and systems involved</h4>
       ${credits.human.map((item) => `<div class="credit-row"><strong>${escapeHTML(item.name)}</strong>${item.role ? ` <span>(${escapeHTML(item.role)})</span>` : ''}<p>${escapeHTML(item.credit)}</p></div>`).join('') || '<p>No human creator named.</p>'}
@@ -2499,7 +2502,7 @@ function importWorkRecord(event) {
 }
 
 function prefillWorkCheckFromRecord() {
-  if (assessment.project?.task && assessment.id !== creationRecord.projectId && !window.confirm('Replace the current Work Check setup with this Work Record? Export the current check first if you want to keep it.')) return false;
+  if (assessment.project?.task && assessment.id !== creationRecord.projectId && !window.confirm('Replace the current Load Test setup with this Work Record? Export the current Load Test first if you want to keep it.')) return false;
   assessment = makeAssessment();
   assessment.stage = ['released', 'public-prototype', 'ready'].includes(creationRecord.status) ? 'release' : 'plan';
   assessment.project.name = creationRecord.title;
@@ -2539,20 +2542,22 @@ function focusCurrentStep() {
 }
 
 function renderMethod() {
-  document.title = 'How It Works | Human + AI Work Check';
+  document.title = 'How It Works | Human + AI Work';
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">Site and Work Record v0.3 · Work Check method ${escapeHTML(METHOD_VERSION)}</p><h1>Follow the work, not the writing style.</h1><p>The method separates two questions: how the work was made, and whether the human + AI arrangement supported the role given to AI.</p></header>
+    <header class="page-header"><p class="eyebrow">Site and Work Record v0.3 · Load Test method ${escapeHTML(METHOD_VERSION)}</p><h1>Follow the work, not the writing style.</h1><p>The methods answer two different questions: how the work was made, and whether the human + AI arrangement can carry the work.</p></header>
     <div class="prose">
       <h2>Two connected methods</h2>
       <h3>1. Work Record: How was this work made?</h3>
-      <p>The Work Record identifies one artifact and version, records human and AI actions, maps each part of the work, and connects claims to evidence. It reports claim support, evidence integrity, and review status separately.</p>
+      <p>The Work Record follows the process instead of guessing from the finished product. It identifies one artifact and version, records human and AI actions, maps each part of the work, and connects claims to evidence. It reports claim support, evidence integrity, and review status separately.</p>
       <p>Claim support can be self-described, documented, corroborated, independently reviewed, not established, or contradicted. A positive label is calculated from linked evidence and review. The person filling out the record does not simply select it.</p>
-      <h3>2. Work Check: Does this exact arrangement support the role you are giving AI?</h3>
-      <p>The model is only one part of the arrangement. The Work Check starts with your capacity, then weighs the exact AI setup and role, workflow controls, and the outcome you are betting on.</p>
+      <h3>Why this is not an AI detector</h3>
+      <p>An AI detector examines a finished product and guesses from patterns. A Work Record does not detect, classify, or help someone bypass detection. It documents the work behind the product.</p>
+      <h3>2. Load Test: Can this arrangement carry the work?</h3>
+      <p>The model is only one part of the arrangement. The Load Test checks whether your current capacity, the assigned AI role, the workflow and controls, and the stakes support relying on that arrangement.</p>
       <h2>AI fluency and this tool answer different questions</h2>
       <p><a href="https://aifluencyframework.org/" target="_blank" rel="noreferrer">The AI Fluency Framework <span class="new-tab-note">(opens in a new tab)</span></a> develops broad human competencies for deciding how to use AI, describing what is needed, evaluating what comes back, and using AI responsibly.</p>
-      <p>Fluency matters, but it does not establish that you can catch a serious error in this task, inspect the important work, control the system’s access, stop a harmful action, or sustain the required review. The Work Check examines those conditions in one real arrangement.</p>
-      <h2>Work Check central question</h2>
+      <p>Fluency matters, but it does not establish that you can catch a serious error in this task, inspect the important work, control the system’s access, stop a harmful action, or sustain the required review. The Load Test examines those conditions in one real arrangement.</p>
+      <h2>Load Test central question</h2>
       <blockquote class="callout"><p><strong>Does this exact arrangement support the role you are giving AI, in relation to your current capacity?</strong></p></blockquote>
       <h2>The five questions being scored</h2>
       <div class="table-scroll" role="region" aria-label="Five questions scored by the method" tabindex="0"><table><thead><tr><th scope="col">Question</th><th scope="col">Method term</th></tr></thead><tbody>
@@ -2572,7 +2577,7 @@ function renderMethod() {
         <li>Planned improvements do not change the current result. They count only after they are completed and evidenced.</li>
         <li>A different model may be suggested for comparison when model behavior is the weak point. A newer or larger model receives no automatic credit.</li>
       </ol>
-      <p>If several systems are involved, record each one and identify the most consequential role. The detailed questions focus on that role. Run a separate Work Check when another consequential system needs its own evaluation.</p>
+      <p>If several systems are involved, record each one and identify the most consequential role. The detailed questions focus on that role. Run a separate Load Test when another consequential system needs its own evaluation.</p>
       <h2>Four working score ranges</h2>
       <p>The scope statement applies to every range: <strong>your current capacity, AI role fit, working relationship, workflow controls, and outcome for this project and proposed AI role.</strong> Evidence Strength is reported separately.</p>
       <div class="table-scroll" role="region" aria-label="Four working score ranges" tabindex="0"><table><thead><tr><th scope="col">Score</th><th scope="col">Result</th><th scope="col">Meaning</th></tr></thead><tbody>
@@ -2598,26 +2603,26 @@ function renderMethod() {
         <li>A project without outcome evidence may be piloted but cannot claim demonstrated effectiveness.</li>
       </ul>
       <h2>What recommendations mean</h2>
-      <p>Recommendations are grouped by what can be done now, within 24 hours, within days, or within weeks. Each one explains whether it could raise operational support, strengthen evidence, remove a blocker, add human capacity, or support a smaller AI role. A numeric projection is an illustrative maximum based on closing the named gap, not a guaranteed increase. Nothing changes until the action is completed, recorded, and the check is recalculated.</p>
+      <p>Recommendations are grouped by what can be done now, within 24 hours, within days, or within weeks. Each one explains whether it could raise operational support, strengthen evidence, remove a blocker, add human capacity, or support a smaller AI role. A numeric projection is an illustrative maximum based on closing the named gap, not a guaranteed increase. Nothing changes until the action is completed, recorded, and the Load Test is recalculated.</p>
       <h2>Accountability</h2>
       <p>AI can produce recommendations, influence decisions, and initiate actions when connected to tools. It cannot absorb the accountability that follows human agency. The person who can authorize, reject, limit, stop, or correct an action remains accountable for how that agency is used.</p>
       <h2>When to refresh</h2>
-      <p>Repeat the check when the model, instructions, memory, tools, data, permissions, human reviewer, task, audience, stakes, acceptance criteria, workflow, or observed outcomes materially change.</p>
+      <p>Repeat the Load Test when the model, instructions, memory, tools, data, permissions, human reviewer, task, audience, stakes, acceptance criteria, workflow, or observed outcomes materially change.</p>
       <h2>Research and standards basis</h2>
       <p>This practice-based method is informed by established work on digital provenance, contributor roles, appropriate reliance, levels of automation, model documentation, and human oversight. Those sources informed the method. They have not tested or validated this tool or its scoring.</p>
       <p><a class="button button-secondary" href="#/research">Read the research basis</a></p>
-      <div class="callout callout-warning"><p><strong>Current status:</strong> The Work Record is schema v${WORK_RECORD_SCHEMA_VERSION}; the Work Check scoring method is ${escapeHTML(METHOD_VERSION)}. Both are transparent, practice-based working methods. They have not been independently validated as scientific instruments. Their findings and recommendations should improve through testing and real use.</p></div>
+      <div class="callout callout-warning"><p><strong>Current status:</strong> The Work Record is schema v${WORK_RECORD_SCHEMA_VERSION}; the Load Test scoring method is ${escapeHTML(METHOD_VERSION)}. Both are transparent, practice-based working methods. They have not been independently validated as scientific instruments. Their findings and recommendations should improve through testing and real use.</p></div>
     </div>
   </div>`;
 }
 
 function renderResearch() {
-  document.title = 'Research Basis | Human + AI Work Check';
+  document.title = 'Research Basis | Human + AI Work';
   const sources = [
     ['AI Fluency Framework', 'https://aifluencyframework.org/', 'AI fluency includes human competencies for deciding how to use AI, describing the work, judging AI outputs and behavior, and using AI responsibly.', 'This tool asks a narrower project question: whether one exact arrangement supports the assigned AI role in relation to the person’s current capacity. The framework has not validated this tool or its score.'],
-    ['NIST AI Risk Management Framework', 'https://www.nist.gov/itl/ai-risk-management-framework', 'AI risk depends on the system, its use, the people involved, the operating context, and possible consequences.', 'The Work Check examines the person, AI system, assigned role, workflow, controls, and outcome together.'],
+    ['NIST AI Risk Management Framework', 'https://www.nist.gov/itl/ai-risk-management-framework', 'AI risk depends on the system, its use, the people involved, the operating context, and possible consequences.', 'The Load Test examines the person, AI system, assigned role, workflow, controls, and outcome together.'],
     ['Levels of automation', 'https://doi.org/10.1109/3468.844354', 'Automation can support information gathering, analysis, decision selection, and action. The right level can differ at each stage.', 'The tool does not treat AI authority as one all-or-nothing choice.'],
-    ['Appropriate reliance in human-AI decision-making', 'https://doi.org/10.1145/3544548.3581058', 'Appropriate reliance depends on more than the chance that AI is right. The person’s ability also matters.', 'The Work Check considers the person’s capacity alongside the AI setup.'],
+    ['Appropriate reliance in human-AI decision-making', 'https://doi.org/10.1145/3544548.3581058', 'Appropriate reliance depends on more than the chance that AI is right. The person’s ability also matters.', 'The Load Test considers the person’s capacity alongside the AI setup.'],
     ['Model Cards for Model Reporting', 'https://research.google/pubs/model-cards-for-model-reporting/', 'Models should be documented with intended uses, tested conditions, performance, and limits.', 'The record asks which system and model were used and what is known about their role and limits.'],
     ['AI Usage Cards', 'https://doi.org/10.1109/JCDL57899.2023.00060', 'AI use can be disclosed through a structured record covering transparency, integrity, and accountability.', 'The Work Record applies a related disclosure idea beyond scholarly work.'],
     ['W3C PROV', 'https://www.w3.org/TR/prov-overview/', 'Provenance can record people, software, activities, sources, and changes involved in producing something.', 'The Work Record connects contributors, actions, sources, evidence, and artifact versions.'],
@@ -2635,24 +2640,24 @@ function renderResearch() {
 }
 
 function renderExamples() {
-  document.title = 'Examples | Human + AI Work Check';
+  document.title = 'Examples | Human + AI Work';
   const examples = [
-    ['Create an article or report', 'AI may organize, challenge, research, draft, or edit. The Work Check identifies the supported role and required verification. The Work Record documents the creator’s actions and each AI contribution.', 'Work Check + Work Record'],
-    ['Build a website', 'AI may propose structure, write code, create content, run tests, or publish. The check separates visible review from security, accessibility, code, permissions, and deployment areas the creator cannot inspect.', 'Launch boundary + test plan'],
+    ['Create an article or report', 'AI may organize, challenge, research, draft, or edit. The Load Test identifies the supported role and required verification. The Work Record documents the creator’s actions and each AI contribution.', 'Load Test + Work Record'],
+    ['Build a website', 'AI may propose structure, write code, create content, run tests, or publish. The Load Test separates visible review from security, accessibility, code, permissions, and deployment areas the creator cannot inspect.', 'Launch boundary + test plan'],
     ['Use an agent to take actions', 'An agent may send messages, change files, operate accounts, or use its own output to trigger a next step. Permissions, reversibility, monitoring, and approval gates matter more than fluent responses.', 'Authority boundary + blockers'],
-    ['Develop training content', 'Content accuracy does not prove that people can learn from or use it. The check separates subject review, instructional flow, learner testing, and observed outcomes.', 'Pilot plan + Evidence Strength'],
+    ['Develop training content', 'Content accuracy does not prove that people can learn from or use it. The Load Test separates subject review, instructional flow, learner testing, and observed outcomes.', 'Pilot plan + Evidence Strength'],
     ['Review a project already in use', 'A polished result may still have weak evidence about what worked. Current-Use Support compares the intended wager with observed use, errors, and consequences.', 'Updated boundary + next review'],
   ];
-  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">Examples</p><h1>Different work needs different records and boundaries.</h1><p>Use a Work Record to document contributions. Add a Work Check when relying on AI in a consequential role needs its own decision.</p></header><section aria-labelledby="example-types-heading"><h2 class="sr-only" id="example-types-heading">Project examples</h2><div class="grid-2">${examples.map(([title, copy, output], index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${title}</h3><p>${copy}</p><p class="kicker">Useful output</p><p><strong>${output}</strong></p></article>`).join('')}</div></section><div class="button-row"><a class="button" href="#/creation-record">Create a Work Record</a><a class="button button-secondary" href="#/sample">See this site’s real record</a></div></div>`;
+  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">Examples</p><h1>Different work needs different records and boundaries.</h1><p>Use a Work Record to document contributions. Add a Load Test when relying on AI in a consequential role needs its own decision.</p></header><section aria-labelledby="example-types-heading"><h2 class="sr-only" id="example-types-heading">Project examples</h2><div class="grid-2">${examples.map(([title, copy, output], index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${title}</h3><p>${copy}</p><p class="kicker">Useful output</p><p><strong>${output}</strong></p></article>`).join('')}</div></section><div class="button-row"><a class="button" href="#/creation-record">Create a Work Record</a><a class="button button-secondary" href="#/sample">See this site’s real record</a></div></div>`;
 }
 
 function renderPricing() {
-  document.title = 'Pricing | Human + AI Work Check';
+  document.title = 'Pricing | Human + AI Work';
   main.innerHTML = `<div class="page">
     <header class="page-header"><p class="eyebrow">Pricing</p><h1>Full access is open during the Founding Preview.</h1><p>Use every current tool free while the product is being tested. The permanent free option will help people find their credibility gap. Paid options will create, preserve, and maintain complete Work Records.</p></header>
     <div class="grid-2">
-      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Complete prototype access for early users who help test the method.</p><ul><li>Full Work Record</li><li>Multiple people and AI systems</li><li>Detailed role-based credits, claims, and evidence</li><li>Public record and short disclosure</li><li>Print, public HTML, and private backup</li><li>Complete Work Check</li></ul><a class="button" href="#/creation-record">Use the Founding Preview</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned one-time purchase</span><h2>Project Record</h2><p class="price">Price to be announced</p><p>Build a complete record for one work product you plan to publish, submit, deliver, or defend.</p><ul><li>Complete evidence-linked Work Record</li><li>Exact artifact and version</li><li>Full Work Check and recommendations</li><li>Downloadable and shareable record</li><li>One later record update</li></ul><a class="button button-secondary" href="#/sample">See a complete record</a></article>
+      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Complete prototype access for early users who help test the method.</p><ul><li>Full Work Record</li><li>Multiple people and AI systems</li><li>Detailed role-based credits, claims, and evidence</li><li>Public record and short disclosure</li><li>Print, public HTML, and private backup</li><li>Complete Load Test</li></ul><a class="button" href="#/creation-record">Use the Founding Preview</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned one-time purchase</span><h2>Project Record</h2><p class="price">Price to be announced</p><p>Build a complete record for one work product you plan to publish, submit, deliver, or defend.</p><ul><li>Complete evidence-linked Work Record</li><li>Exact artifact and version</li><li>Full Load Test and recommendations</li><li>Downloadable and shareable record</li><li>One later record update</li></ul><a class="button button-secondary" href="#/sample">See a complete record</a></article>
       <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Creator</h2><p class="price">Monthly pricing to be announced</p><p>Maintain evidence as your work develops instead of rebuilding the record after someone questions it.</p><ul><li>Multiple active projects</li><li>Version and decision history</li><li>Reusable creator and AI profiles</li><li>Evidence library</li><li>Public, unlisted, or private records</li><li>Recheck and update reminders</li></ul><a class="button button-secondary" href="#/examples">See when to use it</a></article>
       <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Team</h2><p class="price">Pricing to be announced</p><p>Document who contributed, who was capable of checking the work, and who approved its release.</p><ul><li>Contributor confirmations</li><li>Reviewer assignments</li><li>Approval records</li><li>Reusable team workflows</li><li>Organization history and audit export</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
     </div>
@@ -2661,7 +2666,7 @@ function renderPricing() {
 }
 
 function renderCopyright() {
-  document.title = 'Copyright and use | Human + AI Work Check';
+  document.title = 'Copyright and use | Human + AI Work';
   main.innerHTML = `<div class="page">
     <header class="page-header"><p class="eyebrow">Copyright and use</p><h1>Copyright protects the expression, not the method.</h1><p><strong>© 2026 Cheryl Abram. All rights reserved.</strong></p></header>
     <section class="prose">
@@ -2680,23 +2685,23 @@ function renderCopyright() {
 }
 
 function renderFAQ() {
-  document.title = 'FAQ | Human + AI Work Check';
+  document.title = 'FAQ | Human + AI Work';
   const faqs = [
-    ['What does this tool do?', 'The Work Record documents how one artifact was made, who and what contributed, which claims the evidence supports, and who made the final decision. The optional Work Check examines whether one human and AI arrangement supports relying on AI in a consequential role.'],
-    ['How does this tool define trust?', 'Trust is the decision to rely on a system for a defined role. The Work Check asks whether your current capacity, evidence, controls, and workflow support that reliance.'],
+    ['What does this tool do?', 'The Work Record documents how one artifact was made, who and what contributed, what the evidence supports, and who made the final decision. The Load Test checks whether one human + AI arrangement can carry the work assigned to it.'],
+    ['How does this tool define trust?', 'Trust is the decision to rely on a system for a defined role. The Load Test asks whether your current capacity, the AI role, the workflow, the controls, and the stakes support that reliance.'],
     ['Is having a human in the loop enough?', 'No. The person needs the knowledge, access, authority, time, attention, and stamina to recognize a serious problem, correct it, or stop the work. A named reviewer counts only if that person is actually in the workflow and has what the role requires.'],
-    ['Is this an AI detector?', 'No. Detectors guess from the finished product. This tool examines the documented working relationship and process.'],
+    ['Is this an AI detector?', 'No. AI detectors guess from patterns in a finished product. The Work Record documents the process, contributions, decisions, and available evidence. It does not scan writing style or help people bypass detection.'],
     ['Can the Work Record support an authorship claim?', 'The Work Record creates a dated account of human origination, contribution, judgment, decisions, and AI involvement, and it can connect evidence to a specific artifact version. It supports an authorship claim and makes that claim examinable. The finding becomes stronger when important claims are connected to records, the record identifies an exact artifact version, and another person reviews the evidence.'],
     ['Does the score show how much of the work is human?', 'No. A single percentage cannot honestly represent originating an idea, supplying context, drafting, revising, checking, deciding, and approving. The Work Record shows those actions separately.'],
     ['Is the score the probability that AI is correct?', 'No. It shows how strongly the current arrangement supports relying on AI in the proposed role.'],
     ['What is Evidence Strength?', 'Evidence Strength shows how well the answers are documented. It is separate from the operational relationship score. Missing evidence creates uncertainty, not automatic proof of poor ability.'],
     ['Does a newer or more powerful model automatically improve the result?', 'No. Another model may perform better in a specific role, but it needs to be compared on the same representative tasks. A model change does not improve human capacity, permissions, workflow controls, or outcome evidence.'],
-    ['What if several AI systems were used?', 'Record each tool, model or version, setup, and role. Identify the most consequential role for this Work Check. Run another check if a second consequential role needs separate evaluation.'],
+    ['What if several AI systems were used?', 'Record each tool, model or version, setup, and role. Identify the most consequential role for this Load Test. Run another Load Test if a second consequential role needs separate evaluation.'],
     ['Do I have to make my AI conversations public?', 'No. Evidence may be public, private, redacted, exported, or reviewed by another person. If key records are unavailable, the Work Record will show lower Evidence Strength.'],
     ['What if I did not use AI?', 'The Work Record can state: “No AI use reported in the documented workflow.” That is a bounded statement, not proof that no AI was used anywhere.'],
     ['Does a lower score mean I cannot publish or launch?', 'Not always. It may mean giving AI a smaller role, adding capable human review, or keeping an untested function inactive. A hard gate can still block the proposed authority.'],
     ['Who remains accountable?', 'Accountability follows agency. You remain accountable for choices you had the authority and capacity to make, including how much authority you gave the system.'],
-    ['When should I repeat the check?', 'Repeat it when the model, instructions, memory, tools, permissions, task, reviewer, audience, stakes, workflow, or observed results materially change.'],
+    ['When should I repeat the Load Test?', 'Repeat it when the model, instructions, memory, tools, permissions, task, reviewer, audience, stakes, workflow, or observed results materially change.'],
     ['Where is my information stored?', 'In this preview, information stays in the current browser unless you export it. Do not enter confidential, regulated, or sensitive information.'],
     ['Is this scientifically validated?', 'No. It is a transparent, practice-based working method. Its ranges and recommendations are working guidance that should improve through testing and real use.'],
   ];
@@ -2704,7 +2709,7 @@ function renderFAQ() {
 }
 
 function renderNotFound() {
-  document.title = 'Page not found | Human + AI Work Check';
+  document.title = 'Page not found | Human + AI Work';
   main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">404</p><h1>This page is outside the current boundary.</h1><p>The link may be outdated or incomplete.</p></header><a class="button" href="#/">Return home</a></div>`;
 }
 

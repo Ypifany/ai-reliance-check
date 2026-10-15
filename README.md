@@ -1,15 +1,15 @@
-# Human + AI Work Check
+# Human + AI Work
 
 **Your credibility is being questioned. Show how the work was made.**
 
-Human + AI Work Check is a provenance-first public prototype. Its primary tool creates an evidence-backed Work Record for one artifact version. Its optional Work Check examines whether a person’s capacity, an AI system and role, the workflow, and the stakes support relying on AI in that role.
+Human + AI Work is a provenance-first public prototype with two connected tools. The Work Record creates an evidence-backed account of how one artifact version was made. The Load Test checks whether a person’s current capacity, the assigned AI role, the workflow and controls, and the stakes support relying on that arrangement.
 
 The site provides two connected tools:
 
-- **Work Record:** Documents the exact artifact, detailed role-based credits, claims, evidence, review, and final release decision.
-- **Work Check:** Asks whether the exact arrangement supports the role being given to AI in relation to the person’s current capacity, then shows the largest role supported now and what could strengthen the arrangement.
+- **Work Record: Who did what?** Documents the exact artifact, detailed role-based credits, claims, evidence, review, and final release decision.
+- **Load Test: Can this arrangement carry the work?** Shows the largest AI role supported now and what could strengthen the arrangement.
 
-The Work Check produces a transparent project result, a separate evidence-strength result, supported roles and limits, problems that need to be fixed first, and practical actions that can strengthen the relationship now, within 24 hours, within days, or within weeks.
+The Load Test produces a transparent project result, a separate evidence-strength result, supported roles and limits, problems that need to be fixed first, and practical actions that can strengthen the relationship now, within 24 hours, within days, or within weeks.
 
 ## Current status
 
@@ -23,8 +23,8 @@ The prototype:
 - Separates claim support, evidence integrity, and review status
 - Supports public, private, and redacted evidence
 - Produces a privacy-safe public HTML record and a private JSON backup
-- Preserves and migrates earlier Work Record data without invalidating v0.2 Work Checks
-- Supports planning, ready-to-launch, and current-use Work Checks
+- Preserves and migrates earlier Work Record data without invalidating v0.2 assessment data
+- Supports planning, ready-to-launch, and current-use Load Tests
 - Exports and imports project JSON
 - Prints a task-specific project card
 - Includes a real Work Record for this website
@@ -59,12 +59,14 @@ The included GitHub Actions workflow builds and deploys the `dist` directory to 
 
 The Work Record follows the work instead of guessing from its surface. It records what the person did, what each AI system did, which evidence supports each claim, how each part was handled, and which artifact version the record describes. It never invents a human-versus-AI percentage.
 
-The Work Check asks whether the person's current capacity, the AI setup and assigned role, the workflow and controls, and what is at stake support the role and authority being given to AI.
+This is not an AI detector. It does not scan writing style, classify a finished product as human or AI, or help someone bypass detection.
+
+The Load Test asks whether the person's current capacity, the AI setup and assigned role, the workflow and controls, and what is at stake support the role and authority being given to AI.
 
 - **Reliance Support** describes the largest AI role the current arrangement supports.
 - **Evidence Strength** describes how well the available records support that conclusion.
 - A serious gap in knowledge, access, authority, time, attention, or the ability to correct or stop the work can limit the supported AI role.
-- Multiple AI systems and models can be recorded, but one consequential system-role pair is assessed at a time. Run another Work Check for another consequential role.
+- Multiple AI systems and models can be recorded, but one consequential system-role pair is assessed at a time. Run another Load Test for another consequential role.
 - Recommended actions may change the AI role, add qualified human help, strengthen the workflow, or test a different model. Planned actions do not change the current result until they are completed and supported by evidence.
 
 See the in-product **How it works** page for the complete explanation.
