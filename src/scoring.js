@@ -114,7 +114,7 @@ const ACTION_LIBRARY = Object.freeze({
     now: "Define one success signal, one harm signal, who will check them, and when.",
     within24h: "Add a completion signal and a short feedback or observation method.",
     days: "Observe at least three intended users or use cycles.",
-    weeks: "Compare results with the target and publish an updated work check.",
+    weeks: "Compare results with the target and run and save an updated Load Test.",
   },
 });
 
@@ -415,7 +415,7 @@ function evidenceStrengthFor(assessment, itemScores, dimensionWeights, criticalU
   }
   const description = {
     not_enough_information: "Important claims about the relationship do not yet have enough supporting information.",
-    self_described: "The relationship is described by the person completing the check, without records confirming the key steps.",
+    self_described: "The relationship is described by the person completing the Load Test, without records confirming the key steps.",
     partly_documented: "Some records support the account, but important steps or controls are still missing.",
     key_steps_documented: "Current records support the important parts of the relationship, workflow, and result.",
     independently_checked: "A named independent reviewer checked the important records within a stated scope.",
@@ -891,7 +891,7 @@ function projectedScoreFor(trigger, dimensions, publicScore, capacityCeiling, un
     automaticChange: 0,
     projectedChange: Math.max(0, projected - publicScore),
     projectedScore: projected,
-    condition: "Only if the action is completed, the stronger condition is demonstrated, and the check is recalculated.",
+    condition: "Only if the action is completed, the stronger condition is demonstrated, and the Load Test is recalculated.",
   };
 }
 
@@ -960,7 +960,7 @@ function buildRecommendations(context) {
       evidenceEffect: "May raise Evidence Strength after the records are reviewed.",
       blocker: { couldRemove: [], statement: "Reduces uncertainty but does not fix an operational weakness." },
       roleEffect: "May allow a stronger conclusion about the same reported relationship.",
-      evidenceRequired: "Current records that support the important claims made in the check.",
+      evidenceRequired: "Current records that support the important claims made in the Load Test.",
       modelChangeTest: false,
     });
   }
