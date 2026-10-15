@@ -5,7 +5,7 @@
  * rendered consistently in the browser, a printable form, or a future API.
  */
 
-export const METHOD_VERSION = "0.2";
+export const METHOD_VERSION = "0.3";
 
 export const DIMENSIONS = Object.freeze({
   humanAssurance: {
@@ -26,7 +26,7 @@ export const DIMENSIONS = Object.freeze({
   workflowControl: {
     label: "Workflow and Controls",
     description:
-      "Whether access, checks, approvals, records, stopping, and recovery match the authority being granted.",
+      "Whether access, checks, approvals, records, stopping, and recovery can carry the role AI has in this work.",
   },
   outcomeTestability: {
     label: "Outcome and Stakes",
@@ -56,12 +56,12 @@ export const AUTHORITY_LEVELS = Object.freeze({
 
 export const EVIDENCE_BASES = Object.freeze({
   confirmed: {
-    label: "Confirmed",
-    description: "Directly observed or supported by a current result, record, or link.",
+    label: "Current supporting record identified",
+    description: "You identified a current test result, record, observation, note, or link as support. The tool does not inspect it.",
   },
   reported: {
-    label: "Reported",
-    description: "Intended, recalled, or asserted without a current supporting record.",
+    label: "Self-reported, no current record",
+    description: "The answer is intended, recalled, or personally observed, but no current supporting record is available.",
   },
   unknown: {
     label: "Unknown",
@@ -120,11 +120,11 @@ const HUM1_OPTIONS = [
 ];
 
 const HUM3_OPTIONS = [
-  option(0, "The required review cannot be maintained", "The work moves too quickly, lasts too long, or is too large for the available attention and time."),
-  option(25, "The review will probably break down", "The review can happen briefly or occasionally, but not at the expected volume and pace."),
-  option(50, "The review is possible with limits", "The review can be maintained only if scope, pace, volume, or the AI role stays limited."),
-  option(75, "The review can be maintained", "Enough time, attention, and backup are available for the expected volume and pace."),
-  option(100, "Sustainable review has been demonstrated", "The review has held up at the expected volume and pace, including during busy or difficult periods."),
+  option(0, "The human part cannot be carried", "The expected pace, volume, or complexity requires more time and attention than are available."),
+  option(25, "It can be carried only briefly", "The required review can happen occasionally, but it will probably break down during normal use."),
+  option(50, "It can be carried with limits", "The work is manageable only if the scope, pace, volume, or AI role stays limited."),
+  option(75, "It can be carried at the expected pace", "Enough time, attention, and backup are available for the expected volume and pace."),
+  option(100, "It has been measured and sustained", "The required review has held up at the expected volume and pace, including during busy or difficult periods."),
 ];
 
 const WF1_OPTIONS = [
@@ -175,12 +175,28 @@ const HUM2_OPTIONS = [
   option(100, "Independent high-consequence verification", "The highest-consequence claims received qualified independent verification."),
 ];
 
+const HUM2_PLAN_OPTIONS = [
+  option(0, "No verification plan", "No method or person has been identified to check important factual claims outside the AI system."),
+  option(25, "Possible sources named", "Possible sources are listed, but the required checks, reviewer, and stopping rule are not defined."),
+  option(50, "Important checks assigned", "Important claim types, source requirements, and the person responsible for checking them are identified."),
+  option(75, "Complete verification plan", "Every material claim will require a suitable source or an uncertainty label before use, and a failed check will stop progress."),
+  option(100, "Independent high-consequence checks arranged", "The highest-consequence claims also have a named qualified reviewer or different verification method before use."),
+];
+
 const BEH2_OPTIONS = [
   option(0, "Not deliberately tested", "The behavior appears in instructions only."),
   option(25, "Challenge test designed", "A flawed premise or stop case is defined but has not been run."),
   option(50, "One challenge test", "The system was deliberately tested once with a premise it should question or a situation in which it should stop."),
   option(75, "Several agreement and disagreement tests", "Several tests required both appropriate agreement and appropriate disagreement."),
   option(100, "Repeated useful challenge", "Repeated tests show useful challenge without needless contradiction."),
+];
+
+const BEH2_PLAN_OPTIONS = [
+  option(0, "No challenge test planned", "No flawed-premise, disagreement, uncertainty, or stopping case has been defined."),
+  option(25, "One challenge case designed", "One flawed premise or situation in which the system should stop has been written down."),
+  option(50, "Test set and pass criteria ready", "The required agreement, disagreement, uncertainty, and stopping behaviors have test cases and acceptance criteria."),
+  option(75, "Several challenge tests passed", "The proposed setup passed several tests requiring both appropriate agreement and appropriate disagreement."),
+  option(100, "Repeated useful challenge demonstrated", "Repeated matched tests show useful challenge without needless contradiction."),
 ];
 
 const WF3_OPTIONS = [
@@ -191,12 +207,28 @@ const WF3_OPTIONS = [
   option(100, "Failure, security, and rollback tested", "Failure cases, relevant security checks, and rollback were also tested; results were saved."),
 ];
 
+const WF3_PLAN_OPTIONS = [
+  option(0, "No release checks defined", "The plan does not yet say which technical checks must pass before launch."),
+  option(25, "Visual review only", "The plan includes visual review but not checks of behavior or failure."),
+  option(50, "Build and key-path checks defined", "The required build and primary user-path checks, pass criteria, and owner are named."),
+  option(75, "Risk-matched release gate defined", "Relevant build, test, lint, link, mobile, accessibility, deployment, and security checks are assigned and a failure blocks release."),
+  option(100, "Failure and recovery plan ready", "Failure cases, rollback, recovery, saved results, and the person who can stop release are also defined."),
+];
+
 const WF4_OPTIONS = [
   option(0, "Cannot be controlled while running", "The activity cannot be reliably seen, stopped, limited, or reversed, or this is unknown."),
   option(25, "Logs only", "Activity is recorded, but intervention is not demonstrated."),
   option(50, "Monitoring and manual stop", "A person can observe and manually stop the activity."),
   option(75, "Threshold stop and rollback tested", "Threshold-based stopping and rollback have been tested."),
   option(100, "Full operating controls demonstrated", "Least privilege, monitoring, incident response, rollback, and reauthorization are demonstrated."),
+];
+
+const WF4_PLAN_OPTIONS = [
+  option(0, "No operating-control plan", "The plan does not show how activity will be seen, stopped, limited, or reversed."),
+  option(25, "Logging planned", "Activity will be recorded, but intervention authority and a stopping method are not defined."),
+  option(50, "Monitoring and manual stop defined", "A named person will be able to observe the activity and stop it manually."),
+  option(75, "Limits, stop thresholds, and rollback defined", "Operating limits, warning thresholds, stopping authority, and rollback steps are documented."),
+  option(100, "Full controls rehearsed for this setup", "Least privilege, monitoring, stopping, incident response, rollback, and reauthorization have been rehearsed under the proposed setup."),
 ];
 
 /**
@@ -213,19 +245,21 @@ export const QUESTION_DEFINITIONS = Object.freeze([
       release: "Could you recognize and correct a serious error in the finished work? Did you have the knowledge, access, authority, and time?",
       live: "Can you recognize and correct a serious error while this work is in use? Do you have the knowledge, access, authority, and time?",
     },
-    why: "The role you give AI cannot be larger than your own reliable ability to examine the important work and intervene. If you need another person to close a gap, the result should name that as a condition rather than count it as your capacity.",
+    why: "A human being present is not enough. Someone must be able to recognize a serious failure and do something about it.",
+    evidenceGuidance: "A serious error you caught and corrected, relevant experience, proof of access or decision authority, or a named capable reviewer with defined coverage.",
     options: HUM1_OPTIONS,
   },
   {
     id: "HUM3",
     dimension: "humanAssurance",
-    prompt: "Do you have enough knowledge, access, authority, time, and attention to keep catching and fixing serious errors?",
+    prompt: "At the expected volume and pace, can you provide the time and attention this AI role requires?",
     promptByStage: {
-      plan: "Will you have enough knowledge, access, authority, time, and attention to keep catching and fixing serious errors as the work continues?",
-      release: "Did you have enough knowledge, access, authority, time, and attention to catch and fix serious errors, and can you keep doing so after launch?",
-      live: "Do you have enough knowledge, access, authority, time, and attention to keep catching and fixing serious errors while this work is in use?",
+      plan: "At the expected volume and pace, will you have enough time and attention to review, correct, monitor, and recover from this work?",
+      release: "At the expected volume and pace, did you have enough time and attention for the required review before launch, and can you sustain any review that continues afterward?",
+      live: "Is the required human review holding up at the actual volume and pace?",
     },
-    why: "A relationship that depends on more attention than you can sustain may work once and still fail during normal use.",
+    why: "AI can reduce production time while creating checking, correction, monitoring, and recovery work. This compares that work with the time and attention available.",
+    evidenceGuidance: "A timed review, expected output volume, workload calculation, missed-review or backlog records, and backup coverage.",
     options: HUM3_OPTIONS,
   },
   {
@@ -233,11 +267,12 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "capabilityFit",
     prompt: "What shows that this exact AI setup can perform the role you gave it?",
     promptByStage: {
-      plan: "What supports your belief that this exact AI setup can perform the role you plan to give it?",
+      plan: "What testing already supports your belief that this exact AI setup can perform the role you plan to give it?",
       release: "What shows that this exact AI setup performed the role you gave it in the finished work?",
       live: "What shows that this exact AI setup keeps performing its assigned role in actual use?",
     },
     why: "A model's reputation is not evidence that the configured system can do this particular work.",
+    evidenceGuidance: "Saved tests using the exact model, instructions, tools, sources, acceptance criteria, and normal, difficult, edge, or failure cases.",
     options: CAP1_OPTIONS,
     optionsByStage: {
       plan: CAP1_PLAN_OPTIONS,
@@ -250,11 +285,12 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "capabilityFit",
     prompt: "Have the likely ways this could fail been identified and checked?",
     promptByStage: {
-      plan: "Have you identified the likely ways this AI role could fail, and how will you check them?",
+      plan: "Which likely ways this AI role could fail have you already identified and checked?",
       release: "Were the likely ways this AI role could fail identified and checked before launch?",
       live: "Are likely failures being detected, corrected, and recorded during actual use?",
     },
-    why: "Reliance depends on knowing where performance ends and what happens when it fails.",
+    why: "Likely failure paths show what you may have to catch, correct, contain, or recover from.",
+    evidenceGuidance: "A failure-mode list, saved failure-case tests, the expected stopping response, and recovery results.",
     options: CAP2_OPTIONS,
   },
   {
@@ -262,35 +298,38 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "behavioralFit",
     prompt: "What shows that the AI behaves the way you need it to for this work?",
     promptByStage: {
-      plan: "How will you test whether the AI behaves the way you need it to for this work?",
+      plan: "What testing already shows whether the AI behaves the way you need it to for this work?",
       release: "What shows that the AI behaved the way you needed it to while making this work?",
       live: "What shows that the AI continues to behave the way you need it to in actual use?",
     },
     why: "An instruction to challenge, verify, or stop does not show that the behavior will occur when it matters.",
+    evidenceGuidance: "Saved tests showing appropriate agreement, challenge, uncertainty, questions, or stopping under the exact setup.",
     options: BEH1_OPTIONS,
   },
   {
     id: "WF1",
     dimension: "workflowControl",
-    prompt: "Is the AI limited to only the accounts, files, tools, and actions needed for this work?",
+    prompt: "How clearly are the AI system's access and action boundaries known, limited, and enforceable?",
     promptByStage: {
-      plan: "Will the AI be limited to only the accounts, files, tools, and actions needed for this work?",
-      release: "Was the AI limited to only the accounts, files, tools, and actions needed for this work?",
-      live: "Is the AI still limited to only the accounts, files, tools, and actions needed for this work?",
+      plan: "Before work begins, how clearly will the AI system's access and action boundaries be known, limited, and enforceable?",
+      release: "How clearly were the AI system's access and action boundaries known, limited, and enforced?",
+      live: "How clearly are the AI system's access and action boundaries known, limited, and enforced now?",
     },
-    why: "Authority should not exceed what the evidence, human capacity, and recovery controls can support.",
+    why: "The more AI can reach or change before review, the greater the monitoring and recovery work and the possible consequence of one failure.",
+    evidenceGuidance: "Current permission records or screenshots, approval limits, access logs, and a revocation or rollback test.",
     options: WF1_OPTIONS,
   },
   {
     id: "WF2",
     dimension: "workflowControl",
-    prompt: "What check happens before an AI output is used, published, sent, or allowed to affect another system?",
+    prompt: "What independent check can catch, correct, or stop a bad AI output before it creates a consequence?",
     promptByStage: {
-      plan: "What will be checked before an AI output is used, published, sent, or allowed to affect another system?",
+      plan: "What independent check will catch, correct, or stop a bad AI output before it creates a consequence?",
       release: "What was checked before this finished work was approved for launch?",
-      live: "What is checked before each AI output is used, published, sent, or allowed to affect another system?",
+      live: "What independent check can catch, correct, or stop a bad AI output before each consequence?",
     },
-    why: "A check changes the boundary only when it can detect a problem and stop or correct the work.",
+    why: "A review counts only if it can detect the failure that matters and change what happens next.",
+    evidenceGuidance: "A review checklist, approval record, comparison result, or saved example showing that a meaningful failure was blocked or corrected.",
     options: WF2_OPTIONS,
   },
   {
@@ -298,11 +337,12 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "outcomeTestability",
     prompt: "What are you counting on this work to accomplish, and how will you recognize success or harm?",
     promptByStage: {
-      plan: "What are you counting on this work to accomplish, and how will you recognize success or harm?",
-      release: "Have you defined what success, failure, and warning signs will look like after launch?",
-      live: "What actually happened? Did the expected result occur, and what problems appeared?",
+      plan: "What result are you betting on, what would show that the bet is failing, and when will you check?",
+      release: "What result are you betting on after launch, and what warning signs would make you revisit the setup?",
+      live: "What result occurred, what problems appeared, and what does that tell you about continuing as-is?",
     },
-    why: "An output can look complete without producing the outcome you are betting on.",
+    why: "An output can look complete without producing the result you are betting on. Warning signs make it possible to revisit the wager.",
+    evidenceGuidance: "A success target, harm or warning signal, owner, timing, feedback, observation, or actual operating result.",
     options: OUT_PLAN_OPTIONS,
     optionsByStage: {
       plan: OUT_PLAN_OPTIONS,
@@ -315,12 +355,17 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "humanAssurance",
     prompt: "How were important factual claims verified?",
     promptByStage: {
-      plan: "How will important factual claims be checked outside the AI system that produces or repeats them?",
+      plan: "What verification is already planned or in place for important factual claims?",
       release: "How were important factual claims checked outside the AI system that produced or repeated them?",
       live: "How are important factual claims checked during actual use?",
     },
     why: "Important factual claims need verification outside the same system that produced them.",
+    evidenceGuidance: "Source checks, comparison notes, qualified review, or records showing which claims were verified and which remain uncertain.",
     options: HUM2_OPTIONS,
+    optionsByStage: { plan: HUM2_PLAN_OPTIONS },
+    evidenceGuidanceByStage: {
+      plan: "A written verification plan naming claim types, source requirements, the responsible reviewer, uncertainty labels, and any independent check.",
+    },
     trigger: {
       description: "Asked when the work contains factual or consequential claims.",
       projectFlag: "materialClaims",
@@ -332,12 +377,17 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "behavioralFit",
     prompt: "Was the system tested with a flawed premise or a situation in which it should disagree or stop?",
     promptByStage: {
-      plan: "How will you test the AI with a flawed premise or a situation in which it should disagree or stop?",
+      plan: "What challenge testing is already designed or completed for this AI role?",
       release: "Was the AI tested with a flawed premise or a situation in which it should disagree or stop?",
       live: "Does continued testing show that the AI disagrees or stops when it should?",
     },
     why: "Agreeable output is not evidence that a system can serve as a critic, verifier, or stop gate.",
+    evidenceGuidance: "Saved flawed-premise, disagreement, uncertainty, and stopping tests under the same setup.",
     options: BEH2_OPTIONS,
+    optionsByStage: { plan: BEH2_PLAN_OPTIONS },
+    evidenceGuidanceByStage: {
+      plan: "Written challenge cases and pass criteria, plus saved results for any tests already run under the proposed setup.",
+    },
     trigger: {
       description: "Asked when challenge, comparison, uncertainty, or stopping is required.",
       requiredBehaviors: ["compare", "challenge", "uncertainty", "stop"],
@@ -348,12 +398,17 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "workflowControl",
     prompt: "Which technical checks were completed and saved?",
     promptByStage: {
-      plan: "Which technical checks will have to pass before launch?",
+      plan: "Which technical checks are already defined as release requirements?",
       release: "Which technical checks were completed and saved before launch?",
       live: "Which technical checks are repeated and saved while the work is in use?",
     },
     why: "Visible review alone cannot establish that software, links, accessibility, or deployment behavior works.",
+    evidenceGuidance: "Saved build, test, lint, link, mobile, accessibility, deployment, security, failure, or rollback results that fit this work.",
     options: WF3_OPTIONS,
+    optionsByStage: { plan: WF3_PLAN_OPTIONS },
+    evidenceGuidanceByStage: {
+      plan: "A release checklist naming the required checks, pass criteria, owners, stop rule, and any saved rehearsal results.",
+    },
     trigger: {
       description: "Asked for software, website, code, or configuration work.",
       projectFlag: "productionCodeOrConfiguration",
@@ -365,12 +420,17 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     dimension: "workflowControl",
     prompt: "Can the activity be seen, stopped, limited, and reversed while it is running?",
     promptByStage: {
-      plan: "Will you be able to see, stop, limit, and reverse the AI's activity while it is running?",
+      plan: "What controls are already planned or in place to see, stop, limit, and reverse the AI's activity?",
       release: "Were monitoring, stopping, limits, and recovery tested before launch?",
       live: "Can you see, stop, limit, and reverse the AI's activity during actual use?",
     },
     why: "Repeated or autonomous operation needs controls that work during execution, not only a review afterward.",
+    evidenceGuidance: "Monitoring records and saved stop, limit, revocation, rollback, recovery, or incident-response tests.",
     options: WF4_OPTIONS,
+    optionsByStage: { plan: WF4_PLAN_OPTIONS },
+    evidenceGuidanceByStage: {
+      plan: "A permissions and control plan naming monitoring, limits, stopping authority, rollback, recovery, and any saved rehearsal results.",
+    },
     trigger: {
       description: "Asked for repeated or autonomous activity, including unattended operation.",
       projectFlag: "repeatedOrAutonomous",
@@ -422,6 +482,7 @@ export function getActiveQuestionDefinitions(assessment = {}) {
     ...question,
     prompt: question.promptByStage?.[stage] || question.prompt,
     options: question.optionsByStage?.[stage] || question.options,
+    evidenceGuidance: question.evidenceGuidanceByStage?.[stage] || question.evidenceGuidance,
   }));
 }
 

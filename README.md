@@ -2,14 +2,14 @@
 
 **Your credibility is being questioned. Show how the work was made.**
 
-Human + AI Work is a provenance-first public prototype with two connected tools. The Work Record creates an evidence-backed account of how one artifact version was made. The Load Test checks whether a person’s current capacity, the assigned AI role, the workflow and controls, and the stakes support relying on that arrangement.
+Human + AI Work is a provenance-first public prototype with two connected tools. The Work Record creates an evidence-backed account of how one artifact version was made. The Load Test reveals what an assigned AI role still requires from people and the workflow, whether the current setup can carry that load, and what is at stake if the person proceeds as-is.
 
 The site provides two connected tools:
 
 - **Work Record: Who did what?** Documents the exact artifact, detailed role-based credits, claims, evidence, review, and final release decision.
-- **Load Test: Can this arrangement carry the work?** Shows the largest AI role supported now and what could strengthen the arrangement.
+- **Load Test: Can this setup carry the work?** Shows the load created by an AI role, the role described by the person’s answers, the role backed by identified records, and the wager if the setup remains unchanged.
 
-The Load Test produces a transparent project result, a separate evidence-strength result, supported roles and limits, problems that need to be fixed first, and practical actions that can strengthen the relationship now, within 24 hours, within days, or within weeks.
+The Load Test produces a transparent project result, a separate Evidence Strength result, exposed parts of the wager, and practical actions that can reduce the load or strengthen the setup now, within 24 hours, within days, or within weeks. It does not grant or deny permission to proceed.
 
 ## Current status
 
@@ -23,7 +23,7 @@ The prototype:
 - Separates claim support, evidence integrity, and review status
 - Supports public, private, and redacted evidence
 - Produces a privacy-safe public HTML record and a private JSON backup
-- Preserves and migrates earlier Work Record data without invalidating v0.2 assessment data
+- Preserves earlier Load Test setup data and requires reassessment when the scoring method changes
 - Supports planning, ready-to-launch, and current-use Load Tests
 - Exports and imports project JSON
 - Prints a task-specific project card
@@ -61,13 +61,14 @@ The Work Record follows the work instead of guessing from its surface. It record
 
 This is not an AI detector. It does not scan writing style, classify a finished product as human or AI, or help someone bypass detection.
 
-The Load Test asks whether the person's current capacity, the AI setup and assigned role, the workflow and controls, and what is at stake support the role and authority being given to AI.
+The Load Test asks what the role given to AI requires from the person and workflow, whether the current setup can carry that load, and what could happen if the person continues as-is.
 
-- **Reliance Support** describes the largest AI role the current arrangement supports.
-- **Evidence Strength** describes how well the available records support that conclusion.
-- A serious gap in knowledge, access, authority, time, attention, or the ability to correct or stop the work can limit the supported AI role.
+- The **operational result** describes what the person’s answers say the setup can carry.
+- The **record-backed conclusion** is limited to the role-critical records the person identified. The tool records those references but does not inspect them.
+- **Evidence Strength** describes which answers have supporting records identified and whether an independent review was recorded.
+- A serious gap in knowledge, access, authority, time, attention, or the ability to correct or stop the work can leave part of the load uncovered.
 - Multiple AI systems and models can be recorded, but one consequential system-role pair is assessed at a time. Run another Load Test for another consequential role.
-- Recommended actions may change the AI role, add qualified human help, strengthen the workflow, or test a different model. Planned actions do not change the current result until they are completed and supported by evidence.
+- Recommended actions may change the AI role, add qualified human help, strengthen the workflow, or test a different model. A planned action does not change the operational result until it is completed and the Load Test is run again. Evidence Strength changes only when a current supporting record is identified.
 
 See the in-product **How it works** page for the complete explanation.
 
