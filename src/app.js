@@ -37,6 +37,7 @@ const LEGACY_STORAGE_KEY = 'ai-reliance-check:v0.1';
 const RECORD_KEY = 'ai-reliance-check:work-record:v0.3';
 const LEGACY_RECORD_KEYS = ['ai-reliance-check:work-record:v0.2', 'ai-reliance-check:creation-record:v0.1'];
 const ASSESSMENT_SCHEMA_VERSION = 2;
+const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSef4UnjJR67d2zV0Osuu85TVtd5lqXrHCVWwdcOzPwCxNOrSw/viewform';
 
 const WORK_TYPES = [
   ['factual', 'Factual content', 'Claims, research, or source-based material'],
@@ -498,6 +499,15 @@ function renderHome() {
       <div class="button-row">
         <a class="button" href="#/creation-record">Create my Work Record</a>
         <a class="button button-secondary" href="#/method">See how it works</a>
+      </div>
+    </section>
+
+    <section class="section section-compact" aria-labelledby="feedback-heading">
+      <div class="callout">
+        <p class="kicker">Founding feedback</p>
+        <h2 id="feedback-heading">Help improve Human + AI Work.</h2>
+        <p>Try the Work Record or Load Test first. Then tell me what helped, what was confusing, or what should change. The form has four short questions.</p>
+        <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
       </div>
     </section>
   `;
@@ -1503,6 +1513,7 @@ function renderResult() {
       <button class="button" type="button" id="print-result">Print Load Test</button>
       <button class="button button-secondary" type="button" id="export-result">Export Load Test</button>
       <a class="button button-secondary" href="#/creation-record" id="start-record-from-result">Create a Work Record</a>
+      <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
       <button class="button button-danger" type="button" id="new-check">Start a new Load Test</button>
     </div>
   </div>`;
@@ -2321,6 +2332,7 @@ function renderWorkRecordResult() {
       <button class="button button-secondary" type="button" id="download-public-record">${completeness.publicReady ? 'Download public record' : 'Download draft record'}</button>
       <button class="button button-secondary" type="button" id="export-private-record">Export private backup</button>
       <button class="button button-secondary" type="button" id="copy-disclosure-v03">Copy short disclosure</button>
+      <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
       <button class="text-button" type="button" id="edit-work-record">Edit record</button>
     </div>
     <section class="optional-next-step card">
