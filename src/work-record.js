@@ -31,7 +31,7 @@ export const CONTRIBUTION_OPTIONS = Object.freeze([
   Object.freeze(["Human-led", "I did this"]),
   Object.freeze(["Shared", "I did this with AI"]),
   Object.freeze(["AI-reviewed", "AI produced it, then I reviewed and changed it"]),
-  Object.freeze(["AI-accepted", "AI produced it, and I accepted it without material change"]),
+  Object.freeze(["AI-accepted", "AI produced it, and I accepted it without major changes"]),
   Object.freeze(["Other-person", "Another person did this"]),
   Object.freeze(["Unknown", "Unknown"]),
   Object.freeze(["Not applicable", "Not applicable"]),
@@ -43,7 +43,7 @@ export const CLAIM_CATEGORY_OPTIONS = Object.freeze([
   Object.freeze(["direction", "Direction and decisions"]),
   Object.freeze(["evaluation", "Ability to evaluate the work"]),
   Object.freeze(["authorship", "Authorship"]),
-  Object.freeze(["other", "Other claim"]),
+  Object.freeze(["other", "Other statement"]),
 ]);
 
 export const CLAIM_SUPPORT_OPTIONS = Object.freeze([
@@ -62,17 +62,17 @@ export const EVIDENCE_VISIBILITY_OPTIONS = Object.freeze([
 ]);
 
 export const EVIDENCE_INTEGRITY_OPTIONS = Object.freeze([
-  Object.freeze(["unlinked", "Unlinked"]),
-  Object.freeze(["version-linked", "Version-linked"]),
-  Object.freeze(["tamper-evident", "Tamper-evident"]),
+  Object.freeze(["unlinked", "No clear connection"]),
+  Object.freeze(["version-linked", "Yes, tied to this version"]),
+  Object.freeze(["tamper-evident", "Yes, tied to this version and protected against unnoticed changes"]),
 ]);
 
 export const EVIDENCE_RELATIONSHIP_OPTIONS = Object.freeze([
   Object.freeze(["unknown", "Choose relationship"]),
-  Object.freeze(["supports", "Supports the claim"]),
-  Object.freeze(["corroborates", "Corroborates the claim"]),
-  Object.freeze(["contradicts", "Contradicts the claim"]),
-  Object.freeze(["context", "Provides context only"]),
+  Object.freeze(["supports", "Supports: backs up the statement"]),
+  Object.freeze(["corroborates", "Corroborates: independently confirms the statement"]),
+  Object.freeze(["contradicts", "Contradicts: points against the statement"]),
+  Object.freeze(["context", "Context only: helps explain but does not support it"]),
 ]);
 
 export const REVIEW_STATUS_OPTIONS = Object.freeze([
@@ -331,7 +331,9 @@ function linkClaimsAndEvidence(claims, evidence) {
 export function safeHttpUrl(value) {
   try {
     const url = new URL(String(value || ""));
-    return ["http:", "https:"].includes(url.protocol) ? url.href : "";
+    if (!["http:", "https:"].includes(url.protocol)) return "";
+    if (url.username || url.password) return "";
+    return url.href;
   } catch {
     return "";
   }
@@ -783,6 +785,8 @@ export function buildDisclosure(recordInput, options = {}) {
   const systemText = systems.length ? systems.join(", ") : "an AI system that has not been fully identified";
   const creator = record.creator.name || "The creator";
   const roles = record.systems.map(({ role }) => role).filter(Boolean).join("; ") || record.aiContributions || "the contributions described in the Work Record";
+  const humanContribution = record.humanActions || "No human contribution has been described in this Work Record";
+  const humanContributionText = /[.!?]$/.test(humanContribution) ? humanContribution : `${humanContribution}.`;
   const decider = record.finalDecision.name || creator;
   const finalDecision = record.finalDecision.name && record.finalDecision.date
     ? ` ${decider} reviewed the documented version and made the final release decision on ${record.finalDecision.date}.`
@@ -790,5 +794,5 @@ export function buildDisclosure(recordInput, options = {}) {
   const modelHistory = record.modelHistoryCompleteness === "complete"
     ? ""
     : " The complete AI model history has not been verified.";
-  return `Human + AI disclosure: ${creator} records the human contribution and direction described in the Work Record. ${systemText} assisted with ${roles}.${finalDecision} View the Work Record for credits and selected evidence.${modelHistory}`;
+  return `Human + AI disclosure: Human contribution recorded for ${creator}: ${humanContributionText} ${systemText} assisted with ${roles}.${finalDecision} View the Work Record for credits and selected evidence.${modelHistory}`;
 }

@@ -109,16 +109,16 @@ const routes = [
   { name: 'home-feedback', route: '#/', expected: 'Help improve Human + AI Work.' },
   { name: 'home-question-copy', route: '#/', expected: 'Does this sound like AI wrote it?', forbidden: '<span>Question</span><q>This sounds like AI wrote it.</q>' },
   { name: 'home-cake-copy', route: '#/', expected: 'When working with AI, finished work cannot either.', forbidden: '</strong> Finished work cannot either.' },
-  { name: 'record-step-1', route: '#/creation-record', expected: 'Identify the work and its exact version.' },
-  { name: 'sample', route: '#/sample', expected: 'How this website and its methods were developed.' },
-  { name: 'load-test', route: '#/load-test', expected: 'When are you checking the arrangement?' },
+  { name: 'record-step-1', route: '#/creation-record', expected: 'What work are you documenting?' },
+  { name: 'sample', route: '#/sample', expected: 'Example: How this website and its methods were developed.' },
+  { name: 'load-test', route: '#/load-test', expected: 'How far along is the work?' },
   { name: 'load-test-result-copy', route: '#/load-test', expected: 'You get more than a score.', forbidden: 'You will not get only a score.' },
-  { name: 'legacy-check-route', route: '#/check', expected: 'When are you checking the arrangement?' },
+  { name: 'legacy-check-route', route: '#/check', expected: 'How far along is the work?' },
   { name: 'copyright', route: '#/copyright', expected: 'Copyright protects the expression, not the method.' },
   {
     name: 'incomplete-completed-check',
     route: '#/load-test',
-    expected: 'When are you checking the arrangement?',
+    expected: 'How far along is the work?',
     forbidden: '<p class="eyebrow">Result</p>',
     initial: {
       localStorage: {
@@ -133,9 +133,9 @@ const routes = [
       },
     },
   },
-  { name: 'method', route: '#/method', expected: 'Follow the work, not the writing style.' },
-  { name: 'research', route: '#/research', expected: 'Practice-based, then compared with established work.' },
-  { name: 'examples', route: '#/examples', expected: 'Different work needs different records and boundaries.' },
+  { name: 'method', route: '#/method', expected: 'Choose the question you need to answer.' },
+  { name: 'research', route: '#/research', expected: 'Built from real AI-assisted work, then compared with existing research and standards.' },
+  { name: 'examples', route: '#/examples', expected: 'See which tool fits your situation.' },
   { name: 'pricing', route: '#/pricing', expected: 'Full access is open during the Founding Preview.' },
   { name: 'faq', route: '#/faq', expected: 'Plain answers about what this tool can and cannot say.' },
 ];
@@ -166,11 +166,11 @@ const smokeRecord = {
 };
 
 for (const [step, expected] of [
-  [2, 'What should this record support?'],
+  [2, 'What do you want this record to show?'],
   [3, 'Give the credits.'],
-  [4, 'Connect claims to evidence.'],
-  [5, 'Create the detailed credits.'],
-  [6, 'Review the record and name the release decision.'],
+  [4, 'What records support your statements?'],
+  [5, 'Who handled each part of the work?'],
+  [6, 'Review the record and name who approved this version.'],
   [7, 'Your credits and evidence are ready to review.'],
 ]) {
   routes.push({

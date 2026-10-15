@@ -168,10 +168,10 @@ const OUT_RELEASE_OPTIONS = [
 ];
 
 const HUM2_OPTIONS = [
-  option(0, "Not checked", "Material claims were not checked, or the AI checked itself."),
+  option(0, "Not checked", "Important factual claims were not checked, or the AI checked itself."),
   option(25, "Links collected", "Links exist but were not meaningfully reviewed."),
   option(50, "Important sample checked", "A sample of important claims was checked."),
-  option(75, "Every material claim addressed", "Every material claim was checked or clearly labeled uncertain."),
+  option(75, "Every important factual claim addressed", "Every important factual claim was checked or clearly labeled uncertain."),
   option(100, "Independent high-consequence verification", "The highest-consequence claims received qualified independent verification."),
 ];
 
@@ -219,11 +219,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "HUM3",
     dimension: "humanAssurance",
-    prompt: "Can you keep performing the required review at the expected volume and pace?",
+    prompt: "Do you have enough knowledge, access, authority, time, and attention to keep catching and fixing serious errors?",
     promptByStage: {
-      plan: "Will you be able to keep performing the required review at the expected volume and pace?",
-      release: "Was the required review completed, and can it be maintained after launch at the expected volume and pace?",
-      live: "Can you keep performing the required review at the actual volume and pace?",
+      plan: "Will you have enough knowledge, access, authority, time, and attention to keep catching and fixing serious errors as the work continues?",
+      release: "Did you have enough knowledge, access, authority, time, and attention to catch and fix serious errors, and can you keep doing so after launch?",
+      live: "Do you have enough knowledge, access, authority, time, and attention to keep catching and fixing serious errors while this work is in use?",
     },
     why: "A relationship that depends on more attention than you can sustain may work once and still fail during normal use.",
     options: HUM3_OPTIONS,
@@ -260,9 +260,9 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "BEH1",
     dimension: "behavioralFit",
-    prompt: "What shows that the AI behaves the way you need it to in this relationship?",
+    prompt: "What shows that the AI behaves the way you need it to for this work?",
     promptByStage: {
-      plan: "How will you test whether the AI behaves the way you need it to in this relationship?",
+      plan: "How will you test whether the AI behaves the way you need it to for this work?",
       release: "What shows that the AI behaved the way you needed it to while making this work?",
       live: "What shows that the AI continues to behave the way you need it to in actual use?",
     },
@@ -272,11 +272,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "WF1",
     dimension: "workflowControl",
-    prompt: "Are the system's access and authority limited to what this task requires?",
+    prompt: "Is the AI limited to only the accounts, files, tools, and actions needed for this work?",
     promptByStage: {
-      plan: "Will the AI's access and authority be limited to what this work requires?",
-      release: "Were the AI's access and authority limited to what this work required?",
-      live: "Are the AI's current access and authority still limited to what this work requires?",
+      plan: "Will the AI be limited to only the accounts, files, tools, and actions needed for this work?",
+      release: "Was the AI limited to only the accounts, files, tools, and actions needed for this work?",
+      live: "Is the AI still limited to only the accounts, files, tools, and actions needed for this work?",
     },
     why: "Authority should not exceed what the evidence, human capacity, and recovery controls can support.",
     options: WF1_OPTIONS,
@@ -284,11 +284,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "WF2",
     dimension: "workflowControl",
-    prompt: "What check happens before the result creates a consequence?",
+    prompt: "What check happens before an AI output is used, published, sent, or allowed to affect another system?",
     promptByStage: {
-      plan: "What will be checked before an AI output or action creates a consequence?",
+      plan: "What will be checked before an AI output is used, published, sent, or allowed to affect another system?",
       release: "What was checked before this finished work was approved for launch?",
-      live: "What is checked before each AI output or action creates a consequence?",
+      live: "What is checked before each AI output is used, published, sent, or allowed to affect another system?",
     },
     why: "A check changes the boundary only when it can detect a problem and stop or correct the work.",
     options: WF2_OPTIONS,
@@ -313,13 +313,13 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "HUM2",
     dimension: "humanAssurance",
-    prompt: "How were material claims verified?",
+    prompt: "How were important factual claims verified?",
     promptByStage: {
-      plan: "How will material claims be checked outside the AI system that produces or repeats them?",
-      release: "How were material claims checked outside the AI system that produced or repeated them?",
-      live: "How are material claims checked during actual use?",
+      plan: "How will important factual claims be checked outside the AI system that produces or repeats them?",
+      release: "How were important factual claims checked outside the AI system that produced or repeated them?",
+      live: "How are important factual claims checked during actual use?",
     },
-    why: "Material claims need verification outside the same system that produced them.",
+    why: "Important factual claims need verification outside the same system that produced them.",
     options: HUM2_OPTIONS,
     trigger: {
       description: "Asked when the work contains factual or consequential claims.",
