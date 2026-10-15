@@ -455,7 +455,7 @@ test("credits and disclosure name human and AI roles without a false contributio
   assert.match(credits.roles.find(({ key }) => key === "verification").credit, /not established/i);
   assert.match(credits.modelHistoryNote, /has not been verified/i);
   assert.match(disclosure, /ChatGPT 5\.6 Sol Ultra assisted with research, drafting, code, and testing/i);
-  assert.match(disclosure, /Cheryl Abram records the human contribution/i);
+  assert.match(disclosure, /Human contribution recorded for Cheryl Abram/i);
   assert.match(disclosure, /made the final release decision/i);
   assert.doesNotMatch(JSON.stringify({ credits, disclosure }), /\d+%/);
 });
@@ -478,6 +478,10 @@ test("safeHttpUrl rejects unsafe and non-web protocols", () => {
   assert.equal(safeHttpUrl("javascript:alert(1)"), "");
   assert.equal(safeHttpUrl("file:///tmp/private"), "");
   assert.equal(safeHttpUrl("not a url"), "");
+  assert.equal(safeHttpUrl("//example.com/path"), "");
+  assert.equal(safeHttpUrl("https://user:password@example.com/private"), "");
+  assert.equal(safeHttpUrl("https://example.com:bad/path"), "");
+  assert.equal(safeHttpUrl("  HTTP://EXAMPLE.COM/path  "), "http://example.com/path");
   assert.equal(safeHttpUrl("https://example.com/a"), "https://example.com/a");
 });
 

@@ -77,7 +77,7 @@ const ACTION_LIBRARY = Object.freeze({
     target: 75,
     scoreEvidence: "A review plan tested at the expected volume and pace, including the time required and backup coverage.",
     evidenceEffect: "Shows whether required human review can be maintained, not merely performed once.",
-    roleEffect: "May support repeated use after scope, pace, staffing, or the AI role is adjusted.",
+    roleEffect: "May support repeated use after the amount of work, pace, staffing, or AI role is adjusted.",
     now: "Reduce the volume, pace, or AI role to an amount you can review reliably today.",
     within24h: "Time one complete review cycle and calculate whether it fits the expected workload.",
     days: "Add backup review coverage or automate checks that can reliably block a bad result.",
@@ -99,7 +99,7 @@ const ACTION_LIBRARY = Object.freeze({
     target: 75,
     scoreEvidence: "Saved approval, test, stop, recovery, and release records from the actual workflow.",
     evidenceEffect: "Documents that the control operated rather than appearing only in a plan.",
-    roleEffect: "May support consequential action when checks can stop or correct the work.",
+    roleEffect: "May support AI actions that create real consequences when the checks can stop or correct the work.",
     now: "Add a human approval point before the first real consequence and preserve a rollback copy.",
     within24h: "Run and save the relevant build, link, behavior, mobile, accessibility, or deployment checks.",
     days: "Automate the checks that should block release.",
@@ -414,11 +414,11 @@ function evidenceStrengthFor(assessment, itemScores, dimensionWeights, criticalU
     }
   }
   const description = {
-    not_enough_information: "Important claims about the relationship do not yet have enough supporting information.",
-    self_described: "The relationship is described by the person completing the Load Test, without records confirming the key steps.",
+    not_enough_information: "Important parts of this human and AI setup do not yet have enough supporting information.",
+    self_described: "This setup is described by the person completing the Load Test, without records confirming the key steps.",
     partly_documented: "Some records support the account, but important steps or controls are still missing.",
-    key_steps_documented: "Current records support the important parts of the relationship, workflow, and result.",
-    independently_checked: "A named independent reviewer checked the important records within a stated scope.",
+    key_steps_documented: "Current records support the important facts about the AI role, workflow, and result.",
+    independently_checked: "A named independent reviewer checked the important records within clearly stated limits.",
   }[id];
   return {
     evidenceIndex,
@@ -463,8 +463,8 @@ function evaluateSystemGates(systems) {
       gates.push(buildGate({
         id: `system_material_failure:${system.id}`,
         systemId: system.id,
-        title: `${system.name}${suffix} has an unresolved material failure`,
-        effect: "Remove the affected part from scope or resolve and retest it before relying on this system.",
+        title: `${system.name}${suffix} has an unresolved serious failure`,
+        effect: "Remove the affected work or resolve and retest the failure before relying on this system.",
         actionTrigger: "workflow_gap",
         blocking: true,
         authorityCap: "A0",
@@ -488,7 +488,7 @@ function evaluateSystemGates(systems) {
       gates.push(buildGate({
         id: `system_capability:${system.id}`,
         systemId: system.id,
-        title: `${system.name}${suffix} has not demonstrated its assigned role`,
+        title: `${system.name}${suffix} has not shown that it can handle its assigned role`,
         effect: "Use this system only to explore or draft until the exact setup passes task-specific tests.",
         actionTrigger: "capability_gap",
         blocking: authorityRank(system.proposedAuthority) >= authorityRank("A2"),
@@ -499,7 +499,7 @@ function evaluateSystemGates(systems) {
       gates.push(buildGate({
         id: `system_behavior:${system.id}`,
         systemId: system.id,
-        title: `${system.name}${suffix} has not demonstrated the behavior its role requires`,
+        title: `${system.name}${suffix} has not shown the behavior its role requires`,
         effect: "Do not depend on this system to challenge, verify, identify uncertainty, or stop until that behavior is tested.",
         actionTrigger: "behavior_gap",
         authorityCap: "A1",
@@ -522,7 +522,7 @@ function evaluateSystemGates(systems) {
         gates.push(buildGate({
           id: `system_authority_limit:${system.id}`,
           systemId: system.id,
-          title: `${system.name}${suffix} supports a smaller role than proposed`,
+          title: `${system.name}${suffix} supports a smaller role than the one assigned`,
           effect: `Limit this system to ${AUTHORITY_LABELS[cap].toLowerCase()}.`,
           actionTrigger: "capability_gap",
           blocking: true,
@@ -566,7 +566,7 @@ function evaluateGates(assessment, context) {
   } else if (itemScores.HUM1?.level < 75 && authorityRank(proposedAuthority) >= authorityRank("A2")) {
     gates.push(buildGate({
       id: "human_capacity_gap",
-      title: "Your current review capacity does not cover the proposed authority",
+      title: "Your current review capacity does not cover the authority given to AI",
       effect: "Limit AI to producing work for capable human approval until every important part can be judged and corrected.",
       actionTrigger: "human_gap",
       blocking: true,
@@ -577,7 +577,7 @@ function evaluateGates(assessment, context) {
     gates.push(buildGate({
       id: "review_not_sustainable",
       title: "The required human review cannot be sustained",
-      effect: "Reduce the AI role, pace, or volume, or add capable review coverage before consequential or repeated use.",
+      effect: "Reduce the AI role, pace, or volume, or add capable review before AI is used repeatedly or in ways that create serious consequences.",
       actionTrigger: "sustainability_gap",
       blocking: true,
       authorityCap: "A1",
@@ -585,7 +585,7 @@ function evaluateGates(assessment, context) {
   } else if (itemScores.HUM3?.level < 75 && authorityRank(proposedAuthority) >= authorityRank("A3")) {
     gates.push(buildGate({
       id: "review_not_sustainable",
-      title: "Sustained review for unattended operation is not demonstrated",
+      title: "Review has not been shown to keep up while AI operates without item-by-item approval",
       effect: "Keep item-by-item approval until the review process holds up at the expected volume and pace.",
       actionTrigger: "sustainability_gap",
       blocking: true,
@@ -596,7 +596,7 @@ function evaluateGates(assessment, context) {
     gates.push(buildGate({
       id: "human_access_missing",
       title: "You do not have access to inspect the important work",
-      effect: "Do not rely on the proposed role until you or a named capable reviewer can inspect the important work.",
+      effect: "Do not rely on AI in the assigned role until you or a named capable reviewer can inspect the important work.",
       actionTrigger: "human_gap",
       blocking: true,
       authorityCap: "A0",
@@ -606,7 +606,7 @@ function evaluateGates(assessment, context) {
     gates.push(buildGate({
       id: "human_authority_missing",
       title: "You cannot require a correction or stop the work",
-      effect: "Do not authorize consequential AI action until a capable person has real authority to intervene.",
+      effect: "Do not allow the AI to take an action with real consequences until a capable person has the authority to intervene.",
       actionTrigger: "human_gap",
       blocking: true,
       authorityCap: "A0",
@@ -615,8 +615,8 @@ function evaluateGates(assessment, context) {
   if (authorityRank(proposedAuthority) >= authorityRank("A1") && !approvalConfirmed) {
     gates.push(buildGate({
       id: "external_action_without_approval",
-      title: "Approval before consequence is not confirmed",
-      effect: "Keep the AI in private advising or drafting until a human approval point is confirmed before the AI creates an external consequence.",
+      title: "Human approval before AI action is not confirmed",
+      effect: "Keep the AI limited to private advice or drafts until a human must approve the work before it creates an outside consequence.",
       actionTrigger: "workflow_gap",
       blocking: true,
       authorityCap: "A0",
@@ -625,7 +625,7 @@ function evaluateGates(assessment, context) {
   if (authorityRank(proposedAuthority) >= authorityRank("A2") && !reversibilityConfirmed) {
     gates.push(buildGate({
       id: "reversibility_not_confirmed",
-      title: "Reversibility is not confirmed for the proposed action",
+      title: "You have not confirmed that the AI action can be reversed",
       effect: "Limit the AI to producing work for human approval until the action can be reversed or rolled back.",
       actionTrigger: "workflow_gap",
       blocking: true,
@@ -649,7 +649,7 @@ function evaluateGates(assessment, context) {
     gates.push(buildGate({
       id: "insufficient_human_coverage",
       title: "Your current capacity is below what the consequences require",
-      effect: "Block consequential release or decision authority until capable review covers every important part.",
+      effect: "Do not allow AI to release work or make decisions with serious consequences until capable review covers every important part.",
       actionTrigger: "human_gap",
       blocking: true,
       authorityCap: "A1",
@@ -660,10 +660,10 @@ function evaluateGates(assessment, context) {
     const highStakes = consequenceAtLeast(consequence, "high");
     gates.push(buildGate({
       id: "unverified_material_claims",
-      title: "Material claims are not fully verified",
+      title: "Important factual claims are not fully verified",
       effect: highStakes
-        ? "Do not use the unverified claims in the high-consequence decision or release."
-        : "Do not present material claims as verified. Check them or label their uncertainty.",
+        ? "Do not use the unverified factual claims in a decision or release with serious consequences."
+        : "Do not present important factual claims as verified. Check them or clearly state what remains uncertain.",
       actionTrigger: "human_gap",
       blocking: highStakes,
       authorityCap: highStakes ? "A1" : null,
@@ -673,8 +673,8 @@ function evaluateGates(assessment, context) {
   if (productionWork && !technicalChecksConfirmed) {
     gates.push(buildGate({
       id: "untested_production_change",
-      title: "Production change is not technically demonstrated",
-      effect: "Block unsupervised production release until relevant checks and recovery are demonstrated.",
+      title: "The production change has not passed the required technical checks",
+      effect: "Do not allow an unsupervised production release until the relevant checks and recovery steps have been tested.",
       actionTrigger: "workflow_gap",
       blocking: true,
       authorityCap: "A1",
@@ -684,7 +684,7 @@ function evaluateGates(assessment, context) {
     gates.push(buildGate({
       id: "outcome_not_observable",
       title: "The expected result and warning signs are not visible yet",
-      effect: "A limited pilot may proceed, but do not claim effectiveness or scale the relationship.",
+      effect: "A limited pilot may proceed, but do not claim the work is effective or expand its use.",
       actionTrigger: "outcome_gap",
     }));
   }
@@ -699,8 +699,8 @@ function evaluateGates(assessment, context) {
   if (projectValue(assessment, "unresolvedMaterialFailure", false) === true) {
     gates.push(buildGate({
       id: "known_material_failure",
-      title: "A material failure remains unresolved",
-      effect: "Block the affected action until the failure is resolved or removed from scope.",
+      title: "A serious failure remains unresolved",
+      effect: "Do not allow the affected action until the failure is resolved or that action is removed from the work.",
       actionTrigger: "workflow_gap",
       blocking: true,
       authorityCap: "A0",
@@ -918,7 +918,7 @@ function buildRecommendations(context) {
           couldRemove: blockers,
           statement: blockers.length
             ? "May remove the named blocker only after the result is confirmed."
-            : "Addresses a limiting part of the relationship.",
+            : "Addresses a weak part of this setup.",
         },
         roleEffect: definition.roleEffect,
         evidenceRequired: definition.scoreEvidence,
@@ -936,12 +936,12 @@ function buildRecommendations(context) {
         automaticChange: 0,
         projectedChange: 0,
         projectedScore: publicScore,
-        condition: "This reduces the reliance required. It does not raise the relationship score.",
+        condition: "This reduces the reliance required by giving AI less to do. It does not raise the Load Test score.",
       },
       evidenceEffect: "No evidence change.",
       blocker: { couldRemove: [], statement: "Works around current limits instead of removing them." },
-      roleEffect: `Changes the proposed role from ${AUTHORITY_LABELS[proposedAuthority]} to ${AUTHORITY_LABELS[operationalMaxAuthority]}.`,
-      evidenceRequired: "Record the revised AI role, authority, and approval boundary.",
+      roleEffect: `Changes the assigned AI role from ${AUTHORITY_LABELS[proposedAuthority]} to ${AUTHORITY_LABELS[operationalMaxAuthority]}.`,
+      evidenceRequired: "Record the revised AI role, authority, and approval limit.",
       modelChangeTest: false,
     });
   }
@@ -955,11 +955,11 @@ function buildRecommendations(context) {
         automaticChange: 0,
         projectedChange: 0,
         projectedScore: publicScore,
-        condition: "Documentation changes Evidence Strength, not operational performance.",
+        condition: "Documentation changes Evidence Strength, not actual performance.",
       },
       evidenceEffect: "May raise Evidence Strength after the records are reviewed.",
-      blocker: { couldRemove: [], statement: "Reduces uncertainty but does not fix an operational weakness." },
-      roleEffect: "May allow a stronger conclusion about the same reported relationship.",
+      blocker: { couldRemove: [], statement: "Reduces uncertainty but does not fix a weakness in how the work is done." },
+      roleEffect: "May allow a stronger conclusion about the same reported setup.",
       evidenceRequired: "Current records that support the important claims made in the Load Test.",
       modelChangeTest: false,
     });
@@ -981,7 +981,7 @@ function buildRecommendations(context) {
         couldRemove: [],
         statement: "May address a model-specific gap. It cannot fix missing human capacity, access, authority, or workflow controls.",
       },
-      roleEffect: "May reduce the review burden or support the proposed role if the tested model performs better.",
+      roleEffect: "May reduce the review burden or support the assigned AI role if the tested model performs better.",
       evidenceRequired: "Side-by-side results from the same cases, criteria, configuration, and reviewer.",
       modelChangeTest: true,
     });
@@ -1008,16 +1008,16 @@ function buildAuthorizationSummary(context) {
   }
   if (dimensions.capabilityFit >= 60) relyOn.push("Outputs within the demonstrated cases, setup, and stated limits.");
   else relyOn.push("Outputs only as leads or drafts until task-specific performance is demonstrated.");
-  if (activeIds.has("HUM2")) verify.push("Material factual or consequential claims.");
+  if (activeIds.has("HUM2")) verify.push("Important factual claims or claims that could affect a decision.");
   if (activeIds.has("WF3")) verify.push("Build, links, key behavior, mobile, accessibility, deployment, and relevant security checks.");
   if (activeIds.has("WF4")) verify.push("Monitoring, stop controls, limits, and rollback during operation.");
   if (dimensions.humanAssurance < 75) verify.push("Every important part not yet covered by your capacity or a named capable reviewer.");
   if (dimensions.outcomeTestability < 75) verify.push("The intended result and likely harm after release or use.");
   if (authorityRank(proposedAuthority) > authorityRank(maxAuthority)) {
-    doNotAuthorize.unshift(`${AUTHORITY_LABELS[proposedAuthority]} is above the currently supported ${AUTHORITY_LABELS[maxAuthority].toLowerCase()} boundary.`);
+    doNotAuthorize.unshift(`${AUTHORITY_LABELS[proposedAuthority]} is above the AI role currently supported: ${AUTHORITY_LABELS[maxAuthority].toLowerCase()}.`);
   }
   if (authorityRank(operationalMaxAuthority) > authorityRank(maxAuthority)) {
-    doNotAuthorize.unshift(`${AUTHORITY_LABELS[operationalMaxAuthority]} appears operationally possible, but the available evidence does not yet support that conclusion.`);
+    doNotAuthorize.unshift(`${AUTHORITY_LABELS[operationalMaxAuthority]} may be possible in practice, but the available evidence does not yet support that conclusion.`);
   }
   return { delegate, relyOn, verify, doNotAuthorize };
 }
@@ -1036,30 +1036,30 @@ function getDecisionStatus(context) {
     return {
       id: "smaller_role",
       label: "Supported only in a smaller role",
-      description: `Your current capacity, evidence about this AI setup, controls, and workflow support ${AUTHORITY_LABELS[supportedAuthority].toLowerCase()}, not the role you proposed.`,
+      description: `Given what you can currently review, what is known about this AI setup, the workflow checks, and the stakes, AI can be used for ${AUTHORITY_LABELS[supportedAuthority].toLowerCase()}, but not for the larger role you assigned.`,
     };
   }
   if (!proposedRoleOperationallySupported) {
     return {
       id: "not_supported",
       label: "Not supported for the proposed role",
-      description: "Your current capacity, evidence about this AI setup, controls, and workflow do not support the role you proposed under the current stakes.",
+      description: "What you can currently review, the evidence about this AI setup, and the workflow checks are not enough to support the role assigned to AI at these stakes.",
     };
   }
   if (proposedAuthoritySupported && publicScore >= 80 && evidenceConfidence === "High" && !gates.length) {
     return {
       id: "strong",
       label: "Strongly supported under current conditions",
-      description: "Your current capacity, evidence about this AI setup, controls, and workflow strongly support the proposed role under the current conditions.",
+      description: "What you can currently review, the evidence about this AI setup, and the workflow checks strongly support the assigned AI role under the conditions recorded here.",
     };
   }
   const evidenceSentence = evidenceConfidence === "Low"
-    ? " The reported arrangement may fit, but the available evidence is not strong enough to confirm it."
+    ? " This setup may fit the role, but there is not enough evidence yet to confirm it."
     : " The named limits and checks must remain in place.";
   return {
     id: "conditional",
     label: "Supported with named conditions",
-    description: `Your current capacity, evidence about this AI setup, controls, and workflow can support the proposed role only under the named conditions.${evidenceSentence}`,
+    description: `This setup supports the assigned AI role only if the stated limits and checks remain in place.${evidenceSentence}`,
   };
 }
 
