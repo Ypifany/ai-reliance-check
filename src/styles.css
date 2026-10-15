@@ -1474,6 +1474,17 @@ fieldset[aria-invalid="true"] {
   padding: clamp(1.3rem, 4vw, 2.2rem);
 }
 
+.wager-card {
+  margin-bottom: clamp(2.5rem, 6vw, 4.5rem);
+  padding: clamp(1.3rem, 4vw, 2.2rem);
+  border-left: 5px solid var(--teal);
+  background: var(--sage);
+}
+
+.wager-card h2 {
+  max-width: 24ch;
+}
+
 .section-heading-compact {
   margin-bottom: 1.4rem;
 }
@@ -1561,7 +1572,7 @@ fieldset[aria-invalid="true"] {
 
 .result-facts {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 0;
   margin: 1.25rem 0;
   border-block: 1px solid var(--border-dark);
@@ -2571,6 +2582,23 @@ fieldset[aria-invalid="true"] {
 
   .score-lockup {
     text-align: left;
+  }
+
+  .result-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .result-facts > div:nth-child(odd) {
+    padding-left: 0;
+  }
+
+  .result-facts > div:nth-child(even) {
+    padding-right: 0;
+    border-right: 0;
+  }
+
+  .result-facts > div:nth-child(-n+2) {
+    border-bottom: 1px solid var(--border);
   }
 
   .decision-grid {

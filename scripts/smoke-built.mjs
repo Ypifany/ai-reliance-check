@@ -7,6 +7,21 @@ import { HtmlValidate } from 'html-validate';
 const assets = path.resolve('dist/assets');
 const appSource = fs.readFileSync(path.resolve('src/app.js'), 'utf8');
 assert.doesNotMatch(appSource, /href=["']#raise-score["']/, 'The score-actions control must not replace the hash route');
+assert.doesNotMatch(
+  appSource,
+  /what AI (?:can reasonably be|should be) allowed to do|decide what role AI should have/i,
+  'The Load Test must describe the load and wager instead of acting as a permission giver',
+);
+assert.match(
+  appSource,
+  /The Load Test does not decide whether you proceed\./,
+  'The Load Test must state that the decision remains with the person',
+);
+assert.match(
+  appSource,
+  /The Load Test records those references but does not inspect them\./,
+  'The Load Test must not present user-identified records as independently verified',
+);
 for (const fieldId of ['approval-field', 'reversible-field', 'data-authorization-field', 'monitoring-field']) {
   assert.match(appSource, new RegExp(`toggleConditionalField\\('${fieldId}'`), `${fieldId} must be disabled when hidden`);
 }
@@ -104,6 +119,59 @@ function renderRoute(hash, initial = {}) {
   return rendered;
 }
 
+const completedLoadTestAnswers = Object.fromEntries(
+  ['HUM1', 'HUM3', 'CAP1', 'CAP2', 'BEH1', 'WF1', 'WF2', 'OUT1']
+    .map((id) => [id, { level: 100, basis: 'confirmed', evidenceNote: `Current record for ${id}` }]),
+);
+
+const completedLoadTest = {
+  schemaVersion: 2,
+  methodVersion: '0.3',
+  id: 'load-test-smoke',
+  stage: 'release',
+  completed: true,
+  completedAt: '2026-10-15T12:00:00.000Z',
+  updatedAt: '2026-10-15T12:00:00.000Z',
+  project: {
+    name: 'Completed Load Test example',
+    task: 'Prepare and publish a short public guide.',
+    intendedOutcome: 'Readers can follow the guide without being misled.',
+    humanLoad: 'A capable person must check the claims, links, wording, and final release.',
+    failureScenario: 'A serious unsupported claim reaches readers.',
+    failureImpact: 'Readers could make a poor decision and the creator could lose credibility.',
+    consequence: 'moderate',
+    proposedAuthority: 'A1',
+    systems: [{
+      id: 'system-smoke',
+      product: 'Example AI',
+      model: 'Example model',
+      role: 'Draft and organize the guide for human approval',
+      proposedAuthority: 'A1',
+      connectedAccess: false,
+      permissionsConfirmed: true,
+      setup: 'Uses supplied source material and written acceptance criteria.',
+      evidence: 'Saved test and draft record',
+      evidenceBasis: 'confirmed',
+    }],
+    primarySystemId: 'system-smoke',
+    workTypes: ['creative'],
+    requiredBehaviors: ['follow'],
+    connectedAccess: false,
+    permissionsConfirmed: true,
+    humanApprovalBeforeConsequence: true,
+    sensitiveData: false,
+    dataAuthorizationConfirmed: null,
+    unresolvedMaterialFailure: false,
+    actionsAreReversible: true,
+    monitoringConfirmed: false,
+    reviewEvidenceBasis: 'confirmed',
+    reviewEvidenceNote: 'Saved approval and safeguard review',
+    reviewEvidenceUrl: '',
+    qualifiedIndependentReview: false,
+  },
+  answers: completedLoadTestAnswers,
+};
+
 const routes = [
   { name: 'home', route: '#/', expected: 'Your credibility is being questioned.' },
   { name: 'home-feedback', route: '#/', expected: 'Help improve Human + AI Work.' },
@@ -113,6 +181,41 @@ const routes = [
   { name: 'sample', route: '#/sample', expected: 'Example: How this website and its methods were developed.' },
   { name: 'load-test', route: '#/load-test', expected: 'How far along is the work?' },
   { name: 'load-test-result-copy', route: '#/load-test', expected: 'You get more than a score.', forbidden: 'You will not get only a score.' },
+  { name: 'load-test-load-framing', route: '#/load-test', expected: 'what the role you gave AI requires from you' },
+  { name: 'load-test-decision-boundary', route: '#/load-test', expected: 'The Load Test does not decide whether you proceed.' },
+  {
+    name: 'completed-load-test-wager',
+    route: '#/load-test',
+    expected: 'Your wager if you continue as-is',
+    forbidden: 'what AI can reasonably be allowed to do',
+    initial: {
+      localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(completedLoadTest) },
+    },
+  },
+  {
+    name: 'completed-load-test-human-load',
+    route: '#/load-test',
+    expected: 'What still depends on capable review',
+    initial: {
+      localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(completedLoadTest) },
+    },
+  },
+  {
+    name: 'completed-load-test-human-decision',
+    route: '#/load-test',
+    expected: 'The Load Test does not decide whether you proceed.',
+    initial: {
+      localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(completedLoadTest) },
+    },
+  },
+  {
+    name: 'completed-load-test-record-limit',
+    route: '#/load-test',
+    expected: 'The Load Test records those references but does not inspect them.',
+    initial: {
+      localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(completedLoadTest) },
+    },
+  },
   { name: 'legacy-check-route', route: '#/check', expected: 'How far along is the work?' },
   { name: 'copyright', route: '#/copyright', expected: 'Copyright protects the expression, not the method.' },
   {
