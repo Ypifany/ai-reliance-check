@@ -114,7 +114,7 @@ const ACTION_LIBRARY = Object.freeze({
     now: "Define one success signal, one harm signal, who will check them, and when.",
     within24h: "Add a completion signal and a short feedback or observation method.",
     days: "Observe at least three intended users or use cycles.",
-    weeks: "Compare results with the target and run and save an updated Load Test.",
+    weeks: "Compare the results with the target, rerun the Load Test, and save the updated result.",
   },
 });
 
@@ -616,7 +616,7 @@ function evaluateGates(assessment, context) {
     gates.push(buildGate({
       id: "external_action_without_approval",
       title: "Approval before consequence is not confirmed",
-      effect: "Keep the AI in private advising or drafting until a human approval point is confirmed before consequence.",
+      effect: "Keep the AI in private advising or drafting until a human approval point is confirmed before the AI creates an external consequence.",
       actionTrigger: "workflow_gap",
       blocking: true,
       authorityCap: "A0",
@@ -936,7 +936,7 @@ function buildRecommendations(context) {
         automaticChange: 0,
         projectedChange: 0,
         projectedScore: publicScore,
-        condition: "This lowers the trust required. It does not raise the relationship score.",
+        condition: "This reduces the reliance required. It does not raise the relationship score.",
       },
       evidenceEffect: "No evidence change.",
       blocker: { couldRemove: [], statement: "Works around current limits instead of removing them." },
@@ -1014,7 +1014,7 @@ function buildAuthorizationSummary(context) {
   if (dimensions.humanAssurance < 75) verify.push("Every important part not yet covered by your capacity or a named capable reviewer.");
   if (dimensions.outcomeTestability < 75) verify.push("The intended result and likely harm after release or use.");
   if (authorityRank(proposedAuthority) > authorityRank(maxAuthority)) {
-    doNotAuthorize.unshift(`${AUTHORITY_LABELS[proposedAuthority]} is above the currently supported ${maxAuthority} boundary.`);
+    doNotAuthorize.unshift(`${AUTHORITY_LABELS[proposedAuthority]} is above the currently supported ${AUTHORITY_LABELS[maxAuthority].toLowerCase()} boundary.`);
   }
   if (authorityRank(operationalMaxAuthority) > authorityRank(maxAuthority)) {
     doNotAuthorize.unshift(`${AUTHORITY_LABELS[operationalMaxAuthority]} appears operationally possible, but the available evidence does not yet support that conclusion.`);

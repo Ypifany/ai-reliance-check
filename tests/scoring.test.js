@@ -552,7 +552,7 @@ test("changing models is offered only as a comparison test and never earns autom
   assert.match(modelTest.blocker.statement, /cannot fix missing human capacity/i);
 });
 
-test("role reduction changes required trust rather than pretending to raise the score", () => {
+test("role reduction changes required reliance rather than pretending to raise the score", () => {
   const result = scoreAssessment(assessment({
     project: { consequence: "low", proposedAuthority: "A2" },
     answers: answers(100, "confirmed", { HUM1: { level: 50, basis: "confirmed" } }),
@@ -561,7 +561,7 @@ test("role reduction changes required trust rather than pretending to raise the 
 
   assert.ok(adjustment);
   assert.equal(adjustment.scoreEffect.projectedChange, 0);
-  assert.match(adjustment.scoreEffect.condition, /lowers the trust required/i);
+  assert.match(adjustment.scoreEffect.condition, /reduces the reliance required/i);
 });
 
 test("validation status remains separate from relationship and evidence scores", () => {

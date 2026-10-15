@@ -11,7 +11,7 @@ export const WORK_RECORD_STATUS_OPTIONS = Object.freeze([
 
 export const AI_USE_OPTIONS = Object.freeze([
   Object.freeze(["yes", "AI was used"]),
-  Object.freeze(["uncertain", "AI use is uncertain or incomplete"]),
+  Object.freeze(["uncertain", "AI use is uncertain or incompletely documented"]),
   Object.freeze(["no-ai-reported", "No AI use was reported"]),
 ]);
 

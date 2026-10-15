@@ -5,6 +5,12 @@ import vm from 'node:vm';
 import { HtmlValidate } from 'html-validate';
 
 const assets = path.resolve('dist/assets');
+const appSource = fs.readFileSync(path.resolve('src/app.js'), 'utf8');
+assert.doesNotMatch(appSource, /href=["']#raise-score["']/, 'The score-actions control must not replace the hash route');
+for (const fieldId of ['approval-field', 'reversible-field', 'data-authorization-field', 'monitoring-field']) {
+  assert.match(appSource, new RegExp(`toggleConditionalField\\('${fieldId}'`), `${fieldId} must be disabled when hidden`);
+}
+assert.doesNotMatch(appSource, /human-ai-work-check-assessment/, 'New exports must use the Load Test name');
 const bundleName = fs.readdirSync(assets).find((name) => /^index-.*\.js$/.test(name));
 assert.ok(bundleName, 'Built JavaScript bundle not found. Run npm run build first.');
 const bundle = fs.readFileSync(path.join(assets, bundleName), 'utf8')
@@ -101,33 +107,19 @@ function renderRoute(hash, initial = {}) {
 const routes = [
   { name: 'home', route: '#/', expected: 'Your credibility is being questioned.' },
   { name: 'home-feedback', route: '#/', expected: 'Help improve Human + AI Work.' },
+  { name: 'home-question-copy', route: '#/', expected: 'Does this sound like AI wrote it?', forbidden: '<span>Question</span><q>This sounds like AI wrote it.</q>' },
+  { name: 'home-cake-copy', route: '#/', expected: 'When working with AI, finished work cannot either.', forbidden: '</strong> Finished work cannot either.' },
   { name: 'record-step-1', route: '#/creation-record', expected: 'Identify the work and its exact version.' },
-  { name: 'sample', route: '#/sample', expected: 'How this website was made.' },
+  { name: 'sample', route: '#/sample', expected: 'How this website and its methods were developed.' },
   { name: 'load-test', route: '#/load-test', expected: 'When are you checking the arrangement?' },
+  { name: 'load-test-result-copy', route: '#/load-test', expected: 'You get more than a score.', forbidden: 'You will not get only a score.' },
   { name: 'legacy-check-route', route: '#/check', expected: 'When are you checking the arrangement?' },
   { name: 'copyright', route: '#/copyright', expected: 'Copyright protects the expression, not the method.' },
   {
-    name: 'check-missing-legacy-authority',
-    route: '#/check',
-    expected: '<dt>Requested AI authority</dt><dd>Not recorded</dd>',
-    forbidden: '<dt>Requested AI authority</dt><dd>Produce for human approval</dd>',
-    initial: {
-      localStorage: {
-        'ai-reliance-check:v0.2': JSON.stringify({
-          schemaVersion: 2,
-          methodVersion: '0.2',
-          completed: true,
-          stage: 'release',
-          project: { name: 'Legacy authority check', system: 'Legacy AI', systems: [], proposedAuthority: '' },
-          answers: {},
-        }),
-      },
-    },
-  },
-  {
-    name: 'check-explicit-legacy-authority',
+    name: 'incomplete-completed-check',
     route: '#/load-test',
-    expected: '<dt>Requested AI authority</dt><dd>Produce for human approval</dd>',
+    expected: 'When are you checking the arrangement?',
+    forbidden: '<p class="eyebrow">Result</p>',
     initial: {
       localStorage: {
         'ai-reliance-check:v0.2': JSON.stringify({
@@ -135,7 +127,7 @@ const routes = [
           methodVersion: '0.2',
           completed: true,
           stage: 'release',
-          project: { name: 'Explicit authority check', system: 'Legacy AI', systems: [], proposedAuthority: 'A1' },
+          project: { name: 'Incomplete check', system: 'Example AI', systems: [], proposedAuthority: 'A1' },
           answers: {},
         }),
       },
