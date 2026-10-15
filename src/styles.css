@@ -1536,7 +1536,7 @@ fieldset[aria-invalid="true"] {
   font-weight: 800;
 }
 
-.result-next-link a {
+.result-next-link .text-button {
   display: inline-block;
   padding: 0.7rem 0;
 }

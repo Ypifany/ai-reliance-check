@@ -21,7 +21,7 @@ export const DIMENSIONS = Object.freeze({
   behavioralFit: {
     label: "Working Relationship",
     description:
-      "Whether the system behaves as you need it to, including when it should challenge, qualify, ask, or stop.",
+      "Whether the system behaves as you need it to, including when it should challenge, qualify, ask questions, or stop.",
   },
   workflowControl: {
     label: "Workflow and Controls",
@@ -45,7 +45,7 @@ export const AUTHORITY_LEVELS = Object.freeze({
     description: "The system produces work, but a person approves every use that creates a consequence.",
   },
   A2: {
-    label: "Take a reversible approved action",
+    label: "Take an approved, reversible action",
     description: "The system performs a defined, reversible action only after human approval.",
   },
   A3: {
@@ -136,7 +136,7 @@ const WF1_OPTIONS = [
 ];
 
 const WF2_OPTIONS = [
-  option(0, "No independent check", "Nothing happens before use, or the AI only checks its own work."),
+  option(0, "No independent check", "No check occurs before use, or the AI only checks its own work."),
   option(25, "Quick final look", "A person gives the result a quick final look."),
   option(50, "Defined check", "A defined human or automated check occurs before use."),
   option(75, "Risk-matched stop gate", "Checks cover material risks and a failed check stops progress."),
