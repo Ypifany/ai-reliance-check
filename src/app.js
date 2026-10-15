@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 54072)
-Total output lines: 2944
-
 import './styles.css';
 import {
   DIMENSIONS,
@@ -1737,7 +1734,204 @@ function importAssessment(event) {
     showToast('That file is too large. Import a Load Test JSON file smaller than 5 MB.');
     return;
   }
-  const reader = new FileReade…4072 tokens truncated…n class="button button-secondary" type="button" id="record-back">Back</button>' : '<a class="button button-secondary" href="#/">Cancel</a>'}
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const parsed = JSON.parse(reader.result);
+      const imported = parsed.assessment || parsed;
+      const claimedComplete = Boolean(imported.completed);
+      assessment = normalizeImportedAssessment(imported);
+      currentQuestionIndex = resumeQuestionIndex(assessment);
+      saveAssessment();
+      checkView = assessment.completed ? 'result' : 'setup';
+      showToast(claimedComplete && !assessment.completed
+        ? 'Project imported, but required information is incomplete. Review the setup and answers.'
+        : 'Project imported.');
+      renderCheck();
+    } catch {
+      showToast('That file is not a valid Load Test project.');
+    }
+  };
+  reader.readAsText(file);
+}
+
+function normalizeImportedAssessment(imported) {
+  if (!imported || typeof imported !== 'object' || !imported.project || typeof imported.answers !== 'object') {
+    throw new Error('Missing assessment fields');
+  }
+  if (!['plan', 'release', 'live'].includes(imported.stage)) {
+    throw new Error('Invalid stage');
+  }
+
+  const fallback = makeAssessment();
+  const project = { ...fallback.project, ...imported.project };
+  project.systems = normalizeSystems(
+    imported.project.systems,
+    imported.project.system,
+    imported.project.proposedAuthority,
+  );
+  project.primarySystemId = project.systems.some((system) => system.id === imported.project.primarySystemId)
+    ? imported.project.primarySystemId
+    : project.systems[0].id;
+  project.workTypes = Array.isArray(imported.project.workTypes)
+    ? imported.project.workTypes.filter((value) => WORK_TYPES.some(([id]) => id === value))
+    : [];
+  project.requiredBehaviors = Array.isArray(imported.project.requiredBehaviors)
+    ? imported.project.requiredBehaviors.filter((value) => BEHAVIORS.some(([id]) => id === value)).slice(0, 3)
+    : [];
+  project.consequence = ['low', 'moderate', 'high', 'critical'].includes(project.consequence)
+    ? project.consequence
+    : '';
+  const primarySystem = project.systems.find((system) => system.id === project.primarySystemId) || project.systems[0];
+  project.proposedAuthority = Object.hasOwn(AUTHORITY_LABELS, primarySystem?.proposedAuthority)
+    ? primarySystem.proposedAuthority
+    : Object.hasOwn(AUTHORITY_LABELS, project.proposedAuthority) ? project.proposedAuthority : '';
+
+  const answers = Object.fromEntries(Object.entries(imported.answers).filter(([id, answer]) => {
+    return typeof id === 'string' && answer && typeof answer === 'object';
+  }));
+
+  const isLegacy = imported.schemaVersion !== ASSESSMENT_SCHEMA_VERSION || imported.methodVersion !== METHOD_VERSION;
+  const candidate = {
+    ...fallback,
+    ...imported,
+    schemaVersion: ASSESSMENT_SCHEMA_VERSION,
+    methodVersion: METHOD_VERSION,
+    stage: imported.stage,
+    project,
+    answers: isLegacy ? {} : answers,
+    completed: false,
+    currentQuestion: isLegacy ? 0 : Number(imported.currentQuestion || 0),
+    currentQuestionId: isLegacy ? '' : String(imported.currentQuestionId || ''),
+    needsReassessment: isLegacy,
+    legacySnapshot: isLegacy ? {
+      methodVersion: imported.methodVersion || '0.1',
+      completed: Boolean(imported.completed),
+      answers,
+      completedAt: imported.completedAt || '',
+    } : imported.legacySnapshot,
+  };
+  candidate.completed = !isLegacy && Boolean(imported.completed) && assessmentCanShowResult(candidate);
+  return candidate;
+}
+
+function assessmentCanShowResult(value) {
+  const p = value?.project || {};
+  const triStateAnswered = (answer) => answer === true || answer === false || answer === null;
+  const systems = Array.isArray(p.systems) ? p.systems : [];
+  const primary = systems.find((system) => system.id === p.primarySystemId) || systems[0];
+  const authority = primary?.proposedAuthority || p.proposedAuthority;
+  const setupComplete = Boolean(
+    p.task && p.intendedOutcome && p.failureScenario && p.failureImpact &&
+    ['low', 'moderate', 'high', 'critical'].includes(p.consequence) &&
+    p.workTypes?.length && p.requiredBehaviors?.length && systems.length && primary &&
+    systems.every((system) => system.product && system.model && system.role &&
+      Object.hasOwn(AUTHORITY_LABELS, system.proposedAuthority) &&
+      (system.evidenceBasis !== 'confirmed' || system.evidence))
+  );
+  if (!setupComplete) return false;
+  if (!getActiveQuestionDefinitions(value).every((question) => isValidAnswer(question, value.answers?.[question.id]))) return false;
+  if (!triStateAnswered(p.sensitiveData) || !triStateAnswered(p.unresolvedMaterialFailure)) return false;
+  if (p.sensitiveData !== false && !triStateAnswered(p.dataAuthorizationConfirmed)) return false;
+  if (authority !== 'A0' && !triStateAnswered(p.humanApprovalBeforeConsequence)) return false;
+  if ((['A2', 'A3'].includes(authority) || p.workTypes.includes('automation') || p.workTypes.includes('software')) && !triStateAnswered(p.actionsAreReversible)) return false;
+  if ((authority === 'A3' || p.workTypes.includes('automation')) && !triStateAnswered(p.monitoringConfirmed)) return false;
+  if (value.stage === 'live') {
+    if (!Number.isFinite(Number(p.observedRuns)) || Number(p.observedRuns) < 0) return false;
+    const liveFields = ['representativeConditions', 'atLeastOneEdgeOrFailureCase', 'controlsActuallyOperated', 'observedInRealUseForFullOperatingCycle', 'outcomeDataCollected', 'materialFailuresResolved'];
+    if (!liveFields.every((key) => triStateAnswered(p[key]))) return false;
+  }
+  return true;
+}
+
+function renderSample() {
+  document.title = 'Real Work Record | Human + AI Work';
+  main.innerHTML = `<div class="page sample-record-page">
+    <header class="page-header">
+      <p class="eyebrow">Example Work Record</p>
+      <h1>Example: How this website and its methods were developed.</h1>
+      <p>This completed example shows what Cheryl Abram did, what ChatGPT did, which records support that account, and which statements are not supported.</p>
+      <p class="stage-label"><strong>Status:</strong> Public prototype, unfinished</p>
+    </header>
+    <article class="record-preview public-record">
+      <header class="public-record-header"><p class="kicker">Human + AI Work Record · Public prototype v0.3</p><h2>Human + AI Work website and methods</h2><p class="record-summary">Here are the credits and evidence for this version.</p><p>A public website that documents human and AI contributions and optionally checks whether a consequential AI role is supported by the person’s capacity, workflow, evidence, and stakes.</p></header>
+      <section class="record-output-section"><h3>Work documented</h3><dl class="record-facts"><div><dt>Status</dt><dd>Public prototype, unfinished</dd></div><div><dt>Version</dt><dd>v0.3 provenance-first revision</dd></div><div><dt>Creator</dt><dd>Cheryl Abram</dd></div><div><dt>Other human contributors</dt><dd>None reported</dd></div></dl><p><a href="https://ypifany.github.io/ai-reliance-check/" target="_blank" rel="noreferrer">Open the public website <span class="new-tab-note">(opens in a new tab)</span></a></p></section>
+      <section class="record-output-section"><h3>Credits</h3>
+        <h4>People and systems involved</h4>
+        <div class="credit-row"><strong>Cheryl Abram</strong><span> (creator and final decision-maker)</span><p>Originated the product, supplied the method and experience behind it, directed the work, evaluated alternatives, rewrote public language, reviewed the live site, and made the final release decisions.</p></div>
+        <div class="credit-row"><strong>ChatGPT</strong><p>Organized and challenged the method, compared alternatives, checked outside information, drafted and revised wording, proposed user flow, wrote and modified code, ran automated tests, identified problems, and executed approved publication changes.</p></div>
+        <p class="helper-text"><strong>Known model:</strong> ChatGPT 5.6 Sol Ultra. The complete model history has not been verified.</p>
+        <h4>Detailed credits</h4>
+        <ul class="mini-record-list credit-role-list">
+          <li><span><strong>Originating idea and purpose</strong><small>Identified the problem and decided what the product should accomplish.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Source material and core method</strong><small>Supplied experience, examples, principles, and the developing method.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Product direction and requirements</strong><small>Defined the audience, boundaries, features, and final decisions.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Research and source checking</strong><small>Located and compared outside material; the human judged what belonged in the method.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Evaluation, challenge, and selection</strong><small>ChatGPT challenged selected ideas. Cheryl accepted, rejected, or redirected the work.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Writing, editing, and final meaning</strong><small>ChatGPT organized and drafted. Cheryl revised and decided the final public meaning.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Implementation and production</strong><small>Wrote and revised the website code and carried out approved publication changes.</small></span><strong>ChatGPT</strong></li>
+          <li><span><strong>Verification and testing</strong><small>ChatGPT ran automated checks. Cheryl reviewed visible behavior. No independent technical review is claimed.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
+          <li><span><strong>Final release decision</strong><small>Approved the documented version for publication.</small></span><strong>Cheryl Abram</strong></li>
+        </ul>
+      </section>
+      <section class="record-output-section"><h3>What the record supports</h3><p class="helper-text"><strong>Documented</strong> means the statement is connected to supporting records. It does not mean an independent person confirmed it.</p><ul class="claim-support-list"><li><span>Cheryl Abram originated and developed the method.</span><strong class="status-pill">Documented</strong></li><li><span>For this version, Cheryl Abram directed and evaluated the AI-assisted work.</span><strong class="status-pill">Documented</strong></li><li><span>Cheryl Abram made the final decisions about the public product.</span><strong class="status-pill">Documented</strong></li></ul></section>
+      <section class="record-output-section"><h3>What is not established</h3><ul><li>Cheryl personally wrote the website source code.</li><li>Cheryl independently evaluated the technical architecture.</li><li>The method has been scientifically validated.</li><li>The site is production-grade or independently confirmed to meet an accessibility standard.</li></ul></section>
+      <section class="record-output-section"><h3>Selected evidence</h3><ul><li>ChatGPT conversation history from the original idea through development. Detailed excerpts remain private.</li><li><a href="https://github.com/Ypifany/ai-reliance-check" target="_blank" rel="noreferrer">GitHub repository, commits, and pull requests <span class="new-tab-note">(opens in a new tab)</span></a></li><li>Source documents, examples, screenshots, review notes, and approval decisions preserved in the working history.</li><li>The live site and its version history.</li></ul></section>
+      <section class="record-output-section"><h3>Evidence profile</h3><dl class="record-facts"><div><dt>Statements with supporting records</dt><dd>Three key statements</dd></div><div><dt>Connection to this work version</dt><dd>Some records are tied to a version</dd></div><div><dt>Who reviewed the evidence</dt><dd>Creator only</dd></div><div><dt>Independent code review</dt><dd>Not completed</dd></div></dl></section>
+      <section class="record-output-section"><h3>Final release decision</h3><p>Cheryl Abram evaluated, revised, and approved publication. ChatGPT executed approved publication changes.</p></section>
+      <section class="record-output-section disclosure-box"><h3>Short disclosure</h3><p><strong>Human + AI disclosure:</strong> Cheryl Abram originated and directed this work. ChatGPT assisted with research, organization, challenge, public wording, user flow, code, testing, and publishing approved changes. Cheryl reviewed the documented version and made the final release decision.</p></section>
+      <footer class="public-record-footer"><p>The Work Record creates a dated account of where the work began, what people and AI systems did, who made the decisions, and which records support that account. It can connect those records to one exact work version.</p><p>This record is self-reported and remains open to correction as additional evidence is added or reviewed.</p></footer>
+    </article>
+    <div class="button-row"><a class="button" href="#/creation-record">Create a Work Record</a><a class="button button-secondary" href="#/load-test">Run a Load Test</a></div>
+  </div>`;
+}
+
+function contextItem(term, description) {
+  return `<div><dt>${escapeHTML(term)}</dt><dd>${escapeHTML(description)}</dd></div>`;
+}
+
+function resultFact(term, description) {
+  return `<div><dt>${escapeHTML(term)}</dt><dd>${escapeHTML(description)}</dd></div>`;
+}
+
+function creditHandlingLabel(value) {
+  return ({
+    'Human-led': 'Human-led',
+    Shared: 'Human + AI',
+    'AI-reviewed': 'AI produced, human substantially revised',
+    'AI-accepted': 'AI produced, human accepted',
+    'Other-person': 'Other human contributor',
+    Unknown: 'Not established',
+    'Not applicable': 'Not applicable',
+  })[value] || 'Not established';
+}
+
+function renderCreationRecord(focusId = '', errors = []) {
+  if (recordStep > RECORD_STEPS.length) return renderWorkRecordResult();
+  recordStep = Math.min(Math.max(Number(recordStep) || 1, 1), RECORD_STEPS.length);
+  saveRecordStep();
+  document.title = 'Create a Work Record | Human + AI Work';
+  const normalizedErrors = normalizeFormErrors(errors);
+  const [stepId, stepLabel] = RECORD_STEPS[recordStep - 1];
+  main.innerHTML = `<div class="page work-record-page">
+    <header class="page-header record-page-header">
+      <p class="eyebrow">Create a Work Record</p>
+      <h1>Show how this work was made.</h1>
+      <p>Create a record for one finished or nearly finished piece of work. Show what you, other people, and each AI system did. Add supporting records, then generate credits you can share with the work.</p>
+    </header>
+    <div class="callout"><p><strong>This record does not estimate a human-versus-AI percentage.</strong> It shows roles, actions, decisions, and evidence.</p></div>
+    <div class="callout"><p><strong>Have these ready:</strong> a link or version for the exact work, the names of people and AI tools involved, and any chats, drafts, commits, notes, or approval records you may want to cite.</p></div>
+    ${creationRecord.legacyNotes ? `<div class="callout callout-warning"><p><strong>Review information carried forward from an earlier record.</strong><br />${escapeHTML(creationRecord.legacyNotes).replaceAll('\n', '<br />')}</p></div>` : ''}
+    ${recordStepper(recordStep)}
+    <section class="record-step-card" aria-labelledby="record-step-heading">
+      <div class="progress-row"><span>STEP ${recordStep} OF ${RECORD_STEPS.length}</span><span>${escapeHTML(stepLabel)}</span></div>
+      <div class="progress-track" role="progressbar" aria-label="Work Record progress" aria-valuemin="1" aria-valuemax="${RECORD_STEPS.length}" aria-valuenow="${recordStep}" aria-valuetext="Step ${recordStep} of ${RECORD_STEPS.length}: ${escapeHTML(stepLabel)}"><span style="width:${Math.round((recordStep / RECORD_STEPS.length) * 100)}%"></span></div>
+      <p id="record-save-status" class="save-status" role="status" aria-live="polite">Saved only in this browser. Export a private backup when you finish.</p>
+      ${renderErrorSummary(normalizedErrors)}
+      <form id="work-record-form" data-record-step="${stepId}" novalidate>
+        ${renderWorkRecordStep(stepId, creationRecord, normalizedErrors)}
+        <div class="form-actions no-print">
+          ${recordStep > 1 ? '<button class="button button-secondary" type="button" id="record-back">Back</button>' : '<a class="button button-secondary" href="#/">Cancel</a>'}
           <button class="button" type="submit">${recordStep === RECORD_STEPS.length ? 'Generate Work Record' : 'Continue'} <span aria-hidden="true">→</span></button>
         </div>
       </form>
