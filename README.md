@@ -4,6 +4,8 @@
 
 evAIdence is a provenance-first public prototype from Ypifany with two connected tools. The Work Record creates an evidence-backed account of how one artifact version was made. The Load Test reveals what an assigned AI role still requires from people and the workflow, whether the current setup can carry that load, and what is at stake if the person proceeds as-is.
 
+The name is pronounced “evidence.” AI appears inside the word because AI is part of the documented work, not the whole work.
+
 The site provides two connected tools:
 
 - **Work Record: Who did what?** Documents the exact artifact, detailed role-based credits, claims, evidence, review, and final release decision.
