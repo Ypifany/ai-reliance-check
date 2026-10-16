@@ -56,16 +56,16 @@ export const AUTHORITY_LEVELS = Object.freeze({
 
 export const EVIDENCE_BASES = Object.freeze({
   confirmed: {
-    label: "Current supporting record identified",
-    description: "You identified a current test result, record, observation, note, or link as support. The tool does not inspect it.",
+    label: "Yes, saved record named",
+    description: "You named a current test result, work sample, screenshot, note, log, or link. The tool does not inspect it.",
   },
   reported: {
-    label: "Self-reported, no current record",
-    description: "The answer is intended, recalled, or personally observed, but no current supporting record is available.",
+    label: "No saved record; observation, memory, or plan",
+    description: "You based the answer on your observation, memory, or plan, but you did not name a saved record from this project.",
   },
   unknown: {
-    label: "Unknown",
-    description: "There is not enough information to determine this yet.",
+    label: "I do not know yet",
+    description: "You do not have enough information to answer.",
   },
 });
 
@@ -256,7 +256,7 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     promptByStage: {
       plan: "At the expected volume and pace, will you have enough time and attention to review, correct, monitor, and recover from this work?",
       release: "At the expected volume and pace, did you have enough time and attention for the required review before launch, and can you sustain any review that continues afterward?",
-      live: "Is the required human review holding up at the actual volume and pace?",
+      live: "Can you sustain the required review at the actual volume and pace?",
     },
     why: "AI can reduce production time while creating checking, correction, monitoring, and recovery work. This compares that work with the time and attention available.",
     evidenceGuidance: "A timed review, expected output volume, workload calculation, missed-review or backlog records, and backup coverage.",
@@ -265,13 +265,13 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "CAP1",
     dimension: "capabilityFit",
-    prompt: "What shows that this exact AI setup can perform the role you gave it?",
+    prompt: "What tests show that this exact AI setup can do the job you gave it?",
     promptByStage: {
-      plan: "What testing already supports your belief that this exact AI setup can perform the role you plan to give it?",
-      release: "What shows that this exact AI setup performed the role you gave it in the finished work?",
-      live: "What shows that this exact AI setup keeps performing its assigned role in actual use?",
+      plan: "What tests show that this exact AI setup can do the job you plan to give it?",
+      release: "What tests or work samples show that this exact AI setup did the job you gave it?",
+      live: "What results show that this exact AI setup keeps doing its job?",
     },
-    why: "A model's reputation is not evidence that the configured system can do this particular work.",
+    why: "The model name alone does not show that your exact setup can do this work.",
     evidenceGuidance: "Saved tests using the exact model, instructions, tools, sources, acceptance criteria, and normal, difficult, edge, or failure cases.",
     options: CAP1_OPTIONS,
     optionsByStage: {
@@ -283,11 +283,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "CAP2",
     dimension: "capabilityFit",
-    prompt: "Have the likely ways this could fail been identified and checked?",
+    prompt: "Which likely failures have you identified and checked?",
     promptByStage: {
-      plan: "Which likely ways this AI role could fail have you already identified and checked?",
-      release: "Were the likely ways this AI role could fail identified and checked before launch?",
-      live: "Are likely failures being detected, corrected, and recorded during actual use?",
+      plan: "Which likely failures have you identified and checked before work begins?",
+      release: "Did you identify and check the likely failures before launch?",
+      live: "Do you detect, correct, and record likely failures during use?",
     },
     why: "Likely failure paths show what you may have to catch, correct, contain, or recover from.",
     evidenceGuidance: "A failure-mode list, saved failure-case tests, the expected stopping response, and recovery results.",
@@ -309,11 +309,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "WF1",
     dimension: "workflowControl",
-    prompt: "How clearly are the AI system's access and action boundaries known, limited, and enforceable?",
+    prompt: "Do you know what AI can access and do, and can you enforce the limits?",
     promptByStage: {
-      plan: "Before work begins, how clearly will the AI system's access and action boundaries be known, limited, and enforceable?",
-      release: "How clearly were the AI system's access and action boundaries known, limited, and enforced?",
-      live: "How clearly are the AI system's access and action boundaries known, limited, and enforced now?",
+      plan: "Before work begins, will you know what AI can access and do, and how will you limit it?",
+      release: "Did you know what AI could access and do, and did the limits hold?",
+      live: "Do you know what AI can access and do now, and do the limits hold?",
     },
     why: "The more AI can reach or change before review, the greater the monitoring and recovery work and the possible consequence of one failure.",
     evidenceGuidance: "Current permission records or screenshots, approval limits, access logs, and a revocation or rollback test.",
@@ -325,7 +325,7 @@ export const QUESTION_DEFINITIONS = Object.freeze([
     prompt: "What independent check can catch, correct, or stop a bad AI output before it creates a consequence?",
     promptByStage: {
       plan: "What independent check will catch, correct, or stop a bad AI output before it creates a consequence?",
-      release: "What was checked before this finished work was approved for launch?",
+      release: "What did you check before you approved this work for launch?",
       live: "What independent check can catch, correct, or stop a bad AI output before each consequence?",
     },
     why: "A review counts only if it can detect the failure that matters and change what happens next.",
@@ -353,11 +353,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "HUM2",
     dimension: "humanAssurance",
-    prompt: "How were important factual claims verified?",
+    prompt: "How do you check important factual claims outside the AI system?",
     promptByStage: {
-      plan: "What verification is already planned or in place for important factual claims?",
-      release: "How were important factual claims checked outside the AI system that produced or repeated them?",
-      live: "How are important factual claims checked during actual use?",
+      plan: "How will you check important factual claims outside the AI system?",
+      release: "How did you check important factual claims outside the AI system?",
+      live: "How do you check important factual claims during use?",
     },
     why: "Important factual claims need verification outside the same system that produced them.",
     evidenceGuidance: "Source checks, comparison notes, qualified review, or records showing which claims were verified and which remain uncertain.",
@@ -375,10 +375,10 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "BEH2",
     dimension: "behavioralFit",
-    prompt: "Was the system tested with a flawed premise or a situation in which it should disagree or stop?",
+    prompt: "Did you test the AI with a flawed premise or a situation in which it should disagree or stop?",
     promptByStage: {
-      plan: "What challenge testing is already designed or completed for this AI role?",
-      release: "Was the AI tested with a flawed premise or a situation in which it should disagree or stop?",
+      plan: "Which challenge tests have you designed or completed for this AI role?",
+      release: "Did you test the AI with a flawed premise or a situation in which it should disagree or stop?",
       live: "Does continued testing show that the AI disagrees or stops when it should?",
     },
     why: "Agreeable output is not evidence that a system can serve as a critic, verifier, or stop gate.",
@@ -396,11 +396,11 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "WF3",
     dimension: "workflowControl",
-    prompt: "Which technical checks were completed and saved?",
+    prompt: "Which technical checks did you complete and save?",
     promptByStage: {
-      plan: "Which technical checks are already defined as release requirements?",
-      release: "Which technical checks were completed and saved before launch?",
-      live: "Which technical checks are repeated and saved while the work is in use?",
+      plan: "Which technical checks will you require before launch?",
+      release: "Which technical checks did you complete and save before launch?",
+      live: "Which technical checks do you repeat and save while people use the work?",
     },
     why: "Visible review alone cannot establish that software, links, accessibility, or deployment behavior works.",
     evidenceGuidance: "Saved build, test, lint, link, mobile, accessibility, deployment, security, failure, or rollback results that fit this work.",
@@ -418,10 +418,10 @@ export const QUESTION_DEFINITIONS = Object.freeze([
   {
     id: "WF4",
     dimension: "workflowControl",
-    prompt: "Can the activity be seen, stopped, limited, and reversed while it is running?",
+    prompt: "Can you see, stop, limit, and reverse the AI's activity while it runs?",
     promptByStage: {
-      plan: "What controls are already planned or in place to see, stop, limit, and reverse the AI's activity?",
-      release: "Were monitoring, stopping, limits, and recovery tested before launch?",
+      plan: "How will you see, stop, limit, and reverse the AI's activity?",
+      release: "Did you test monitoring, stopping, limits, and recovery before launch?",
       live: "Can you see, stop, limit, and reverse the AI's activity during actual use?",
     },
     why: "Repeated or autonomous operation needs controls that work during execution, not only a review afterward.",
