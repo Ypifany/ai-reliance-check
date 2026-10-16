@@ -640,8 +640,9 @@ function renderSetup(error = [], focusId = '') {
         <h1>${escapeHTML(stage.setupHeading)}</h1>
         <p class="question-why">${escapeHTML(stage.setupIntro)}</p>
         ${renderErrorSummary(errors)}
+        ${errors.length ? '<p class="helper-text"><strong>Your answers are saved.</strong> Fix the item below to continue.</p>' : ''}
         <form id="setup-form" novalidate>
-          <div class="callout"><p><strong>Have these ready:</strong> what AI will do, what will still depend on people, the result you are counting on, the main way the work could fail, the AI product and model, and any test results or records you already have.</p><p class="helper-text">Your answers are saved only in this browser as you work.</p></div>
+          <div class="callout"><p><strong>Have these ready:</strong> what AI will do, what you or another person will do, the result you are counting on, the main way the work could fail, the AI product and model, and any test results or records you already have.</p><p class="helper-text">Your answers are saved only in this browser as you work.</p></div>
           <h2 class="form-section-heading">1. Describe the work and the result you are counting on</h2>
           <div class="field-grid">
             <div class="field field-span-2">
@@ -660,9 +661,9 @@ function renderSetup(error = [], focusId = '') {
               ${fieldError(errors, 'outcome')}
             </div>
             <div class="field field-span-2">
-              <label for="human-load">If AI does this job, what will still depend on you or another capable person? <span class="required">Required</span></label>
+              <label for="human-load">${escapeHTML(stage.humanQuestion)} <span class="required">Required</span></label>
               <textarea id="human-load" name="humanLoad" required ${errorAttributes(errors, 'human-load', 'human-load-help')}>${escapeHTML(p.humanLoad || '')}</textarea>
-              <small id="human-load-help">Include anything people must still inspect, decide, verify, approve, monitor, correct, stop, or recover.</small>
+              <small id="human-load-help">${escapeHTML(stage.humanHelp)}</small>
               ${fieldError(errors, 'human-load')}
             </div>
             <div class="field field-span-2">
@@ -672,7 +673,7 @@ function renderSetup(error = [], focusId = '') {
               ${fieldError(errors, 'failure-scenario')}
             </div>
             <div class="field field-span-2">
-              <label for="failure-impact">If this happened, who or what could be harmed, and how? <span class="required">Required</span></label>
+              <label for="failure-impact">If this happened, who or what could it harm, and how? <span class="required">Required</span></label>
               <textarea id="failure-impact" name="failureImpact" required ${errorAttributes(errors, 'failure-impact')}>${escapeHTML(p.failureImpact || '')}</textarea>
               ${fieldError(errors, 'failure-impact')}
             </div>
@@ -689,17 +690,17 @@ function renderSetup(error = [], focusId = '') {
               </select>
               ${fieldError(errors, 'consequence')}
             </div>
-            <div class="field"><p class="field-note"><strong>Which AI role creates the load being tested?</strong><br />For each AI system, describe what it does and how far it acts before a person reviews or approves. The remaining questions will focus on the system handling the most important or risky part of the work.</p></div>
+            <div class="field"><p class="field-note"><strong>Which AI role are you testing?</strong><br />For each AI system, describe what it does and how far it acts before a person reviews or approves. The remaining questions will focus on the system handling the most important or risky part of the work.</p></div>
           </div>
 
           <fieldset class="fieldset systems-fieldset" id="systems-group" ${groupErrorAttributes(errors, 'systems-group')}>
-            <legend>2. Which AI systems and models are being used? <span class="required">Required</span></legend>
+            <legend>2. ${escapeHTML(stage.systemsQuestion)} <span class="required">Required</span></legend>
             <p class="helper-text">Record each system separately. Enter “Unknown” when you do not know the exact model or version. Mark the system handling the most important or risky part of the work.</p>
             <div class="system-editor-list">
-              ${p.systems.map((system, index) => systemEditor(system, index, p.systems.length, errors)).join('')}
+              ${p.systems.map((system, index) => systemEditor(system, index, p.systems.length, errors, stage)).join('')}
             </div>
             <fieldset class="fieldset consequential-system-group">
-              <legend>Which AI system is handling the most important or risky part of the work?</legend>
+              <legend>${escapeHTML(stage.primarySystemQuestion)}</legend>
               <div class="choice-grid">${p.systems.map((system, index) => `<label class="choice"><input type="radio" name="primarySystemId" value="${escapeHTML(system.id)}" ${system.id === p.primarySystemId ? 'checked' : ''} required /><span><strong>${escapeHTML(system.product || `System ${index + 1}`)}</strong><span>The detailed performance questions will focus on this system and role.</span></span></label>`).join('')}</div>
             </fieldset>
             ${fieldError(errors, 'systems-group')}
@@ -707,7 +708,7 @@ function renderSetup(error = [], focusId = '') {
           </fieldset>
 
           <fieldset class="fieldset" id="work-types-group" ${groupErrorAttributes(errors, 'work-types-group')}>
-            <legend>3. What kind of work is involved? <span class="required">Choose at least one</span></legend>
+            <legend>3. What kind of work are you doing? <span class="required">Choose at least one</span></legend>
             <div class="choice-grid">
               ${WORK_TYPES.map(([value, label, description]) => checkboxChoice('workTypes', value, label, description, p.workTypes.includes(value))).join('')}
             </div>
@@ -770,11 +771,15 @@ function renderSetup(error = [], focusId = '') {
     });
   });
   bindErrorSummaryLinks();
-  if (focusId) window.requestAnimationFrame(() => document.getElementById(focusId)?.focus());
+  if (focusId) window.requestAnimationFrame(() => {
+    const target = document.getElementById(focusId);
+    target?.focus({ preventScroll: true });
+    target?.scrollIntoView({ block: 'center', behavior: 'auto' });
+  });
   else focusCurrentStep();
 }
 
-function systemEditor(system, index, count, errors = []) {
+function systemEditor(system, index, count, errors = [], stage = stagePrompts(assessment.stage)) {
   const prefix = `system-${index}`;
   return `<article class="system-editor">
     <div class="system-editor-heading"><h2>System ${index + 1}</h2>${count > 1 ? `<button class="text-button" type="button" data-remove-system="${escapeHTML(system.id)}">Remove</button>` : ''}</div>
@@ -782,17 +787,17 @@ function systemEditor(system, index, count, errors = []) {
     <div class="field-grid">
       <div class="field"><label for="${prefix}-product">AI product or tool <span class="required">Required</span></label><input id="${prefix}-product" name="systemProduct" value="${escapeHTML(system.product)}" placeholder="For example, ChatGPT" required ${errorAttributes(errors, `${prefix}-product`)} />${fieldError(errors, `${prefix}-product`)}</div>
       <div class="field"><label for="${prefix}-model">Exact model or version <span class="required">Required</span></label><input id="${prefix}-model" name="systemModel" value="${escapeHTML(system.model)}" placeholder="Enter Unknown if needed" required ${errorAttributes(errors, `${prefix}-model`)} />${fieldError(errors, `${prefix}-model`)}</div>
-      <div class="field field-span-2"><label for="${prefix}-role">What does this AI system do in the workflow? <span class="required">Required</span></label><textarea id="${prefix}-role" name="systemRole" placeholder="For example, organize source material, draft code, or execute an approved deployment" required ${errorAttributes(errors, `${prefix}-role`)}>${escapeHTML(system.role)}</textarea>${fieldError(errors, `${prefix}-role`)}</div>
-      <div class="field"><label for="${prefix}-authority">How far does this AI system act before a person must review or approve? <span class="required">Required</span></label><select id="${prefix}-authority" name="systemAuthority" required ${errorAttributes(errors, `${prefix}-authority`)}><option value="">Choose one</option>${Object.entries(AUTHORITY_LABELS).map(([value, label]) => `<option value="${value}" ${system.proposedAuthority === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select><small>Private advice or drafts create no outside effect. Human approval means a person approves before use. An approved action is reversible and happens only after approval. Acting within limits does not require approval each time.</small>${fieldError(errors, `${prefix}-authority`)}</div>
+      <div class="field field-span-2"><label for="${prefix}-role">${escapeHTML(stage.systemRoleQuestion)} <span class="required">Required</span></label><textarea id="${prefix}-role" name="systemRole" placeholder="For example, organize source material, draft code, or execute an approved deployment" required ${errorAttributes(errors, `${prefix}-role`)}>${escapeHTML(system.role)}</textarea>${fieldError(errors, `${prefix}-role`)}</div>
+      <div class="field"><label for="${prefix}-authority">${escapeHTML(stage.systemAuthorityQuestion)} <span class="required">Required</span></label><select id="${prefix}-authority" name="systemAuthority" required ${errorAttributes(errors, `${prefix}-authority`)}><option value="">Choose one</option>${Object.entries(AUTHORITY_LABELS).map(([value, label]) => `<option value="${value}" ${system.proposedAuthority === value ? 'selected' : ''}>${escapeHTML(label)}</option>`).join('')}</select><small>Private advice or drafts create no outside effect. Human approval means a person approves before use. An approved action is reversible and happens only after approval. Acting within limits does not require approval each time.</small>${fieldError(errors, `${prefix}-authority`)}</div>
       <div class="field"><label for="${prefix}-access">Can it connect to accounts, files, repositories, data, publishing, or other tools?</label><select id="${prefix}-access" name="systemAccess">${triStateOptions(system.connectedAccess, 'No', 'Yes', 'Unknown')}</select></div>
-      <div class="field"><label for="${prefix}-permissions">If it connects, are its permissions known and limited?</label><select id="${prefix}-permissions" name="systemPermissions">${triStateOptions(system.permissionsConfirmed, 'No', 'Yes', 'Unknown or not applicable')}</select></div>
+      <div class="field"><label for="${prefix}-permissions">If it connects, do you know its permissions, and have you limited them?</label><select id="${prefix}-permissions" name="systemPermissions">${triStateOptions(system.permissionsConfirmed, 'No', 'Yes', 'Unknown or not applicable')}</select></div>
       <div class="field field-span-2"><label for="${prefix}-setup">What instructions, memory, tools, data, access, or permissions affect how it works?</label><textarea id="${prefix}-setup" name="systemSetup" placeholder="Describe anything that could affect how this system behaves">${escapeHTML(system.setup)}</textarea></div>
-      <div class="field field-span-2"><label for="${prefix}-evidence">Evidence about this system in this role <span class="helper-text">Required if you select Current supporting record identified below</span></label><textarea id="${prefix}-evidence" name="systemEvidence" placeholder="Name the current model record, test, work sample, result, or known limit" ${errorAttributes(errors, `${prefix}-evidence`)}>${escapeHTML(system.evidence)}</textarea>${fieldError(errors, `${prefix}-evidence`)}</div>
-      <div class="field field-span-2"><label for="${prefix}-evidence-basis">How do you know these details are accurate?</label><select id="${prefix}-evidence-basis" name="systemEvidenceBasis">${selectOptions([
-        ['confirmed', 'Current supporting record identified'],
-        ['reported', 'Self-reported, remembered, or planned'],
-        ['unknown', 'I do not know'],
+      <div class="field field-span-2"><label for="${prefix}-evidence-basis">${escapeHTML(stage.systemRecordQuestion)}</label><select id="${prefix}-evidence-basis" name="systemEvidenceBasis">${selectOptions([
+        ['confirmed', 'Yes, I can name the saved records'],
+        ['reported', 'No saved records; this is based on my observation, memory, or plan'],
+        ['unknown', 'I do not know yet'],
       ], system.evidenceBasis || 'unknown')}</select></div>
+      <div class="field field-span-2"><label for="${prefix}-evidence">Name or link the record or records <span class="helper-text">Required only if you chose “Yes”</span></label><textarea id="${prefix}-evidence" name="systemEvidence" placeholder="For example: saved AI chat, model screen, settings page, permission screen, or version history" ${errorAttributes(errors, `${prefix}-evidence`)}>${escapeHTML(system.evidence)}</textarea><small>These records support the system and setup details above. Later questions ask whether the system can do the job well.</small>${fieldError(errors, `${prefix}-evidence`)}</div>
     </div>
   </article>`;
 }
@@ -878,7 +883,7 @@ function submitSetup(event) {
   const errors = [];
   if (!task) errors.push({ id: 'task', message: 'Describe the work being checked.' });
   if (!intendedOutcome) errors.push({ id: 'outcome', message: 'Describe the outcome you are betting on.' });
-  if (!humanLoad) errors.push({ id: 'human-load', message: 'Describe what will still depend on you or another capable person.' });
+  if (!humanLoad) errors.push({ id: 'human-load', message: 'Describe what you or another person will do that AI will not do.' });
   if (!failureScenario) errors.push({ id: 'failure-scenario', message: 'Describe the most serious way this work could fail because of how you and AI are working together.' });
   if (!failureImpact) errors.push({ id: 'failure-impact', message: 'Describe what could happen if that failure reached others.' });
   if (!['low', 'moderate', 'high', 'critical'].includes(String(form.get('consequence') || ''))) {
@@ -893,10 +898,10 @@ function submitSetup(event) {
     if (!system.role) errors.push({ id: `${prefix}-role`, message: `Describe the workflow role for system ${index + 1}.` });
     if (!Object.hasOwn(AUTHORITY_LABELS, system.proposedAuthority)) errors.push({ id: `${prefix}-authority`, message: `Choose the authority for system ${index + 1}.` });
     if (system.evidenceBasis === 'confirmed' && !system.evidence) {
-      errors.push({ id: `${prefix}-evidence`, message: `Name the current record supporting the system description, or choose Self-reported, no current record.` });
+      errors.push({ id: `${prefix}-evidence`, message: `Name or link the saved records for system ${index + 1}, or choose the observation, memory, or plan option.` });
     }
   });
-  if (errors.length) return renderSetup(errors);
+  if (errors.length) return renderSetup(errors, errors[0]?.id || '');
   const activeIds = new Set(activeQuestions().map(({ id }) => id));
   assessment.answers = Object.fromEntries(Object.entries(assessment.answers).filter(([id]) => activeIds.has(id)));
   saveAssessment();
@@ -1012,18 +1017,18 @@ function renderQuestion(error = [], draftAnswer = null) {
             ${fieldError(errors, 'answer-choice-group')}
           </fieldset>
           <div class="evidence-box">
-            <h2>What supports this answer?</h2>
-            <p class="helper-text">Choose what currently supports this answer. Select Current supporting record identified only when you can name a current test, result, record, observation, note, or link. This tool records what you identify; it does not inspect the record. A plan or intention is self-reported until it happens. It is okay to choose Unknown.</p>
-            ${question.evidenceGuidance ? `<p class="evidence-guidance"><strong>Useful support for this answer:</strong> ${escapeHTML(question.evidenceGuidance)}</p>` : ''}
+            <h2>Do you have a saved record from this project that supports this answer?</h2>
+            <p class="helper-text">A saved record can be a test result, work sample, screenshot, note, log, or link from this project and setup. The Load Test records what you name but does not inspect it. A written plan can show what you prepared, but it does not prove the plan will work.</p>
+            ${question.evidenceGuidance ? `<p class="evidence-guidance"><strong>A useful record could be:</strong> ${escapeHTML(question.evidenceGuidance)}</p>` : ''}
             <fieldset class="fieldset" id="evidence-basis-group" ${groupErrorAttributes(errors, 'evidence-basis-group')}><legend class="sr-only">Evidence basis</legend><div class="choice-grid choice-grid-compact">
-                ${evidenceChoice('confirmed', 'Current supporting record identified', 'You can name a current test, result, record, observation, note, or link as support', answer.basis)}
-                ${evidenceChoice('reported', 'Self-reported, no current record', 'Intended, recalled, or personally observed, but no current supporting record is available', answer.basis)}
-                ${evidenceChoice('unknown', 'Unknown', 'I cannot determine this yet', answer.basis)}
+                ${evidenceChoice('confirmed', 'Yes, I can name a saved record', 'I can name or link a record from this project that supports this answer', answer.basis)}
+                ${evidenceChoice('reported', 'No saved record; this is based on my observation, memory, or plan', 'I do not have a saved record that supports this answer', answer.basis)}
+                ${evidenceChoice('unknown', 'I do not know yet', 'I do not have enough information to answer', answer.basis)}
               </div>${fieldError(errors, 'evidence-basis-group')}</fieldset>
             <div class="field-grid" style="margin-top: 1rem">
               <div class="field">
-                <label for="evidence-note">Evidence note</label>
-                <input id="evidence-note" name="evidenceNote" value="${escapeHTML(answer.evidenceNote || '')}" placeholder="Name the record, date, setup, result, or missing proof" ${errorAttributes(errors, 'evidence-note')} />
+                <label for="evidence-note">Name the record or explain what is missing</label>
+                <input id="evidence-note" name="evidenceNote" value="${escapeHTML(answer.evidenceNote || '')}" placeholder="For example: October 15 test results, GitHub test report, or no permission record available" ${errorAttributes(errors, 'evidence-note')} />
                 ${fieldError(errors, 'evidence-note')}
               </div>
               <div class="field">
@@ -1078,9 +1083,9 @@ function evidenceChoice(value, label, description, selected) {
 
 function evidenceBasisDisplay(value) {
   return ({
-    confirmed: 'Current supporting record identified',
-    reported: 'Self-reported, no current record',
-    unknown: 'Unknown',
+    confirmed: 'Yes, saved record named',
+    reported: 'No saved record; observation, memory, or plan',
+    unknown: 'I do not know yet',
   })[value] || 'Unanswered';
 }
 
@@ -1095,10 +1100,10 @@ function submitQuestion(event, question, count) {
   };
   const errors = [];
   if (answer.level === undefined) errors.push({ id: 'answer-choice-group', message: 'Choose the description that is true now.' });
-  if (!answer.basis) errors.push({ id: 'evidence-basis-group', message: 'Choose whether a Current supporting record is identified, the answer is Self-reported without a current record, or it is Unknown.' });
+  if (!answer.basis) errors.push({ id: 'evidence-basis-group', message: 'Choose what you are basing this answer on.' });
   if (errors.length) return renderQuestion(errors, answer);
   if (!isValidAnswer(question, answer)) {
-    return renderQuestion([{ id: 'evidence-note', message: 'Name the current record or add its link, or choose Self-reported, no current record.' }], answer);
+    return renderQuestion([{ id: 'evidence-note', message: 'Name or link the saved record, or choose the observation, memory, or plan option.' }], answer);
   }
   assessment.answers[question.id] = answer;
   if (question.id === 'CAP1' && assessment.stage === 'plan') {
@@ -1129,7 +1134,7 @@ function arrangementSummary() {
       <div><dt>Work</dt><dd>${escapeHTML(p.task || 'Not defined yet')}</dd></div>
       <div><dt>AI role being tested</dt><dd>${escapeHTML(AUTHORITY_LABELS[primarySystem?.proposedAuthority || p.proposedAuthority] || 'Not defined yet')}</dd></div>
       <div><dt>Result you are counting on</dt><dd>${escapeHTML(p.intendedOutcome || 'Not defined yet')}</dd></div>
-      <div><dt>What still depends on people</dt><dd>${escapeHTML(p.humanLoad || 'Not defined yet')}</dd></div>
+      <div><dt>What people do that AI does not</dt><dd>${escapeHTML(p.humanLoad || 'Not defined yet')}</dd></div>
       <div><dt>Serious failure</dt><dd>${escapeHTML(p.failureScenario || 'Not defined yet')}</dd></div>
     </dl>
     <p class="helper-text">Saved only in this browser as you work.</p>
@@ -1160,6 +1165,13 @@ function stagePrompts(stage) {
       taskQuestion: 'What work are you planning, and what are you considering delegating to AI?',
       outcomeQuestion: 'What result are you counting on if the work goes as planned?',
       outcomeHelp: 'Name the useful result and how you will recognize success.',
+      humanQuestion: 'What will you or another person do that AI will not do?',
+      humanHelp: 'Include what you will check, decide, verify, approve, watch, correct, stop, or fix. If another person will do any of this, name their role.',
+      systemsQuestion: 'Which AI systems and models will you use?',
+      primarySystemQuestion: 'Which AI system will handle the most important or risky part?',
+      systemRoleQuestion: 'What job will this AI system do?',
+      systemAuthorityQuestion: 'How far will this AI system act before a person reviews or approves?',
+      systemRecordQuestion: 'Do you have one or more saved records that show the AI product and model, planned setup, access, and role?',
       authorityQuestion: 'How far will AI act before a person reviews or approves?',
       behaviorQuestion: 'What are you counting on the AI system to do?',
     },
@@ -1169,6 +1181,13 @@ function stagePrompts(stage) {
       taskQuestion: 'What did the work produce, recommend, decide, change, or do?',
       outcomeQuestion: 'What result are you counting on when you publish, send, or launch it?',
       outcomeHelp: 'Name the result you expect from sharing this work.',
+      humanQuestion: 'What did you or another person do that AI did not do?',
+      humanHelp: 'Include what you checked, decided, verified, approved, corrected, or will continue to watch or fix after launch. If another person did any of this, name their role.',
+      systemsQuestion: 'Which AI systems and models did you use?',
+      primarySystemQuestion: 'Which AI system handled the most important or risky part?',
+      systemRoleQuestion: 'What job did this AI system do?',
+      systemAuthorityQuestion: 'How far did this AI system act before a person reviewed or approved?',
+      systemRecordQuestion: 'Do you have one or more saved records that show the AI product and model, setup, access, and role you used for this work?',
       authorityQuestion: 'What was the most important or risky AI role in this work?',
       behaviorQuestion: 'What did you count on the AI system to do?',
     },
@@ -1178,15 +1197,29 @@ function stagePrompts(stage) {
       taskQuestion: 'What is the AI system producing, recommending, deciding, changing, or doing now?',
       outcomeQuestion: 'What result are you still counting on?',
       outcomeHelp: 'Name the intended result and what would make you limit or stop using AI in this role.',
+      humanQuestion: 'What do you or another person do that AI does not do?',
+      humanHelp: 'Include what you check, decide, verify, approve, watch, correct, stop, or fix. If another person does any of this, name their role.',
+      systemsQuestion: 'Which AI systems and models are you using?',
+      primarySystemQuestion: 'Which AI system handles the most important or risky part now?',
+      systemRoleQuestion: 'What job does this AI system do now?',
+      systemAuthorityQuestion: 'How far does this AI system act before a person reviews or approves?',
+      systemRecordQuestion: 'Do you have one or more saved records that show the AI product and model, current setup, access, and role?',
       authorityQuestion: 'What is the most important or risky AI role now?',
       behaviorQuestion: 'What are you counting on the AI system to keep doing?',
     },
   }[stage] || {
     setupHeading: 'Describe the work.',
     setupIntro: 'Describe the work, what AI does, and the result you are counting on.',
-    taskQuestion: 'What work is being done?',
+    taskQuestion: 'What work are you doing?',
     outcomeQuestion: 'What are you betting will happen?',
     outcomeHelp: 'Describe the intended result and what could happen if it fails.',
+    humanQuestion: 'What do you or another person do that AI does not do?',
+    humanHelp: 'Include what you check, decide, verify, approve, watch, correct, stop, or fix.',
+    systemsQuestion: 'Which AI systems and models are you using?',
+    primarySystemQuestion: 'Which AI system handles the most important or risky part?',
+    systemRoleQuestion: 'What job does this AI system do?',
+    systemAuthorityQuestion: 'How far does this AI system act before a person reviews or approves?',
+    systemRecordQuestion: 'Do you have one or more saved records that show the AI product and model, setup, access, and role?',
     authorityQuestion: 'What authority does AI have?',
     behaviorQuestion: 'What are you counting on the AI system to do?',
   };
@@ -1198,9 +1231,17 @@ function renderReview(error = '') {
   const needsApproval = p.proposedAuthority !== 'A0';
   const needsReversibility = ['A2', 'A3'].includes(p.proposedAuthority) || p.workTypes.includes('automation') || p.workTypes.includes('software');
   const needsMonitoring = p.proposedAuthority === 'A3' || p.workTypes.includes('automation');
-  const approvalQuestion = p.proposedAuthority === 'A3'
-    ? 'Did a capable person approve the operating limits, and can that person change or stop them?'
-    : 'Does a person with the needed knowledge, access, authority, time, and attention approve the work before it creates an outside consequence?';
+  const approvalQuestion = assessment.stage === 'plan'
+    ? p.proposedAuthority === 'A3'
+      ? 'Will a capable person approve the operating limits, and will that person be able to change or stop them?'
+      : 'Will a person with the needed knowledge, access, authority, time, and attention approve the work before it can affect anyone?'
+    : assessment.stage === 'release'
+      ? p.proposedAuthority === 'A3'
+        ? 'Did a capable person approve the operating limits, and can that person change or stop them?'
+        : 'Did a person with the needed knowledge, access, authority, time, and attention approve the work before it could affect anyone?'
+      : p.proposedAuthority === 'A3'
+        ? 'Has a capable person approved the operating limits, and can that person change or stop them?'
+        : 'Does a person with the needed knowledge, access, authority, time, and attention approve the work before it affects anyone?';
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
       <section class="assessment-main setup-card">
@@ -1227,15 +1268,15 @@ function renderReview(error = '') {
               <select id="sensitiveData" name="sensitiveData" required>${triStateOptions(p.sensitiveData, 'No', 'Yes', 'I cannot determine')}</select>
             </div>
             <div class="field" id="data-authorization-field" ${p.sensitiveData === true || p.sensitiveData === null ? '' : 'hidden'}>
-              <label for="dataAuthorization">If sensitive data is involved, is its use explicitly authorized?</label>
+              <label for="dataAuthorization">If AI uses sensitive data, did you or another authorized person approve that use?</label>
               <select id="dataAuthorization" name="dataAuthorizationConfirmed" required>${triStateOptions(p.dataAuthorizationConfirmed, 'No', 'Yes', 'I cannot determine')}</select>
             </div>
             <div class="field" id="monitoring-field" ${needsMonitoring ? '' : 'hidden'}>
-              <label for="monitoring">If the system acts repeatedly or independently, can the activity be seen and stopped?</label>
+              <label for="monitoring">If the system acts repeatedly or independently, can you see and stop its activity?</label>
               <select id="monitoring" name="monitoringConfirmed" required>${triStateOptions(p.monitoringConfirmed, 'No', 'Yes', 'I cannot determine')}</select>
             </div>
             <div class="field">
-              <label for="failure">Is there a serious known problem that has not been fixed?</label>
+              <label for="failure">Do you know about a serious problem that you have not fixed?</label>
               <select id="failure" name="unresolvedMaterialFailure" required>${triStateOptions(p.unresolvedMaterialFailure, 'No', 'Yes', 'I cannot determine')}</select>
             </div>
           </div>
@@ -1243,15 +1284,15 @@ function renderReview(error = '') {
           ${assessment.stage === 'live' ? liveEvidenceFields(p) : ''}
 
           <fieldset class="fieldset" style="margin-top: 1.5rem">
-            <legend>What supports these safeguard and real-use answers?</legend>
-            <p class="helper-text">These answers affect the conclusion. A selected “Yes” is still self-reported unless you identify a current record, test, observation, or result. By choosing Current supporting record identified, you are saying the named record covers every important safeguard or real-use answer above. If the evidence is mixed, choose the weakest basis that applies.</p>
+            <legend>Do you have saved records from this project for these safeguard and real-use answers?</legend>
+            <p class="helper-text">Choose “Yes” only if you can name a current approval, permission record, test, observation, or result that covers every important answer above. If the records are mixed, choose the weakest answer that applies.</p>
             <div class="field-grid">
               <div class="field">
-                <label for="review-evidence-basis">Evidence basis</label>
+                <label for="review-evidence-basis">Do saved records from this project support these answers?</label>
                 <select id="review-evidence-basis" name="reviewEvidenceBasis" required>${selectOptions([
-                  ['confirmed', 'Current supporting record identified'],
-                  ['reported', 'Self-reported, no current record'],
-                  ['unknown', 'Unknown or not checked'],
+                  ['confirmed', 'Yes, I can name the saved records'],
+                  ['reported', 'No saved records; this is based on my observation, memory, or plan'],
+                  ['unknown', 'I do not know yet'],
                 ], p.reviewEvidenceBasis || 'unknown')}</select>
               </div>
               <div class="field">
@@ -1290,7 +1331,7 @@ function renderReview(error = '') {
           </div>
 
           <div class="callout callout-warning" style="margin-top: 1.5rem">
-            <p><strong>Before you calculate:</strong> this is a self-assessment. “Current supporting record identified” means you named support for an answer. This tool has not inspected that record, and the label does not mean an independent reviewer certified it.</p>
+            <p><strong>Before you calculate:</strong> this is a self-assessment. “Yes, I can name a saved record” means you named something from this project that supports an answer. This tool has not inspected that record, and the label does not mean an independent reviewer certified it.</p>
           </div>
           <div class="form-actions">
             <button class="button button-secondary" type="button" id="review-back">Back</button>
@@ -1340,7 +1381,7 @@ function systemReviewFields(systems) {
     <input type="hidden" name="reviewSystemId" value="${escapeHTML(system.id)}" />
     <label for="review-system-access-${index}">${escapeHTML(system.product || `System ${index + 1}`)} ${system.model ? `(${escapeHTML(system.model)})` : ''}: can it connect to accounts, files, repositories, data, publishing, or other tools?</label>
     <select id="review-system-access-${index}" name="reviewSystemAccess" required>${triStateOptions(system.connectedAccess, 'No', 'Yes', 'I cannot determine')}</select>
-    <label for="review-system-permissions-${index}">Are its permissions known and limited to this role?</label>
+    <label for="review-system-permissions-${index}">Do you know which permissions it has, and have you limited them to this role?</label>
     <select id="review-system-permissions-${index}" name="reviewSystemPermissions" required>${triStateOptions(system.permissionsConfirmed, 'No', 'Yes', 'I cannot determine or not applicable')}</select>
   </div>`).join('');
 }
@@ -1365,15 +1406,15 @@ function triStateOptions(selected, noLabel, yesLabel, unknownLabel) {
 
 function liveEvidenceFields(p) {
   return `<fieldset class="fieldset" style="margin-top: 1.5rem">
-    <legend>What has been observed?</legend>
+    <legend>What have you observed?</legend>
     <div class="field-grid">
       <div class="field"><label for="observedRuns">Completed end-to-end runs</label><input id="observedRuns" name="observedRuns" type="number" min="0" max="999" value="${p.observedRuns === '' || p.observedRuns === undefined ? '' : Number(p.observedRuns)}" required /></div>
-      ${booleanSelect('representativeConditions', 'Was it used under normal working conditions?', p.representativeConditions)}
-      ${booleanSelect('atLeastOneEdgeOrFailureCase', 'Was at least one unusual or failure case tested?', p.atLeastOneEdgeOrFailureCase)}
+      ${booleanSelect('representativeConditions', 'Did people use it under normal working conditions?', p.representativeConditions)}
+      ${booleanSelect('atLeastOneEdgeOrFailureCase', 'Did you test at least one unusual or failure case?', p.atLeastOneEdgeOrFailureCase)}
       ${booleanSelect('controlsActuallyOperated', 'Did the planned checks and safeguards actually work?', p.controlsActuallyOperated)}
-      ${booleanSelect('observedInRealUseForFullOperatingCycle', 'Was it observed through one complete work cycle?', p.observedInRealUseForFullOperatingCycle)}
+      ${booleanSelect('observedInRealUseForFullOperatingCycle', 'Did you observe it through one complete work cycle?', p.observedInRealUseForFullOperatingCycle)}
       ${booleanSelect('outcomeDataCollected', 'Did you record whether the expected result happened?', p.outcomeDataCollected)}
-      ${booleanSelect('materialFailuresResolved', 'Were serious problems fixed?', p.materialFailuresResolved)}
+      ${booleanSelect('materialFailuresResolved', 'Did you fix every serious problem?', p.materialFailuresResolved)}
     </div>
   </fieldset>`;
 }
@@ -1398,7 +1439,7 @@ function submitReview(event) {
     !assessment.project.reviewEvidenceNote &&
     !assessment.project.reviewEvidenceUrl
   ) {
-    return renderReview('Name or link the current record supporting the safeguard answers, or choose Self-reported, no current record.');
+    return renderReview('Name or link the saved record, or choose the observation, memory, or plan option.');
   }
   assessment.completed = true;
   assessment.completedAt = new Date().toISOString();
@@ -1507,7 +1548,7 @@ function renderResult() {
         ${contextItem('AI job in the workflow', primarySystem?.role || 'Not recorded')}
         ${contextItem('AI role tested', AUTHORITY_LABELS[primarySystem?.proposedAuthority || p.proposedAuthority] || 'Not recorded')}
         ${contextItem('Result you are counting on', p.intendedOutcome || 'Not recorded')}
-        ${contextItem('What still depends on people', p.humanLoad || 'Not recorded')}
+        ${contextItem('What you or another person does that AI does not', p.humanLoad || 'Not recorded')}
         ${contextItem('Serious failure', p.failureScenario || 'Not recorded')}
         ${contextItem('Possible impact', p.failureImpact || 'Not recorded')}
         ${contextItem('Impact level', consequenceLabel)}
@@ -1518,7 +1559,7 @@ function renderResult() {
     <section class="wager-card card" aria-labelledby="wager-heading">
       <p class="kicker">The decision remains yours</p>
       <h2 id="wager-heading">Your wager if you continue as-is</h2>
-      <p>${escapeHTML(wagerLead(assessment.stage))} You are counting on <strong>${escapeHTML(primarySystem?.product || 'the AI system')}</strong> to ${escapeHTML(primarySystem?.role || 'perform the role you described')}. People and the workflow must still carry: <strong>${escapeHTML(p.humanLoad || 'the review, correction, monitoring, and recovery work described in this result')}</strong>.</p>
+      <p>${escapeHTML(wagerLead(assessment.stage))} You are counting on <strong>${escapeHTML(primarySystem?.product || 'the AI system')}</strong> to ${escapeHTML(primarySystem?.role || 'perform the role you described')}. You or another capable person must still: <strong>${escapeHTML(p.humanLoad || 'review, correct, monitor, and recover the work described in this result')}</strong>.</p>
       <p>If that setup fails, you identified this serious failure: <strong>${escapeHTML(p.failureScenario || 'Not recorded')}</strong> The possible impact is: <strong>${escapeHTML(p.failureImpact || 'Not recorded')}</strong></p>
       <p><strong>The Load Test does not decide whether you proceed.</strong> It shows what you are relying on, which parts have supporting records identified, which parts depend on your report, and what could happen if those assumptions fail.</p>
     </section>
@@ -1556,7 +1597,7 @@ function renderResult() {
 
     <section class="decision-grid" aria-label="How the load compares with the current setup">
       ${decisionColumn('Record-backed conclusion', 'supported', loadSummary.currentSetupCanCarry || defaultDelegate(result), 'Work covered by the role-critical records you identified for this setup.')}
-      ${decisionColumn('What still depends on capable review', 'verify', loadSummary.stillNeedsCapableReview || defaultVerify(), 'Judgment, checking, approval, monitoring, or correction that must still be carried by you or another capable person.')}
+      ${decisionColumn('What a capable person still needs to do', 'verify', loadSummary.stillNeedsCapableReview || defaultVerify(), 'Judgment, checking, approval, monitoring, or correction that you or another capable person must carry.')}
       ${decisionColumn('Where the load exceeds the setup', 'blocked', loadSummary.exposedLoad || gates.map(gateText), 'Gaps that could become failures or consequences if you continue as-is.')}
     </section>
 
@@ -1596,7 +1637,7 @@ function renderResult() {
       <p class="kicker">Human capacity for this load</p>
       <h2>${escapeHTML(loadFit.label)}</h2>
       <p>${escapeHTML(loadFit.description)}</p>
-      <p><strong>What still depends on people:</strong> ${escapeHTML(p.humanLoad || 'Not recorded')}</p>
+      <p><strong>What people do that AI does not:</strong> ${escapeHTML(p.humanLoad || 'Not recorded')}</p>
     </section>
 
     <details class="result-disclosure">
@@ -2186,7 +2227,7 @@ function renderRecordWorkStep(record, errors) {
       ${radioChoice('voiceRequired', 'not-applicable', 'Not applicable', 'This work is not meant to have a personal voice.', record.voiceRequired)}
       ${radioChoice('voiceRequired', 'unknown', 'Not sure yet', 'Leave this visible as unanswered in the record.', record.voiceRequired)}
     </div></fieldset>
-    <fieldset class="fieldset"><legend>Is this work being used to show what you know or can do?</legend><div class="choice-grid choice-grid-compact">
+    <fieldset class="fieldset"><legend>Are you using this work to show what you know or can do?</legend><div class="choice-grid choice-grid-compact">
       ${radioChoice('capabilityDemonstration', 'yes', 'Yes', 'The work is intended to demonstrate my capability.', record.capabilityDemonstration)}
       ${radioChoice('capabilityDemonstration', 'partly', 'Partly', 'It demonstrates some, but not all, of my capability.', record.capabilityDemonstration)}
       ${radioChoice('capabilityDemonstration', 'no', 'No', 'The work only needs to achieve its purpose.', record.capabilityDemonstration)}
@@ -2222,7 +2263,7 @@ function renderRecordCreditsStep(record, errors = []) {
       ], record.contributorStatus)}</select>${fieldError(errors, 'contributor-status')}</div>
     </div>
     ${showContributors ? `<fieldset class="fieldset record-repeat-group" id="record-contributors-group" ${groupErrorAttributes(errors, 'record-contributors-group')}><legend>Other human contributors <span class="required">Required</span></legend><div class="record-contributor-list">${record.contributors.map((item, index) => recordContributorEditor(item, index, errors)).join('')}</div>${fieldError(errors, 'record-contributors-group')}<button class="button button-secondary" type="button" id="add-record-contributor">Add another person</button></fieldset>` : ''}
-    <fieldset class="fieldset systems-fieldset" id="ai-use-group" ${groupErrorAttributes(errors, 'ai-use-group')}><legend>Was AI used in the documented workflow? <span class="required">Required</span></legend><div class="choice-grid choice-grid-compact">${AI_USE_OPTIONS.map(([value, label]) => radioChoice('aiUse', value, label, '', record.aiUse)).join('')}</div>${fieldError(errors, 'ai-use-group')}</fieldset>
+    <fieldset class="fieldset systems-fieldset" id="ai-use-group" ${groupErrorAttributes(errors, 'ai-use-group')}><legend>Did you use AI in the documented workflow? <span class="required">Required</span></legend><div class="choice-grid choice-grid-compact">${AI_USE_OPTIONS.map(([value, label]) => radioChoice('aiUse', value, label, '', record.aiUse)).join('')}</div>${fieldError(errors, 'ai-use-group')}</fieldset>
     ${showAI ? `<div class="field"><label for="ai-contributions">What did the AI tool do? <span class="required">Required</span></label><textarea id="ai-contributions" name="aiContributions" placeholder="Organized notes, compared alternatives, drafted language, wrote code, tested behavior, published approved changes..." required ${errorAttributes(errors, 'ai-contributions')}>${escapeHTML(record.aiContributions)}</textarea>${fieldError(errors, 'ai-contributions')}</div>
       <div class="field"><label for="model-history">Do you know the complete model history for this work?</label><select id="model-history" name="modelHistoryCompleteness">${selectOptions([
         ['complete', 'Yes, all AI models used for important work are identified'], ['incomplete', 'No, at least one model is missing or uncertain'], ['unknown', 'I do not know whether the history is complete'],
@@ -2313,9 +2354,9 @@ function recordSystemEditorV03(system, index, count, errors = []) {
     <div class="field-grid">
       <div class="field"><label for="record-system-product-v03-${index}">AI product or tool <span class="required">Required</span></label><input id="record-system-product-v03-${index}" name="recordSystemProduct" value="${escapeHTML(system.product)}" placeholder="For example, ChatGPT" required ${errorAttributes(errors, `record-system-product-v03-${index}`)} />${fieldError(errors, `record-system-product-v03-${index}`)}</div>
       <div class="field"><label for="record-system-model-v03-${index}">Exact model or version <span class="required">Required</span></label><input id="record-system-model-v03-${index}" name="recordSystemModel" value="${escapeHTML(system.model)}" placeholder="Enter Unknown if it was not shown" required ${errorAttributes(errors, `record-system-model-v03-${index}`)} />${fieldError(errors, `record-system-model-v03-${index}`)}</div>
-      <div class="field field-span-2"><label for="record-system-setup-v03-${index}">How was it configured or guided?</label><textarea id="record-system-setup-v03-${index}" name="recordSystemSetup" placeholder="Prompts, custom instructions, memory, tools, source files, or permissions">${escapeHTML(system.setup || '')}</textarea></div>
+      <div class="field field-span-2"><label for="record-system-setup-v03-${index}">How did you configure or guide it?</label><textarea id="record-system-setup-v03-${index}" name="recordSystemSetup" placeholder="Prompts, custom instructions, memory, tools, source files, or permissions">${escapeHTML(system.setup || '')}</textarea></div>
       <div class="field field-span-2"><label for="record-system-role-v03-${index}">What did this AI system do? <span class="required">Required</span></label><textarea id="record-system-role-v03-${index}" name="recordSystemRole" required ${errorAttributes(errors, `record-system-role-v03-${index}`)}>${escapeHTML(system.role)}</textarea>${fieldError(errors, `record-system-role-v03-${index}`)}</div>
-      <div class="field"><label for="record-system-basis-v03-${index}">How do you know this is what the AI did?</label><select id="record-system-basis-v03-${index}" name="recordSystemEvidenceBasis">${selectOptions([['unknown', 'I do not know'], ['confirmed', 'A current record supports this'], ['reported', 'Based on what I observed or remember']], system.evidenceBasis || 'unknown')}</select></div>
+      <div class="field"><label for="record-system-basis-v03-${index}">Do you have a saved record of what this AI system did?</label><select id="record-system-basis-v03-${index}" name="recordSystemEvidenceBasis">${selectOptions([['unknown', 'I do not know yet'], ['confirmed', 'Yes, I can name a saved record'], ['reported', 'No saved record; this is based on my observation or memory']], system.evidenceBasis || 'unknown')}</select></div>
     </div>
   </article>`;
 }
@@ -2331,7 +2372,7 @@ function recordEvidenceEditor(item, index, claims) {
       <div class="field field-span-2"><label for="evidence-url-${index}">Link <span class="helper-text">Optional. Public links may appear in the public record.</span></label><input id="evidence-url-${index}" name="evidenceUrl" type="url" value="${escapeHTML(item.url || '')}" placeholder="https://" /></div>
       <div class="field"><label for="evidence-version-${index}">Version, commit, release, or identifier</label><input id="evidence-version-${index}" name="evidenceVersion" value="${escapeHTML(item.version || '')}" /></div>
       <div class="field"><label for="evidence-visibility-${index}">Visibility</label><select id="evidence-visibility-${index}" name="evidenceVisibility">${selectOptions(EVIDENCE_VISIBILITY_OPTIONS, item.visibility || 'private')}</select></div>
-      <div class="field"><label for="evidence-integrity-${index}">Is this record clearly connected to the exact work version?</label><select id="evidence-integrity-${index}" name="evidenceIntegrity">${selectOptions(EVIDENCE_INTEGRITY_OPTIONS, item.integrity || 'unlinked')}</select><small>Choose the protected option only when a signature, credential, verified digest, or similar mechanism would reveal unnoticed changes.</small></div>
+      <div class="field"><label for="evidence-integrity-${index}">Can you connect this record to the exact work version?</label><select id="evidence-integrity-${index}" name="evidenceIntegrity">${selectOptions(EVIDENCE_INTEGRITY_OPTIONS, item.integrity || 'unlinked')}</select><small>Choose the protected option only when a signature, credential, verified digest, or similar mechanism would reveal unnoticed changes.</small></div>
       <div class="field"><label for="evidence-relationship-${index}">How does this record relate to the selected statements?</label><select id="evidence-relationship-${index}" name="evidenceRelationship">${selectOptions(EVIDENCE_RELATIONSHIP_OPTIONS, item.relationship || 'unknown')}</select></div>
     </div>
     <fieldset class="fieldset"><legend>Which statements does this record address?</legend><div class="choice-grid">${claims.length ? claims.map((claim) => checkboxChoice(`evidenceClaim:${item.id}`, claim.id, claim.statement, '', item.claimIds?.includes(claim.id))).join('') : '<p class="helper-text">Return to Step 2 and select at least one statement.</p>'}</div></fieldset>
@@ -2468,7 +2509,7 @@ function validateWorkRecordStep(stepId, record) {
         if (!contributor.contribution) errors.push({ id: `contributor-credit-${index}`, message: `Describe the important work person ${index + 1} did.` });
       });
     }
-    if (record.aiUse === 'unknown') errors.push({ id: 'ai-use-group', message: 'Say whether AI was used in the documented workflow.' });
+    if (record.aiUse === 'unknown') errors.push({ id: 'ai-use-group', message: 'Tell us whether you used AI in the documented workflow.' });
     if (['yes', 'uncertain'].includes(record.aiUse)) {
       if (!record.aiContributions) errors.push({ id: 'ai-contributions', message: 'Describe what the AI tool did.' });
       if (!record.systems.length) errors.push({ id: 'record-systems-group', message: 'Add at least one AI system and describe what it did.' });
@@ -2822,7 +2863,7 @@ function renderMethod() {
       <p>An AI detector examines a finished product and guesses from patterns. A Work Record does not detect, classify, or help someone bypass detection. It documents the work behind the product.</p>
       <h3>2. Load Test: Can this setup carry the work?</h3>
       <p>The model is only one part of the answer. The Load Test shows what the AI role still requires people and the workflow to judge, check, approve, monitor, correct, stop, or recover from. It then compares that load with the capacity, safeguards, evidence, and stakes recorded for this work.</p>
-      <ol><li>Choose whether the work is planned, ready to launch, or already in use.</li><li>Describe what AI does, what still depends on people, the result you are counting on, and what could happen if the setup fails.</li><li>See what the current setup can carry, where the wager is exposed, and what could change it.</li></ol>
+      <ol><li>Choose whether the work is planned, ready to launch, or already in use.</li><li>Describe what AI does, what you do that AI does not do, the result you are counting on, and what could happen if the setup fails.</li><li>See what the current setup can carry, where the wager is exposed, and what could change it.</li></ol>
       <h2>Load Test central question</h2>
       <blockquote class="callout"><p><strong>What does the role you gave AI require from you, can your current capacity and workflow carry that load, and what could happen if you continue as-is?</strong></p></blockquote>
       <p><strong>The Load Test does not decide whether you may proceed.</strong> It shows the wager you are making so you can decide with your eyes open.</p>

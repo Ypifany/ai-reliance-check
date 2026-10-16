@@ -22,6 +22,26 @@ assert.match(
   /The Load Test records those references but does not inspect them\./,
   'The Load Test must not present user-identified records as independently verified',
 );
+assert.match(
+  appSource,
+  /What did you or another person do that AI did not do\?/,
+  'The Before Launch setup must ask plainly what the person did',
+);
+assert.doesNotMatch(
+  appSource,
+  /How do you know these details are accurate\?|Evidence about this system in this role|Which AI systems and models are being used\?|Was AI used in the documented workflow\?/,
+  'The system-record question must not use the old ambiguous wording',
+);
+assert.match(
+  appSource,
+  /Do you have one or more saved records that show the AI product and model, setup, access, and role you used for this work\?/,
+  'The Before Launch setup must ask directly whether saved system and setup records exist',
+);
+assert.match(
+  appSource,
+  /return renderSetup\(errors, errors\[0\]\?\.id \|\| ''\);/,
+  'A setup validation error must focus the exact field that needs attention',
+);
 for (const fieldId of ['approval-field', 'reversible-field', 'data-authorization-field', 'monitoring-field']) {
   assert.match(appSource, new RegExp(`toggleConditionalField\\('${fieldId}'`), `${fieldId} must be disabled when hidden`);
 }
@@ -195,7 +215,7 @@ const routes = [
   {
     name: 'completed-load-test-human-load',
     route: '#/load-test',
-    expected: 'What still depends on capable review',
+    expected: 'What a capable person still needs to do',
     initial: {
       localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(completedLoadTest) },
     },
