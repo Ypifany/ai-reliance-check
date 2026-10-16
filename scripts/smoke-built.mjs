@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import vm from 'node:vm';
 import { HtmlValidate } from 'html-validate';
+import { getAssessmentScopeKey } from '../src/questions.js';
 
 const assets = path.resolve('dist/assets');
 const appSource = fs.readFileSync(path.resolve('src/app.js'), 'utf8');
@@ -24,7 +25,7 @@ assert.match(
 );
 assert.match(
   appSource,
-  /What did you or another person do that AI did not do\?/,
+  /What work did you personally do to make or check this project\?/,
   'The Before Launch setup must ask plainly what the person did',
 );
 assert.doesNotMatch(
@@ -34,9 +35,13 @@ assert.doesNotMatch(
 );
 assert.match(
   appSource,
-  /Do you have one or more saved records that show the AI product and model, setup, access, and role you used for this work\?/,
-  'The Before Launch setup must ask directly whether saved system and setup records exist',
+  /Do you have a saved record showing what this AI used, what job it did, or what it produced\?/,
+  'The Before Launch setup must ask plainly what records of AI use exist',
 );
+assert.match(appSource, /I’m working on it now/, 'The Load Test must include a work-in-progress stage');
+assert.match(appSource, /Who works directly with this AI tool\?/, 'The setup must identify who directly uses each AI tool');
+assert.match(appSource, /About this project/, 'The setup must open with a plain project heading');
+assert.doesNotMatch(appSource, /Describe the work and the result you are counting on/, 'The setup must not use the old abstract project heading');
 assert.match(
   appSource,
   /return renderSetup\(errors, errors\[0\]\?\.id \|\| ''\);/,
@@ -46,8 +51,9 @@ for (const fieldId of ['approval-field', 'reversible-field', 'data-authorization
   assert.match(appSource, new RegExp(`toggleConditionalField\\('${fieldId}'`), `${fieldId} must be disabled when hidden`);
 }
 assert.doesNotMatch(appSource, /human-ai-work-check-assessment/, 'New exports must use the Load Test name');
-const bundleName = fs.readdirSync(assets).find((name) => /^index-.*\.js$/.test(name));
-assert.ok(bundleName, 'Built JavaScript bundle not found. Run npm run build first.');
+const builtIndex = fs.readFileSync(path.resolve('dist/index.html'), 'utf8');
+const bundleName = builtIndex.match(/assets\/(index-[^"']+\.js)/)?.[1];
+assert.ok(bundleName, 'Built JavaScript bundle not found in dist/index.html. Run npm run build first.');
 const bundle = fs.readFileSync(path.join(assets, bundleName), 'utf8')
   .replaceAll('import.meta.url', '"https://example.test/assets/index.js"');
 
@@ -145,8 +151,8 @@ const completedLoadTestAnswers = Object.fromEntries(
 );
 
 const completedLoadTest = {
-  schemaVersion: 2,
-  methodVersion: '0.3',
+  schemaVersion: 4,
+  methodVersion: '0.5',
   id: 'load-test-smoke',
   stage: 'release',
   completed: true,
@@ -155,8 +161,14 @@ const completedLoadTest = {
   project: {
     name: 'Completed Load Test example',
     task: 'Prepare and publish a short public guide.',
+    aiUseFocus: 'making',
     intendedOutcome: 'Readers can follow the guide without being misled.',
     humanLoad: 'A capable person must check the claims, links, wording, and final release.',
+    humanActivities: [],
+    otherHumanInvolved: 'no',
+    otherHumanRole: '',
+    otherHumanActivities: [],
+    humanOther: 'A capable person must check the claims, links, wording, and final release.',
     failureScenario: 'A serious unsupported claim reaches readers.',
     failureImpact: 'Readers could make a poor decision and the creator could lose credibility.',
     consequence: 'moderate',
@@ -166,6 +178,11 @@ const completedLoadTest = {
       product: 'Example AI',
       model: 'Example model',
       role: 'Draft and organize the guide for human approval',
+      operator: 'me',
+      operatorRole: '',
+      checker: 'me',
+      checkerRole: '',
+      checkerScope: 'Check the claims, links, wording, and final release',
       proposedAuthority: 'A1',
       connectedAccess: false,
       permissionsConfirmed: true,
@@ -191,6 +208,22 @@ const completedLoadTest = {
   },
   answers: completedLoadTestAnswers,
 };
+completedLoadTest.scopeKey = getAssessmentScopeKey(completedLoadTest);
+Object.values(completedLoadTest.answers).forEach((answer) => {
+  answer.status = 'known';
+  answer.scopeKey = completedLoadTest.scopeKey;
+});
+
+const unknownLoadTest = structuredClone(completedLoadTest);
+unknownLoadTest.id = 'load-test-unknown-smoke';
+unknownLoadTest.project.systems[0].operator = 'unknown';
+unknownLoadTest.project.systems[0].operatorRole = '';
+unknownLoadTest.project.systems[0].checker = 'unknown';
+unknownLoadTest.project.systems[0].checkerScope = '';
+unknownLoadTest.scopeKey = getAssessmentScopeKey(unknownLoadTest);
+Object.values(unknownLoadTest.answers).forEach((answer) => {
+  answer.scopeKey = unknownLoadTest.scopeKey;
+});
 
 const routes = [
   { name: 'home', route: '#/', expected: 'Your credibility is being questioned.' },
@@ -201,7 +234,7 @@ const routes = [
   { name: 'sample', route: '#/sample', expected: 'Example: How this website and its methods were developed.' },
   { name: 'load-test', route: '#/load-test', expected: 'How far along is the work?' },
   { name: 'load-test-result-copy', route: '#/load-test', expected: 'You get more than a score.', forbidden: 'You will not get only a score.' },
-  { name: 'load-test-load-framing', route: '#/load-test', expected: 'what the role you gave AI requires from you' },
+  { name: 'load-test-load-framing', route: '#/load-test', expected: 'what the role you gave AI requires from you and anyone else doing or checking the work' },
   { name: 'load-test-decision-boundary', route: '#/load-test', expected: 'The Load Test does not decide whether you proceed.' },
   {
     name: 'completed-load-test-wager',
@@ -210,6 +243,15 @@ const routes = [
     forbidden: 'what AI can reasonably be allowed to do',
     initial: {
       localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(completedLoadTest) },
+    },
+  },
+  {
+    name: 'unknown-load-test-withholds-score',
+    route: '#/load-test',
+    expected: 'Not enough information to calculate a score',
+    forbidden: 'Supported for this exact setup',
+    initial: {
+      localStorage: { 'ai-reliance-check:v0.2': JSON.stringify(unknownLoadTest) },
     },
   },
   {

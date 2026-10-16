@@ -1015,6 +1015,10 @@ button.button {
   align-items: start;
 }
 
+.assessment-shell-single {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .assessment-main {
   min-width: 0;
 }
