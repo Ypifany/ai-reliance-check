@@ -174,7 +174,7 @@ const completedLoadTest = {
 
 const routes = [
   { name: 'home', route: '#/', expected: 'Your credibility is being questioned.' },
-  { name: 'home-feedback', route: '#/', expected: 'Help improve Human + AI Work.' },
+  { name: 'home-feedback', route: '#/', expected: 'Help improve evAIdence.' },
   { name: 'home-question-copy', route: '#/', expected: 'Does this sound like AI wrote it?', forbidden: '<span>Question</span><q>This sounds like AI wrote it.</q>' },
   { name: 'home-cake-copy', route: '#/', expected: 'When working with AI, finished work cannot either.', forbidden: '</strong> Finished work cannot either.' },
   { name: 'record-step-1', route: '#/creation-record', expected: 'What work are you documenting?' },
