@@ -1,8 +1,8 @@
-# Human + AI Work
+# evAIdence
 
 **Your credibility is being questioned. Show how the work was made.**
 
-Human + AI Work is a provenance-first public prototype with two connected tools. The Work Record creates an evidence-backed account of how one artifact version was made. The Load Test reveals what an assigned AI role still requires from people and the workflow, whether the current setup can carry that load, and what is at stake if the person proceeds as-is.
+evAIdence is a provenance-first public prototype from Ypifany with two connected tools. The Work Record creates an evidence-backed account of how one artifact version was made. The Load Test reveals what an assigned AI role still requires from people and the workflow, whether the current setup can carry that load, and what is at stake if the person proceeds as-is.
 
 The site provides two connected tools:
 

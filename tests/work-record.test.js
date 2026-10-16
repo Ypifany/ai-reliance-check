@@ -34,7 +34,7 @@ function publishableRecord(overrides = {}) {
     schemaVersion: 3,
     id: "record-1",
     status: "public-prototype",
-    title: "Human + AI Work",
+    title: "evAIdence",
     description: "A public prototype.",
     creator: { name: "Cheryl Abram", role: "Creator" },
     artifact: { url: "https://example.com/work", version: "abc123", date: "2026-10-14" },

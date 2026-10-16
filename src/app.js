@@ -395,10 +395,11 @@ function setActiveNav(path) {
 function homepageCreditsSequence(duplicate = false) {
   return `<div class="credits-sequence"${duplicate ? ' aria-hidden="true"' : ''}>
     <p class="credits-overline">A Work Record for</p>
-    <h2${duplicate ? '' : ' id="credits-screen-title"'}>Human + AI Work</h2>
+    <h2${duplicate ? '' : ' id="credits-screen-title"'}>evAIdence</h2>
     <div class="credits-entry"><p>Originating idea and purpose</p><strong>Human</strong><span>Identified the problem and decided what the product should accomplish.</span></div>
     <div class="credits-entry"><p>Source material and core method</p><strong>Human</strong><span>Supplied the experience, examples, principles, and method behind the product.</span></div>
     <div class="credits-entry"><p>Product direction and requirements</p><strong>Human</strong><span>Defined the audience, boundaries, features, and changes to keep or reject.</span></div>
+    <div class="credits-entry"><p>Brand name and logo direction</p><strong>Human + AI tool</strong><span>The human chose the name and supplied the logo. The AI tool prepared the transparent asset and added the approved branding.</span></div>
     <div class="credits-entry"><p>Research and source checking</p><strong>Human + AI tool</strong><span>The AI tool located and compared sources. The human judged what belonged in the method.</span></div>
     <div class="credits-entry"><p>Writing, editing, and user flow</p><strong>Human + AI tool</strong><span>The AI tool organized and drafted. The human questioned, revised, and decided the final meaning.</span></div>
     <div class="credits-entry"><p>Implementation and production</p><strong>AI tool</strong><span>Wrote and revised code and executed approved publication changes.</span></div>
@@ -410,7 +411,7 @@ function homepageCreditsSequence(duplicate = false) {
 }
 
 function renderHome() {
-  document.title = 'Home | Human + AI Work';
+  document.title = 'Home | evAIdence';
   main.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
@@ -430,6 +431,7 @@ function renderHome() {
           <a class="button" href="#/creation-record">Create a Work Record <span aria-hidden="true">→</span></a>
           <a class="button button-secondary" href="#/sample">See an example</a>
         </div>
+        <p class="brand-explainer"><strong>evAIdence is pronounced “evidence.”</strong> AI is inside the evidence, just as it is inside the work. It is part of the process, not the whole work.</p>
         <p class="hero-limit"><strong>Not an AI detector.</strong> It does not scan writing style, assign a human-versus-AI percentage, or rewrite work to bypass detection. It documents the process and links statements to evidence.</p>
       </div>
       <aside class="credits-screen" aria-labelledby="credits-screen-title">
@@ -509,7 +511,7 @@ function renderHome() {
     <section class="section section-compact" aria-labelledby="feedback-heading">
       <div class="callout">
         <p class="kicker">Founding feedback</p>
-        <h2 id="feedback-heading">Help improve Human + AI Work.</h2>
+        <h2 id="feedback-heading">Help improve evAIdence.</h2>
         <p>Try the Work Record or Load Test first. Then tell me what helped, what was confusing, or what should change. The form has four short questions.</p>
         <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
       </div>
@@ -561,7 +563,7 @@ function startAssessment(stage) {
 }
 
 function renderCheck() {
-  document.title = 'Load Test | Human + AI Work';
+  document.title = 'Load Test | evAIdence';
   if (checkView === 'setup') renderSetup();
   else if (checkView === 'questions') renderQuestion();
   else if (checkView === 'review') renderReview();
@@ -628,7 +630,7 @@ function renderSetup(error = [], focusId = '') {
   const p = assessment.project;
   const stage = stagePrompts(assessment.stage);
   const errors = normalizeFormErrors(error);
-  document.title = `${errors.length ? 'Error: ' : ''}Load Test | Human + AI Work`;
+  document.title = `${errors.length ? 'Error: ' : ''}Load Test | evAIdence`;
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
       <section class="assessment-main setup-card">
@@ -986,7 +988,7 @@ function renderQuestion(error = [], draftAnswer = null) {
   const answer = draftAnswer || assessment.answers[question.id] || {};
   const progress = Math.round(((currentQuestionIndex + 1) / (questions.length + 1)) * 100);
   const errors = normalizeFormErrors(error);
-  document.title = `${errors.length ? 'Error: ' : ''}Load Test | Human + AI Work`;
+  document.title = `${errors.length ? 'Error: ' : ''}Load Test | evAIdence`;
 
   main.innerHTML = `<div class="page">
     <div class="assessment-shell">
@@ -1463,7 +1465,7 @@ function captureReviewDraft(formElement) {
 function renderResult() {
   const result = scoreAssessment(assessment);
   const p = assessment.project;
-  document.title = `${p.name || stageLabel(assessment.stage)} Load Test Result | Human + AI Work`;
+  document.title = `${p.name || stageLabel(assessment.stage)} Load Test Result | evAIdence`;
   const primarySystem = p.systems.find((system) => system.id === p.primarySystemId) || p.systems[0];
   const dimensionLabels = Object.fromEntries(Object.entries(DIMENSIONS).map(([key, value]) => [key, value.label]));
   const loadSummary = result.loadSummary || {
@@ -1619,7 +1621,7 @@ function renderResult() {
     </section>
 
     <section class="reliance-card" id="reliance-card">
-      <h1 class="print-only">Human + AI Load Test result</h1>
+      <h1 class="print-only">evAIdence Load Test result</h1>
       <div class="reliance-card-header">
         <div><p class="kicker">Load Test | Self-assessed</p><h2>${escapeHTML(p.name || 'Untitled project')}</h2><p>${escapeHTML(p.task)}</p></div>
         <div class="reliance-card-score">${result.publicScore}/100 | ${escapeHTML(result.decisionStatus?.label || result.band)}</div>
@@ -1955,7 +1957,7 @@ function assessmentCanShowResult(value) {
 }
 
 function renderSample() {
-  document.title = 'Real Work Record | Human + AI Work';
+  document.title = 'Real Work Record | evAIdence';
   main.innerHTML = `<div class="page sample-record-page">
     <header class="page-header">
       <p class="eyebrow">Example Work Record</p>
@@ -1964,18 +1966,19 @@ function renderSample() {
       <p class="stage-label"><strong>Status:</strong> Public prototype, unfinished</p>
     </header>
     <article class="record-preview public-record">
-      <header class="public-record-header"><p class="kicker">Human + AI Work Record · Public prototype v0.3</p><h2>Human + AI Work website and methods</h2><p class="record-summary">Here are the credits and evidence for this version.</p><p>A public website that documents human and AI contributions and reveals the load and wager created by an AI role in a specific workflow.</p></header>
+      <header class="public-record-header"><p class="kicker">evAIdence™ Work Record · Public prototype v0.3</p><h2>evAIdence website and methods</h2><p class="record-summary">Here are the credits and evidence for this version.</p><p>A public website that documents human and AI contributions and reveals the load and wager created by an AI role in a specific workflow.</p></header>
       <section class="record-output-section"><h3>Work documented</h3><dl class="record-facts"><div><dt>Status</dt><dd>Public prototype, unfinished</dd></div><div><dt>Version</dt><dd>v0.3 provenance-first revision</dd></div><div><dt>Creator</dt><dd>Cheryl Abram</dd></div><div><dt>Other human contributors</dt><dd>None reported</dd></div></dl><p><a href="https://ypifany.github.io/ai-reliance-check/" target="_blank" rel="noreferrer">Open the public website <span class="new-tab-note">(opens in a new tab)</span></a></p></section>
       <section class="record-output-section"><h3>Credits</h3>
         <h4>People and systems involved</h4>
-        <div class="credit-row"><strong>Cheryl Abram</strong><span> (creator and final decision-maker)</span><p>Originated the product, supplied the method and experience behind it, directed the work, evaluated alternatives, rewrote public language, reviewed the live site, and made the final release decisions.</p></div>
-        <div class="credit-row"><strong>ChatGPT</strong><p>Organized and challenged the method, compared alternatives, checked outside information, drafted and revised wording, proposed user flow, wrote and modified code, ran automated tests, identified problems, and executed approved publication changes.</p></div>
+        <div class="credit-row"><strong>Cheryl Abram</strong><span> (creator and final decision-maker)</span><p>Originated the product, supplied the method and experience behind it, chose the brand name and logo direction, evaluated alternatives, rewrote public language, reviewed the live site, and made the final release decisions.</p></div>
+        <div class="credit-row"><strong>ChatGPT</strong><p>Organized and challenged the method, compared alternatives, checked outside information, drafted and revised wording, proposed user flow, prepared approved website assets, wrote and modified code, ran automated tests, identified problems, and executed approved publication changes.</p></div>
         <p class="helper-text"><strong>Known model:</strong> ChatGPT 5.6 Sol Ultra. The complete model history has not been verified.</p>
         <h4>Detailed credits</h4>
         <ul class="mini-record-list credit-role-list">
           <li><span><strong>Originating idea and purpose</strong><small>Identified the problem and decided what the product should accomplish.</small></span><strong>Cheryl Abram</strong></li>
           <li><span><strong>Source material and core method</strong><small>Supplied experience, examples, principles, and the developing method.</small></span><strong>Cheryl Abram</strong></li>
           <li><span><strong>Product direction and requirements</strong><small>Defined the audience, boundaries, features, and final decisions.</small></span><strong>Cheryl Abram</strong></li>
+          <li><span><strong>Brand name and logo direction</strong><small>Cheryl chose the evAIdence name and supplied the logo. ChatGPT prepared the transparent asset and integrated the approved branding.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
           <li><span><strong>Research and source checking</strong><small>Located and compared outside material; the human judged what belonged in the method.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
           <li><span><strong>Evaluation, challenge, and selection</strong><small>ChatGPT challenged selected ideas. Cheryl accepted, rejected, or redirected the work.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
           <li><span><strong>Writing, editing, and final meaning</strong><small>ChatGPT organized and drafted. Cheryl revised and decided the final public meaning.</small></span><strong>Cheryl Abram + ChatGPT</strong></li>
@@ -2020,7 +2023,7 @@ function renderCreationRecord(focusId = '', errors = []) {
   if (recordStep > RECORD_STEPS.length) return renderWorkRecordResult();
   recordStep = Math.min(Math.max(Number(recordStep) || 1, 1), RECORD_STEPS.length);
   saveRecordStep();
-  document.title = 'Create a Work Record | Human + AI Work';
+  document.title = 'Create a Work Record | evAIdence';
   const normalizedErrors = normalizeFormErrors(errors);
   const [stepId, stepLabel] = RECORD_STEPS[recordStep - 1];
   main.innerHTML = `<div class="page work-record-page">
@@ -2563,7 +2566,7 @@ function bindWorkRecordDynamicActions(form, stepId) {
 }
 
 function renderWorkRecordResult() {
-  document.title = `${creationRecord.title || 'Work Record'} | Human + AI Work`;
+  document.title = `${creationRecord.title || 'Work Record'} | evAIdence`;
   const publicRecord = toPublicWorkRecord(creationRecord);
   const completeness = getWorkRecordCompleteness(creationRecord);
   main.innerHTML = `<div class="page work-record-result-page">
@@ -2630,7 +2633,7 @@ function workRecordPreview(recordInput, options = {}) {
   const title = escapeHTML(record.title || 'Untitled work');
   const titleMarkup = options.standalone ? `<h1>${title}</h1>` : `<h1 class="print-only">${title}</h1><h2 class="no-print">${title}</h2>`;
   return `<header class="public-record-header">
-      <p class="kicker">Human + AI Work Record · Public prototype v0.3</p>
+      <p class="kicker">evAIdence™ Work Record · Public prototype v0.3</p>
       ${options.draft ? '<p class="draft-stamp">Draft Work Record · Public-ready requirements are incomplete</p>' : ''}
       ${titleMarkup}
       <p class="record-summary">${escapeHTML(credits.headline)}</p>
@@ -2703,7 +2706,7 @@ function downloadText(filename, textValue, type = 'text/plain') {
 }
 
 function downloadPublicWorkRecord(publicRecord, draft = false) {
-  const title = escapeHTML(publicRecord.title || 'Human + AI Work Record');
+  const title = escapeHTML(publicRecord.title || 'evAIdence Work Record');
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>${title}</title><style>
     body{max-width:850px;margin:0 auto;padding:40px 24px;color:#18211d;font:16px/1.55 system-ui,sans-serif}h1,h2,h3,h4{font-family:Georgia,serif;line-height:1.15}h1{font-size:2.4rem}.draft-stamp{padding:.7rem;border:2px solid #963e38;color:#963e38;font-weight:800;text-transform:uppercase}.kicker,dt{font:700 .75rem ui-monospace,monospace;letter-spacing:.08em;text-transform:uppercase;color:#0e5b50}.record-summary{padding:1rem 0;border-block:2px solid #18211d;font:600 1.4rem Georgia,serif}.record-output-section{padding:1.25rem 0;border-bottom:1px solid #cbd3cd}.record-facts{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem}.record-facts div{padding:.75rem;background:#f6f2e9}.record-facts dd{margin:.25rem 0 0}.claim-support-list,.mini-record-list{padding:0;list-style:none}.claim-support-list li,.mini-record-list li{display:flex;justify-content:space-between;gap:1rem;padding:.65rem 0;border-bottom:1px solid #cbd3cd}.credit-role-list small{display:block;margin-top:.2rem;color:#59645e}.status-pill{white-space:nowrap}.credit-row{padding:.75rem 0;border-bottom:1px solid #cbd3cd}.credit-row p{margin:.25rem 0}.helper-text,.public-record-footer{color:#59645e;font-size:.88rem}.disclosure-box{background:#dce8df;padding:1rem}.new-tab-note{font-size:.8em}@media(max-width:600px){.record-facts{grid-template-columns:1fr}.claim-support-list li,.mini-record-list li{display:block}.status-pill{display:block;margin-top:.3rem}}@media print{body{padding:0}.record-output-section{break-inside:auto}.credit-row,.record-facts div,.claim-support-list li,.mini-record-list li{break-inside:avoid}}
   </style></head><body><main>${workRecordPreview(publicRecord, { standalone: true, draft })}</main></body></html>`;
@@ -2756,7 +2759,7 @@ function importWorkRecord(event) {
       showToast('Work Record imported. Review every step before publishing it.');
       renderCreationRecord('record-title');
     } catch {
-      showToast('That file is not a valid Human + AI Work Record.');
+      showToast('That file is not a valid evAIdence Work Record.');
     } finally {
       event.target.value = '';
     }
@@ -2805,7 +2808,7 @@ function focusCurrentStep(preferredSelector = '') {
 }
 
 function renderMethod() {
-  document.title = 'How It Works | Human + AI Work';
+  document.title = 'How It Works | evAIdence';
   main.innerHTML = `<div class="page">
     <header class="page-header"><p class="eyebrow">How it works</p><h1>Choose the question you need to answer.</h1><p>Use the Work Record to show how finished work was made. Use the Load Test to make the load and wager in one human and AI workflow visible.</p></header>
     <div class="button-row"><a class="button" href="#/creation-record">Create a Work Record</a><a class="button button-secondary" href="#/load-test">Run a Load Test</a></div>
@@ -2888,7 +2891,7 @@ function renderMethod() {
 }
 
 function renderResearch() {
-  document.title = 'Research Basis | Human + AI Work';
+  document.title = 'Research Basis | evAIdence';
   const sources = [
     ['AI Fluency Framework', 'https://aifluencyframework.org/', 'AI fluency includes human competencies for deciding how to use AI, describing the work, judging AI outputs and behavior, and using AI responsibly.', 'This tool asks a narrower project question: what load an assigned AI role leaves with people and the workflow, whether the current setup can carry it, and what is at stake. The framework has not validated this tool or its score.'],
     ['NIST AI Risk Management Framework', 'https://www.nist.gov/itl/ai-risk-management-framework', 'AI risk depends on the system, its use, the people involved, the operating context, and possible consequences.', 'The Load Test examines the person, AI system, assigned role, workflow, controls, and outcome together.'],
@@ -2911,7 +2914,7 @@ function renderResearch() {
 }
 
 function renderExamples() {
-  document.title = 'Examples | Human + AI Work';
+  document.title = 'Examples | evAIdence';
   const examples = [
     ['Create an article or report', 'Use the Work Record to show where the idea came from, what you wrote or changed, what AI did, and which records support that account.', 'Work Record. Add a Load Test if people may rely on important claims.'],
     ['Build a website', 'Use the Load Test to check whether your technical ability, testing, permissions, and release process support the job you gave AI.', 'Load Test before launch, then a Work Record for the finished site.'],
@@ -2923,7 +2926,7 @@ function renderExamples() {
 }
 
 function renderPricing() {
-  document.title = 'Pricing | Human + AI Work';
+  document.title = 'Pricing | evAIdence';
   main.innerHTML = `<div class="page">
     <header class="page-header"><p class="eyebrow">Pricing</p><h1>Full access is open during the Founding Preview.</h1><p>Use both current tools free while the product is being tested. The permanent free option will help people find their credibility gap. Paid options will create, preserve, and maintain complete Work Records.</p></header>
     <div class="grid-2">
@@ -2937,7 +2940,7 @@ function renderPricing() {
 }
 
 function renderCopyright() {
-  document.title = 'Copyright and use | Human + AI Work';
+  document.title = 'Copyright and use | evAIdence';
   main.innerHTML = `<div class="page">
     <header class="page-header"><p class="eyebrow">Copyright and use</p><h1>Copyright protects the expression, not the method.</h1><p><strong>© 2026 Cheryl Abram. All rights reserved.</strong></p></header>
     <section class="prose">
@@ -2956,8 +2959,9 @@ function renderCopyright() {
 }
 
 function renderFAQ() {
-  document.title = 'FAQ | Human + AI Work';
+  document.title = 'FAQ | evAIdence';
   const faqs = [
+    ['How do you pronounce evAIdence?', 'Evidence. The letters AI are emphasized because AI is inside the evidence and the workflow. It is part of the work, not the whole work.'],
     ['What does this site do?', 'It provides two tools. The Work Record shows how finished work was made and who did what. The Load Test shows what an assigned AI role still requires from people and the workflow, whether the current setup can carry it, and what is at stake if it cannot.'],
     ['Which tool should I use?', 'Use the Work Record when you need credits or evidence showing how finished work was made. Use the Load Test when you need to see the load and wager created by relying on AI in one specific project. You may use both for the same project.'],
     ['How does this tool define trust?', 'Trust is the decision to rely on a system for a defined role. The Load Test asks whether your current capacity, the AI role, the workflow, the controls, and the stakes support that reliance.'],
@@ -2981,7 +2985,7 @@ function renderFAQ() {
 }
 
 function renderNotFound() {
-  document.title = 'Page not found | Human + AI Work';
+  document.title = 'Page not found | evAIdence';
   main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">404</p><h1>This page was not found.</h1><p>The link may be outdated or incomplete.</p></header><a class="button" href="#/">Return home</a></div>`;
 }
 

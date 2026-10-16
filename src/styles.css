@@ -187,10 +187,54 @@ button {
 .brand {
   display: inline-flex;
   align-items: center;
+  gap: 0.55rem;
   color: var(--ink);
-  font-size: 0.95rem;
-  font-weight: 750;
   text-decoration: none;
+}
+
+.brand-logo {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  object-fit: contain;
+}
+
+.brand-lockup {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.brand-name {
+  font-family: var(--serif);
+  font-size: 1.22rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+}
+
+.brand-ai {
+  color: var(--teal);
+  font-family: var(--sans);
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+
+.brand-tm {
+  position: relative;
+  top: -0.35em;
+  margin-left: 0.08em;
+  font-family: var(--sans);
+  font-size: 0.42em;
+  letter-spacing: 0;
+}
+
+.brand-byline {
+  margin-top: 0.22rem;
+  color: var(--muted);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .site-nav {
@@ -400,9 +444,22 @@ main [role="alert"] {
 }
 
 .hero-copy > .hero-limit {
-  margin-top: 1rem;
+  margin-top: 0.75rem;
   color: var(--muted);
   font-size: 0.88rem;
+}
+
+.brand-explainer {
+  margin: 1.3rem 0 0;
+  padding: 0.7rem 0.85rem;
+  border-left: 3px solid var(--teal);
+  background: rgba(255, 255, 255, 0.55);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.brand-explainer strong {
+  color: var(--ink);
 }
 
 .credits-screen {
@@ -2501,6 +2558,15 @@ fieldset[aria-invalid="true"] {
   margin-bottom: 0.75rem;
 }
 
+.brand-logo-footer {
+  width: 58px;
+  height: 58px;
+}
+
+.brand-footer .brand-name {
+  font-size: 1.45rem;
+}
+
 .creator-credit,
 .method-credit,
 .copyright-notice {
@@ -2622,7 +2688,7 @@ fieldset[aria-invalid="true"] {
   }
 }
 
-@media (max-width: 840px) {
+@media (max-width: 1080px) {
   .site-header {
     min-height: 64px;
   }
@@ -2661,7 +2727,9 @@ fieldset[aria-invalid="true"] {
     border-bottom: 1px solid var(--border);
     font-size: 1.05rem;
   }
+}
 
+@media (max-width: 840px) {
   .credits-screen-toolbar {
     align-items: flex-start;
     flex-direction: column;

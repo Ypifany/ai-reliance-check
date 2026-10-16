@@ -1,5 +1,5 @@
 /**
- * Human + AI Load Test assessment definition.
+ * evAIdence Load Test assessment definition.
  *
  * The definitions are data, rather than UI markup, so the assessment can be
  * rendered consistently in the browser, a printable form, or a future API.
