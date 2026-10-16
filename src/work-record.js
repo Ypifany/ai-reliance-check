@@ -725,16 +725,16 @@ export function buildCredits(recordInput, options = {}) {
   });
 
   const ai = ["no-ai-reported", "unknown"].includes(record.aiUse) ? [] : record.systems.map((system) => ({
-    name: [system.product, system.model].filter(Boolean).join(" ") || "AI system not fully identified",
+    name: [system.product, system.model].filter(Boolean).join(" ") || "AI tool not fully identified",
     role: system.role || record.aiContributions || "AI contribution not yet described.",
     evidenceBasis: system.evidenceBasis,
   }));
   if (!["no-ai-reported", "unknown"].includes(record.aiUse) && !ai.length) {
-    ai.push({ name: "AI system not fully identified", role: record.aiContributions || "AI contribution not yet described.", evidenceBasis: "unknown" });
+    ai.push({ name: "AI tool not fully identified", role: record.aiContributions || "AI contribution not yet described.", evidenceBasis: "unknown" });
   }
 
   const creatorName = record.creator.name || "The human creator";
-  const aiName = ai.map(({ name }) => name).filter(Boolean).join(", ") || "The AI system";
+  const aiName = ai.map(({ name }) => name).filter(Boolean).join(", ") || "The AI tool";
   const roleCredit = (handling) => {
     if (handling === "Human-led") return `${creatorName} led this.`;
     if (handling === "Shared") return `${creatorName} and ${aiName} worked on this together.`;
@@ -782,7 +782,7 @@ export function buildDisclosure(recordInput, options = {}) {
   }
 
   const systems = record.systems.map((system) => [system.product, system.model].filter(Boolean).join(" ")).filter(Boolean);
-  const systemText = systems.length ? systems.join(", ") : "an AI system that has not been fully identified";
+  const systemText = systems.length ? systems.join(", ") : "an AI tool that has not been fully identified";
   const creator = record.creator.name || "The creator";
   const roles = record.systems.map(({ role }) => role).filter(Boolean).join("; ") || record.aiContributions || "the contributions described in the Work Record";
   const humanContribution = record.humanActions || "No human contribution has been described in this Work Record";

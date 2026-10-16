@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import {
   DIMENSIONS,
   QUESTION_DEFINITIONS,
+  getAssessmentScopeKey,
   getActiveQuestionDefinitions,
 } from "../src/questions.js";
 import {
@@ -61,8 +62,8 @@ function assessment(overrides = {}) {
   };
 }
 
-test("v0.3 questions put human capacity first and expose renderable options and evidence guidance", () => {
-  assert.equal(METHOD_VERSION, "0.3");
+test("v0.5 questions put checker capacity first and expose renderable options and evidence guidance", () => {
+  assert.equal(METHOD_VERSION, "0.5");
   assert.equal(Object.keys(DIMENSIONS)[0], "humanAssurance");
   assert.deepEqual(QUESTION_DEFINITIONS.slice(0, 2).map(({ id }) => id), ["HUM1", "HUM3"]);
   assert.ok(QUESTION_DEFINITIONS.length >= 12);
@@ -77,18 +78,21 @@ test("v0.3 questions put human capacity first and expose renderable options and 
   }
 });
 
-test("planning, release, and live checks use stage-specific tense", () => {
+test("planning, in-progress, release, and live checks use stage-specific tense", () => {
   const plan = getActiveQuestionDefinitions(assessment({ stage: "plan" }));
+  const build = getActiveQuestionDefinitions(assessment({ stage: "build" }));
   const release = getActiveQuestionDefinitions(assessment({ stage: "release" }));
   const live = getActiveQuestionDefinitions(assessment({ stage: "live" }));
   const byId = (items, id) => items.find((item) => item.id === id);
 
-  assert.match(byId(plan, "HUM1").prompt, /Will you/i);
-  assert.match(byId(release, "HUM1").prompt, /finished work/i);
-  assert.match(byId(live, "HUM1").prompt, /while this work is in use/i);
-  assert.match(byId(plan, "OUT1").prompt, /betting on/i);
-  assert.match(byId(release, "OUT1").prompt, /after launch/i);
-  assert.match(byId(live, "OUT1").prompt, /result occurred/i);
+  assert.match(byId(plan, "HUM1").prompt, /Will the person responsible for reviewing/i);
+  assert.match(byId(build, "HUM1").prompt, /During the build/i);
+  assert.match(byId(release, "HUM1").prompt, /Before launch/i);
+  assert.match(byId(live, "HUM1").prompt, /While people use this work/i);
+  assert.match(byId(plan, "OUT1").prompt, /How will you know whether the finished work succeeded/i);
+  assert.match(byId(build, "OUT1").prompt, /finished work/i);
+  assert.match(byId(release, "OUT1").prompt, /After launch/i);
+  assert.match(byId(live, "OUT1").prompt, /What happened after people used the work/i);
   assert.notEqual(byId(plan, "OUT1").options[0].label, byId(release, "OUT1").options[0].label);
   assert.notEqual(byId(release, "OUT1").options[0].label, byId(live, "OUT1").options[0].label);
 });
@@ -106,10 +110,10 @@ test("before-work adaptive questions use plan-ready choices and evidence guidanc
   }));
   const byId = (id) => plan.find((question) => question.id === id);
 
-  assert.equal(byId("HUM2").options[0].label, "No verification plan");
-  assert.equal(byId("BEH2").options[1].label, "One challenge case designed");
-  assert.equal(byId("WF3").options[3].label, "Risk-matched release gate defined");
-  assert.equal(byId("WF4").options[3].label, "Limits, stop thresholds, and rollback defined");
+  assert.equal(byId("HUM2").options[0].label, "There is no plan to check important facts");
+  assert.equal(byId("BEH2").options[1].label, "One challenge test is written");
+  assert.equal(byId("WF3").options[3].label, "A failed launch check will block release");
+  assert.equal(byId("WF4").options[3].label, "Limits, stop points, and steps to undo changes are defined");
   for (const id of ["HUM2", "BEH2", "WF3", "WF4"]) {
     assert.match(byId(id).evidenceGuidance, /plan|written|checklist|criteria|control/i);
   }
@@ -286,6 +290,250 @@ test("missing answers score zero without NaN while an unknown basis can retain a
   assert.equal(malformed.itemScores.CAP1.score, 0);
 });
 
+test("an explicit unknown answer is not converted into a zero or a public score", () => {
+  const result = scoreAssessment(assessment({
+    answers: answers(100, "confirmed", {
+      CAP1: { status: "unknown", level: null, basis: "unknown" },
+    }),
+  }));
+
+  assert.equal(result.scoreAvailable, false);
+  assert.equal(result.publicScore, null);
+  assert.equal(result.operationalScore, null);
+  assert.equal(result.itemScores.CAP1.level, null);
+  assert.equal(result.itemScores.CAP1.unknown, true);
+  assert.ok(result.unknownQuestionIds.includes("CAP1"));
+  assert.equal(result.decisionStatus.id, "not_enough_information");
+});
+
+test("an unknown direct AI user withholds every score and role conclusion", () => {
+  const result = scoreAssessment(assessment({
+    project: {
+      consequence: "low",
+      proposedAuthority: "A1",
+      primarySystemId: "tool-1",
+      systems: [{
+        id: "tool-1",
+        product: "Code helper",
+        model: "Model A",
+        role: "write website code",
+        setup: "typed instructions and project files",
+        operator: "unknown",
+        checker: "other",
+        checkerRole: "technical reviewer",
+        checkerScope: "review and correct the code",
+        proposedAuthority: "A1",
+        connectedAccess: false,
+      }],
+    },
+  }));
+
+  assert.equal(result.scoreAvailable, false);
+  assert.equal(result.publicScore, null);
+  assert.equal(result.operationalMaxAuthority, null);
+  assert.equal(result.conclusionAuthority, null);
+  assert.equal(result.proposedAuthoritySupported, null);
+  assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("OPERATOR:")));
+  assert.ok(result.authorization.delegate.every((item) => /No AI role conclusion/i.test(item)));
+  assert.ok(result.recommendations.every((item) => item.scoreEffect.projectedScore === null));
+});
+
+test("invalid imported operator and reviewer values are treated as unknown", () => {
+  const result = scoreAssessment(assessment({
+    project: {
+      consequence: "low",
+      proposedAuthority: "A1",
+      primarySystemId: "tool-1",
+      systems: [{
+        id: "tool-1",
+        product: "Code helper",
+        model: "Model A",
+        role: "write website code",
+        setup: "typed instructions and project files",
+        operator: "not-a-valid-operator",
+        checker: "not-a-valid-reviewer",
+        checkerScope: "review the code",
+        proposedAuthority: "A1",
+        connectedAccess: false,
+      }],
+    },
+  }));
+
+  assert.equal(result.scoreAvailable, false);
+  assert.equal(result.publicScore, null);
+  assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("OPERATOR:")));
+  assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("REVIEWER:")));
+});
+
+test("ordinary uncertainty phrases in required AI details withhold the score", () => {
+  const scoreWith = (changes) => scoreAssessment(assessment({
+    project: {
+      consequence: "low",
+      proposedAuthority: "A1",
+      primarySystemId: "tool-1",
+      systems: [{
+        id: "tool-1",
+        product: "Code helper",
+        model: "Model A",
+        role: "write website code",
+        setup: "typed instructions and project files",
+        operator: "me",
+        checker: "me",
+        checkerScope: "review and correct the code",
+        proposedAuthority: "A1",
+        connectedAccess: false,
+        ...changes,
+      }],
+    },
+  }));
+
+  for (const phrase of ["I do not know", "I don't know", "Not sure", "N/A", "?"]) {
+    const result = scoreWith({ model: phrase });
+    assert.equal(result.scoreAvailable, false, `model phrase ${phrase} must withhold the score`);
+    assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("MODEL:")));
+  }
+  for (const phrase of ["", "Unknown", "I do not know"]) {
+    const result = scoreWith({ product: phrase });
+    assert.equal(result.scoreAvailable, false, `product phrase ${phrase || "blank"} must withhold the score`);
+    assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("PRODUCT:")));
+  }
+  for (const phrase of ["", "Unknown", "I do not know"]) {
+    const result = scoreWith({ setup: phrase });
+    assert.equal(result.scoreAvailable, false, `setup phrase ${phrase || "blank"} must withhold the score`);
+    assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("SETUP:")));
+  }
+  const roleUnknown = scoreWith({ role: "Unknown" });
+  assert.equal(roleUnknown.scoreAvailable, false);
+  assert.ok(roleUnknown.unknownInputs.some(({ id }) => id.startsWith("ROLE:")));
+  const reviewUnknown = scoreWith({ checkerScope: "Cannot determine" });
+  assert.equal(reviewUnknown.scoreAvailable, false);
+  assert.ok(reviewUnknown.unknownInputs.some(({ id }) => id.startsWith("REVIEWER:")));
+});
+
+test("an imported material flag cannot hide a primary AI tool from scoring", () => {
+  const result = scoreAssessment(assessment({
+    project: {
+      consequence: "low",
+      proposedAuthority: "A1",
+      primarySystemId: "tool-1",
+      systems: [{
+        id: "tool-1",
+        product: "Code helper",
+        model: "Model A",
+        role: "write website code",
+        setup: "typed instructions and project files",
+        operator: "me",
+        checker: "me",
+        checkerScope: "review and correct the code",
+        proposedAuthority: "A1",
+        connectedAccess: null,
+        material: false,
+      }],
+    },
+  }));
+
+  assert.equal(result.scoreAvailable, false);
+  assert.equal(result.systemAssessments[0].material, true);
+  assert.ok(result.unknownInputs.some(({ id }) => id.startsWith("ACCESS:")));
+});
+
+test("an unknown final review answer withholds every score and projected increase", () => {
+  const result = scoreAssessment(assessment({
+    project: {
+      consequence: "low",
+      proposedAuthority: "A1",
+      sensitiveData: null,
+    },
+  }));
+
+  assert.equal(result.scoreAvailable, false);
+  assert.equal(result.publicScore, null);
+  assert.equal(result.operationalScore, null);
+  assert.equal(result.maxAuthority, null);
+  assert.equal(result.proposedRoleOperationallySupported, null);
+  assert.ok(result.unknownInputs.some(({ id }) => id === "SENSITIVE_DATA"));
+  assert.ok(result.gates.every(({ id }) => id.startsWith("missing_information:")));
+  assert.ok(result.recommendations.every((item) => item.scoreEffect.projectedChange === null));
+});
+
+test("final access confirmation does not change the question-answer scope", () => {
+  const value = assessment({
+    schemaVersion: 4,
+    stage: "build",
+    project: {
+      task: "Build a website",
+      intendedOutcome: "Help people understand a method",
+      aiUseFocus: "making",
+      humanActivities: ["purpose", "review"],
+      failureScenario: "Broken or misleading website",
+      failureImpact: "Visitors could rely on bad guidance",
+      consequence: "moderate",
+      proposedAuthority: "A1",
+      workTypes: ["software"],
+      requiredBehaviors: ["follow"],
+      primarySystemId: "tool-1",
+      systems: [{
+        id: "tool-1",
+        product: "Code helper",
+        model: "Model A",
+        role: "write website code",
+        operator: "other",
+        operatorRole: "developer",
+        checker: "operator",
+        checkerScope: "review and correct the code",
+        proposedAuthority: "A1",
+        setup: "project files and requirements",
+        connectedAccess: false,
+        permissionsConfirmed: false,
+      }],
+    },
+  });
+  const before = getAssessmentScopeKey(value);
+  value.project.systems[0].connectedAccess = true;
+  value.project.systems[0].permissionsConfirmed = true;
+  assert.equal(getAssessmentScopeKey(value), before);
+});
+
+test("capacity questions name the recorded checker and answers stay tied to that setup", () => {
+  const value = assessment({
+    schemaVersion: 4,
+    project: {
+      consequence: "low",
+      proposedAuthority: "A1",
+      workTypes: [],
+      requiredBehaviors: [],
+      primarySystemId: "tool-1",
+      systems: [{
+        id: "tool-1",
+        product: "Code helper",
+        model: "Model A",
+        role: "write website code",
+        operator: "other",
+        operatorRole: "developer",
+        checker: "operator",
+        checkerScope: "inspect, test, and correct the code",
+        proposedAuthority: "A1",
+        setup: "typed instructions and project files",
+        connectedAccess: false,
+      }],
+    },
+  });
+  value.scopeKey = getAssessmentScopeKey(value);
+  value.answers = Object.fromEntries(Object.entries(value.answers).map(([id, answer]) => [id, {
+    ...answer,
+    scopeKey: value.scopeKey,
+  }]));
+
+  const humanQuestion = getActiveQuestionDefinitions(value).find(({ id }) => id === "HUM1");
+  assert.match(humanQuestion.prompt, /developer/i);
+  assert.equal(scoreAssessment(value).scoreAvailable, true);
+
+  value.answers.HUM1.scopeKey = "a different setup";
+  const stale = scoreAssessment(value);
+  assert.equal(stale.scoreAvailable, false);
+  assert.ok(stale.unknownQuestionIds.includes("HUM1"));
+});
+
 test("human capacity sets a ceiling that a high average cannot erase", () => {
   const result = scoreAssessment(assessment({
     answers: answers(100, "confirmed", { HUM1: { level: 25, basis: "confirmed" } }),
@@ -348,6 +596,24 @@ test("a plan keeps reported capability operational while matched records strengt
   assert.equal(tested.itemScores.CAP1.level, 100);
   assert.equal(tested.operationalScore, projected.operationalScore);
   assert.equal(tested.evidenceConfidence, "High");
+});
+
+test("a work-in-progress check preserves the build stage and scores observed work like release", () => {
+  const build = scoreAssessment(assessment({ stage: "build" }));
+  const release = scoreAssessment(assessment({ stage: "release" }));
+
+  assert.equal(build.stage, "build");
+  assert.equal(build.operationalScore, release.operationalScore);
+  assert.deepEqual(build.dimensions, release.dimensions);
+  assert.deepEqual(build.itemScores, release.itemScores);
+  assert.equal(build.evidenceConfidence, release.evidenceConfidence);
+  assert.equal(build.validationStatus, "Untested");
+});
+
+test("an unsupported stage still falls back to plan", () => {
+  const result = scoreAssessment(assessment({ stage: "not-a-stage" }));
+
+  assert.equal(result.stage, "plan");
 });
 
 test("self-reported adaptive checks affect the operational result without becoming records", () => {
@@ -637,6 +903,7 @@ test("per-system evidence basis is used instead of treating every explicit syste
         product: "Writing system",
         model: "Model A",
         role: "Draft",
+        setup: "typed instructions and source notes",
         proposedAuthority: "A1",
         connectedAccess: false,
         evidenceBasis: "reported",
@@ -652,6 +919,7 @@ test("per-system evidence basis is used instead of treating every explicit syste
         product: "Writing system",
         model: "Model A",
         role: "Draft",
+        setup: "typed instructions and source notes",
         proposedAuthority: "A1",
         connectedAccess: false,
         evidenceBasis: "unknown",
@@ -674,6 +942,7 @@ test("a system marked confirmed without a current record is treated as reported"
         product: "Writing system",
         model: "Model A",
         role: "Draft",
+        setup: "typed instructions and source notes",
         proposedAuthority: "A1",
         connectedAccess: false,
         evidenceBasis: "confirmed",
@@ -710,14 +979,25 @@ test("multiple AI systems are assessed conservatively instead of averaged", () =
           id: "writer",
           name: "Writing system",
           model: "Model A",
+          role: "draft website copy",
+          setup: "typed instructions and source notes",
+          operator: "me",
+          checker: "me",
+          checkerScope: "review and correct the draft",
           proposedAuthority: "A1",
           capabilityLevel: 100,
+          connectedAccess: false,
           permissionsConfirmed: true,
         },
         {
           id: "publisher",
           name: "Publishing system",
           model: "Model B",
+          role: "publish approved website changes",
+          setup: "repository and publishing access",
+          operator: "me",
+          checker: "me",
+          checkerScope: "review the changes before publishing",
           proposedAuthority: "A2",
           connectedAccess: true,
           permissionsConfirmed: false,
@@ -925,7 +1205,7 @@ test("reported real-use claims can fit A3 operationally without establishing it 
 test("result preserves old UI fields and adds the revised result contract", () => {
   const result = scoreAssessment(assessment());
 
-  assert.equal(AUTHORITY_LABELS.A1, "Produce for human approval");
+  assert.equal(AUTHORITY_LABELS.A1, "Make work for a person to approve");
   assert.equal(result.supportedAuthority, result.maxAuthority);
   assert.equal(result.publicScore, result.operationalScore);
   assert.ok(Array.isArray(result.authorization.delegate));

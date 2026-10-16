@@ -2,7 +2,9 @@ import {
   AUTHORITY_LEVELS,
   DIMENSIONS,
   METHOD_VERSION as QUESTION_METHOD_VERSION,
+  getAssessmentScopeKey,
   getActiveQuestionDefinitions,
+  isUncertainText,
 } from "./questions.js";
 
 export const METHOD_VERSION = QUESTION_METHOD_VERSION;
@@ -36,7 +38,9 @@ const DIMENSION_KEYS = Object.keys(DIMENSIONS);
 const AUTHORITY_ORDER = ["A0", "A1", "A2", "A3"];
 const CONSEQUENCE_ORDER = ["low", "moderate", "high", "critical"];
 const ALLOWED_LEVELS = new Set([0, 25, 50, 75, 100]);
-const STAGES = new Set(["plan", "release", "live"]);
+const STAGES = new Set(["plan", "build", "release", "live"]);
+const KNOWN_OPERATOR_TYPES = new Set(["me", "other", "both"]);
+const KNOWN_REVIEWER_TYPES = new Set(["me", "operator", "other", "shared"]);
 
 const ACTION_LIBRARY = Object.freeze({
   capability_gap: {
@@ -257,11 +261,17 @@ function stageAdjustedLevel(questionId, level, assessment) {
 }
 
 function scoreItems(assessment, activeQuestions) {
+  const currentScopeKey = getAssessmentScopeKey(assessment);
+  const requiresScope = Number(assessment?.schemaVersion || 0) >= 4 || Boolean(assessment?.scopeKey);
   return Object.fromEntries(
     activeQuestions.map((question) => {
       const answer = assessment?.answers?.[question.id] || {};
-      const rawLevel = normalizeLevel(answer.level ?? answer.value);
-      const level = stageAdjustedLevel(question.id, rawLevel, assessment);
+      const scopeChanged = requiresScope && (
+        assessment?.scopeKey !== currentScopeKey || answer.scopeKey !== currentScopeKey
+      );
+      const unknown = scopeChanged || answer.status === "unknown" || answer.level === "unknown";
+      const rawLevel = unknown ? null : normalizeLevel(answer.level ?? answer.value);
+      const level = unknown ? null : stageAdjustedLevel(question.id, rawLevel, assessment);
       const requestedBasis = normalizeBasis(answer.basis);
       const hasCurrentRecord = Boolean(
         String(answer.evidenceNote || "").trim() || String(answer.evidenceUrl || "").trim(),
@@ -275,9 +285,12 @@ function scoreItems(assessment, activeQuestions) {
         basis,
         evidenceValue: EVIDENCE_VALUES[basis],
         multiplier: 1,
+        status: unknown ? "unknown" : "known",
+        unknown,
+        scopeChanged,
         score: level,
-        operationalScore: level,
-        wasCapped: level !== rawLevel,
+        operationalScore: unknown ? 0 : level,
+        wasCapped: !unknown && level !== rawLevel,
         answered: Boolean(assessment?.answers && Object.hasOwn(assessment.answers, question.id)),
       }];
     }),
@@ -313,11 +326,21 @@ function normalizeSystemRecords(assessment) {
   }
   return raw.map((record, index) => {
     const value = record && typeof record === "object" ? record : { name: String(record || "") };
+    const rawName = String(value.name ?? value.product ?? value.system ?? "").trim();
     return {
       id: String(value.id || `system-${index + 1}`),
-      name: String(value.name || value.product || value.system || `AI system ${index + 1}`),
+      name: rawName || `AI tool ${index + 1}`,
+      productKnown: !isUncertainText(rawName),
       model: String(value.model || value.modelVersion || ""),
       role: String(value.role || value.assignedRole || ""),
+      setup: String(value.setup || "").trim(),
+      operatorRecorded: Object.hasOwn(value, "operator"),
+      operator: String(value.operator || ""),
+      operatorRole: String(value.operatorRole || ""),
+      checkerRecorded: Object.hasOwn(value, "checker") || Object.hasOwn(value, "checkerScope"),
+      checker: String(value.checker || "unknown"),
+      checkerRole: String(value.checkerRole || ""),
+      checkerScope: String(value.checkerScope || ""),
       proposedAuthority: normalizeAuthority(value.proposedAuthority ?? value.authority ?? project.proposedAuthority),
       supportedAuthority: AUTHORITY_ORDER.includes(value.supportedAuthority) ? value.supportedAuthority : null,
       capabilityLevel: normalizeFlexibleLevel(value.capabilityLevel ?? value.capabilityScore),
@@ -331,7 +354,7 @@ function normalizeSystemRecords(assessment) {
         !String(value.evidence || value.evidenceNote || "").trim()
         ? "reported"
         : normalizeBasis(value.evidenceBasis ?? value.basis),
-      material: value.material !== false,
+      material: true,
       legacy: false,
     };
   });
@@ -339,7 +362,7 @@ function normalizeSystemRecords(assessment) {
 
 function findCriticalUnknowns(assessment, itemScores, activeIds, consequence, systems) {
   const unknowns = [];
-  const isUnknown = (id) => itemScores[id]?.basis === "unknown";
+  const isUnknown = (id) => itemScores[id]?.unknown === true || itemScores[id]?.basis === "unknown";
   const proposedAuthority = normalizeAuthority(projectValue(assessment, "proposedAuthority", "A0"));
   const connectedAccess = projectValue(assessment, "connectedAccess", undefined);
   const permissions = projectValue(assessment, "permissionsConfirmed", undefined);
@@ -493,6 +516,35 @@ function evaluateSystemGates(systems) {
   for (const system of systems) {
     if (system.legacy || !system.material) continue;
     const suffix = system.model ? ` (${system.model})` : "";
+    if (system.operatorRecorded && (
+      !KNOWN_OPERATOR_TYPES.has(system.operator) ||
+      (["other", "both"].includes(system.operator) && isUncertainText(system.operatorRole))
+    )) {
+      gates.push(buildGate({
+        id: `system_operator_unknown:${system.id}`,
+        systemId: system.id,
+        title: `${system.name}${suffix} does not have a clearly identified direct user`,
+        effect: "The current information does not show who works directly with this AI tool. That missing relationship must be known before the tool can assess the workflow.",
+        actionTrigger: "workflow_gap",
+        blocking: true,
+        authorityCap: "A0",
+      }));
+    }
+    if (system.checkerRecorded && (
+      !KNOWN_REVIEWER_TYPES.has(system.checker) ||
+      (["other", "shared"].includes(system.checker) && isUncertainText(system.checkerRole)) ||
+      isUncertainText(system.checkerScope)
+    )) {
+      gates.push(buildGate({
+        id: `system_checker_unknown:${system.id}`,
+        systemId: system.id,
+        title: `${system.name}${suffix} does not have a clearly identified human reviewer`,
+        effect: "The current information does not show who can judge and correct this AI job. This is an information gap, not proof that no capable reviewer exists.",
+        actionTrigger: "human_gap",
+        blocking: true,
+        authorityCap: "A0",
+      }));
+    }
     if (system.unresolvedMaterialFailure) {
       gates.push(buildGate({
         id: `system_material_failure:${system.id}`,
@@ -512,7 +564,7 @@ function evaluateSystemGates(systems) {
         id: `system_permissions:${system.id}`,
         systemId: system.id,
         title: `${system.name}${suffix} does not have confirmed permission limits`,
-        effect: "If unchanged, this system can act through access that has not been fully known, narrowed, and tested.",
+        effect: "If unchanged, this AI tool can act through access that has not been fully known, narrowed, and tested.",
         actionTrigger: "permission_gap",
         blocking: true,
         authorityCap: "A1",
@@ -523,7 +575,7 @@ function evaluateSystemGates(systems) {
         id: `system_capability:${system.id}`,
         systemId: system.id,
         title: `${system.name}${suffix} has not shown that it can handle its assigned role`,
-        effect: "If unchanged, the workflow depends on this system performing work it has not demonstrated under task-specific tests.",
+        effect: "If unchanged, the workflow depends on this AI tool performing work it has not demonstrated under task-specific tests.",
         actionTrigger: "capability_gap",
         blocking: authorityRank(system.proposedAuthority) >= authorityRank("A2"),
         authorityCap: "A1",
@@ -557,7 +609,7 @@ function evaluateSystemGates(systems) {
           id: `system_authority_limit:${system.id}`,
           systemId: system.id,
           title: `${system.name}${suffix} supports a smaller role than the one assigned`,
-          effect: `The current setup carries ${AUTHORITY_LABELS[cap].toLowerCase()}, not the larger role assigned to this system.`,
+          effect: `The current setup carries ${AUTHORITY_LABELS[cap].toLowerCase()}, not the larger role assigned to this AI tool.`,
           actionTrigger: "capability_gap",
           blocking: true,
           authorityCap: cap,
@@ -591,7 +643,7 @@ function evaluateGates(assessment, context) {
   if (itemScores.HUM1?.level < 50 && authorityRank(proposedAuthority) >= authorityRank("A1")) {
     gates.push(buildGate({
       id: "human_capacity_gap",
-      title: "You cannot yet cover every serious error this role could create",
+      title: "The human reviewer cannot yet cover every serious error this role could create",
       effect: "If unchanged, serious errors may reach use because no capable person can reliably recognize and correct them.",
       actionTrigger: "human_gap",
       blocking: true,
@@ -600,7 +652,7 @@ function evaluateGates(assessment, context) {
   } else if (itemScores.HUM1?.level < 75 && authorityRank(proposedAuthority) >= authorityRank("A2")) {
     gates.push(buildGate({
       id: "human_capacity_gap",
-      title: "Your current review capacity does not cover the authority given to AI",
+      title: "The human reviewer’s current capacity does not cover the authority given to AI",
       effect: "The assigned role creates important work that the current human coverage cannot fully judge and correct.",
       actionTrigger: "human_gap",
       blocking: true,
@@ -629,7 +681,7 @@ function evaluateGates(assessment, context) {
   if (projectValue(assessment, "humanAccessConfirmed", true) === false) {
     gates.push(buildGate({
       id: "human_access_missing",
-      title: "You do not have access to inspect the important work",
+      title: "The human reviewer does not have access to inspect the important work",
       effect: "If unchanged, important work can pass through the workflow without inspection by someone able to examine it.",
       actionTrigger: "human_gap",
       blocking: true,
@@ -639,7 +691,7 @@ function evaluateGates(assessment, context) {
   if (projectValue(assessment, "humanAuthorityConfirmed", true) === false) {
     gates.push(buildGate({
       id: "human_authority_missing",
-      title: "You cannot require a correction or stop the work",
+      title: "The human reviewer cannot require a correction or stop the work",
       effect: "If unchanged, AI can create a real consequence while no capable person has authority to require correction or stop the work.",
       actionTrigger: "human_gap",
       blocking: true,
@@ -764,13 +816,13 @@ function getCapacityCeiling(assessment, itemScores) {
   const sustainabilityLevel = itemScores.HUM3?.level ?? 0;
   if (humanLevel < 25) {
     score = Math.min(score, 39);
-    reasons.push("You cannot currently recognize and correct a serious error in the important work.");
+    reasons.push("The human reviewer cannot currently recognize and correct a serious error in the important work.");
   } else if (humanLevel < 50) {
     score = Math.min(score, 59);
-    reasons.push("Major gaps remain in your knowledge, access, authority, or time.");
+    reasons.push("Major gaps remain in the human reviewer’s knowledge, access, authority, or time.");
   } else if (humanLevel < 75) {
     score = Math.min(score, 79);
-    reasons.push("Your current review does not cover every important part.");
+    reasons.push("The human reviewer’s current review does not cover every important part.");
   }
   if (sustainabilityLevel < 25) {
     score = Math.min(score, 59);
@@ -781,11 +833,11 @@ function getCapacityCeiling(assessment, itemScores) {
   }
   if (projectValue(assessment, "humanAccessConfirmed", true) === false) {
     score = Math.min(score, 39);
-    reasons.push("You do not have access to inspect the important work.");
+    reasons.push("The human reviewer does not have access to inspect the important work.");
   }
   if (projectValue(assessment, "humanAuthorityConfirmed", true) === false) {
     score = Math.min(score, 39);
-    reasons.push("You do not have authority to require a correction or stop the work.");
+    reasons.push("The human reviewer does not have authority to require a correction or stop the work.");
   }
   if (projectValue(assessment, "humanTimeAdequate", true) === false) {
     score = Math.min(score, 59);
@@ -1110,10 +1162,10 @@ function buildAuthorizationSummary(context) {
   if (activeIds.has("HUM2")) verify.push("Important factual claims or claims that could affect a decision.");
   if (activeIds.has("WF3")) verify.push("Build, links, key behavior, mobile, accessibility, deployment, and relevant security checks.");
   if (activeIds.has("WF4")) verify.push("Monitoring, stop controls, limits, and rollback during operation.");
-  if (dimensions.humanAssurance < 75) verify.push("Every important part not yet covered by your capacity or a named capable reviewer.");
+  if (dimensions.humanAssurance < 75) verify.push("Every important part not yet covered by the named human reviewer or another capable reviewer.");
   if (dimensions.outcomeTestability < 75) verify.push("The intended result and likely harm after release or use.");
   if (authorityRank(proposedAuthority) > authorityRank(operationalMaxAuthority)) {
-    doNotAuthorize.unshift(`${AUTHORITY_LABELS[proposedAuthority]} creates more load than your answers show the current setup can carry. Your answers reach ${AUTHORITY_LABELS[operationalMaxAuthority].toLowerCase()}.`);
+    doNotAuthorize.unshift(`${AUTHORITY_LABELS[proposedAuthority]} creates more load than the recorded answers show the current setup can carry. The current answers reach ${AUTHORITY_LABELS[operationalMaxAuthority].toLowerCase()}.`);
   }
   if (authorityRank(operationalMaxAuthority) > authorityRank(maxAuthority)) {
     doNotAuthorize.unshift(`${AUTHORITY_LABELS[operationalMaxAuthority]} may fit the reported setup, but the available records do not yet show that it does.`);
@@ -1173,6 +1225,128 @@ export function getBand(score) {
   return bandDefinitionFor(normalized).label;
 }
 
+function collectScoreUnknowns(assessment, activeQuestions, itemScores, systems) {
+  const project = assessment.project || {};
+  const activeIds = new Set(activeQuestions.map(({ id }) => id));
+  const unknowns = [];
+  const add = (id, label) => {
+    if (!unknowns.some((item) => item.id === id)) unknowns.push({ id, label });
+  };
+
+  for (const question of activeQuestions) {
+    if (itemScores[question.id]?.unknown) add(question.id, question.prompt);
+  }
+  for (const system of systems.filter((item) => item.material)) {
+    const name = `${system.name}${system.model ? ` (${system.model})` : ""}`;
+    if (!system.productKnown) {
+      add(`PRODUCT:${system.id}`, `The AI product or tool used for ${system.role || "this job"}`);
+    }
+    if (system.operatorRecorded && (
+      !KNOWN_OPERATOR_TYPES.has(system.operator) ||
+      (["other", "both"].includes(system.operator) && isUncertainText(system.operatorRole))
+    )) {
+      add(`OPERATOR:${system.id}`, `Who works directly with ${name}`);
+    }
+    if (system.checkerRecorded && (
+      !KNOWN_REVIEWER_TYPES.has(system.checker) ||
+      (["other", "shared"].includes(system.checker) && isUncertainText(system.checkerRole)) ||
+      isUncertainText(system.checkerScope)
+    )) {
+      add(`REVIEWER:${system.id}`, `Who can review and correct the AI job performed by ${name}`);
+    }
+    if (system.operatorRecorded && isUncertainText(system.model)) {
+      add(`MODEL:${system.id}`, `The exact model or version used by ${system.name}`);
+    }
+    if (system.operatorRecorded && isUncertainText(system.role)) {
+      add(`ROLE:${system.id}`, `The job ${system.name} performs in this project`);
+    }
+    if (isUncertainText(system.setup)) {
+      add(`SETUP:${system.id}`, `What ${name} has to work with, including instructions, files, memory, tools, data, and access`);
+    }
+    if (system.connectedAccess !== true && system.connectedAccess !== false) {
+      add(`ACCESS:${system.id}`, `Whether ${name} can open or change accounts, files, code, data, or publishing tools`);
+    }
+    if (system.connectedAccess === true && system.permissionsConfirmed !== true && system.permissionsConfirmed !== false) {
+      add(`PERMISSIONS:${system.id}`, `Which permissions ${name} has and whether they are limited to this job`);
+    }
+  }
+
+  const authority = normalizeAuthority(project.proposedAuthority);
+  if (authorityRank(authority) >= authorityRank("A1") && project.humanApprovalBeforeConsequence === null) {
+    add("APPROVAL", "Whether a capable person approves the work before it can affect anyone");
+  }
+  const needsReversibility = authorityRank(authority) >= authorityRank("A2") ||
+    activeIds.has("WF3") || project.workTypes?.includes("automation") || project.workTypes?.includes("software");
+  if (needsReversibility && project.actionsAreReversible === null) {
+    add("REVERSIBILITY", "Whether an AI-assisted action or release can be undone");
+  }
+  if (project.sensitiveData === null) {
+    add("SENSITIVE_DATA", "Whether the AI can access confidential, regulated, personal, or sensitive information");
+  }
+  if (project.sensitiveData === true && project.dataAuthorizationConfirmed === null) {
+    add("DATA_AUTHORIZATION", "Whether an authorized person approved the AI’s use of sensitive information");
+  }
+  const needsMonitoring = authority === "A3" || activeIds.has("WF4") || project.workTypes?.includes("automation");
+  if (needsMonitoring && project.monitoringConfirmed === null) {
+    add("MONITORING", "Whether someone can see and stop the AI while it works on its own or repeats actions");
+  }
+  if (project.unresolvedMaterialFailure === null) {
+    add("KNOWN_FAILURE", "Whether the project has a serious problem that has not been fixed");
+  }
+  if (assessment.stage === "live") {
+    const liveFields = [
+      ["representativeConditions", "Whether people used the work under normal working conditions"],
+      ["atLeastOneEdgeOrFailureCase", "Whether anyone tested an unusual or failure case"],
+      ["controlsActuallyOperated", "Whether the planned checks and safeguards worked"],
+      ["observedInRealUseForFullOperatingCycle", "Whether the setup was observed for a full operating cycle"],
+      ["outcomeDataCollected", "Whether the project collected information about results"],
+      ["materialFailuresResolved", "Whether serious failures were resolved"],
+    ];
+    for (const [key, label] of liveFields) if (project[key] === null) add(`LIVE:${key}`, label);
+  }
+  return unknowns;
+}
+
+function missingInformationRecommendations(unknowns) {
+  const summary = unknowns.slice(0, 3).map(({ label }) => label).join("; ");
+  const base = {
+    category: "missing_information",
+    scoreEffect: {
+      automaticChange: 0,
+      projectedChange: null,
+      projectedScore: null,
+      condition: "No score is available until the missing information is added.",
+    },
+    evidenceEffect: "Adds information needed to interpret this exact human and AI arrangement.",
+    blocker: { couldRemove: unknowns.map(({ id }) => id), statement: "The Load Test cannot calculate or support a role conclusion while this information is unknown." },
+    roleEffect: "No AI role conclusion is available yet.",
+    modelChangeTest: false,
+  };
+  return [
+    {
+      ...base,
+      id: "missing_information:now",
+      timing: "now",
+      action: `Mark the unanswered parts and ask the person closest to the AI work for the facts. Start with: ${summary || "the missing setup details"}.`,
+      evidenceRequired: "A direct answer from the person responsible, plus a screenshot, setting, work record, or test result when available.",
+    },
+    {
+      ...base,
+      id: "missing_information:within24h",
+      timing: "within24h",
+      action: "Record who works directly with the AI, who reviews its work, what each person can check, and what access the AI has.",
+      evidenceRequired: "Named roles, the AI job, reviewer coverage, and current access or permission records.",
+    },
+    {
+      ...base,
+      id: "missing_information:days",
+      timing: "days",
+      action: "Run the missing tests or reviews, save the results, and repeat the Load Test with the completed information.",
+      evidenceRequired: "Completed test or review records tied to the same project, AI model, setup, and role.",
+    },
+  ];
+}
+
 /**
  * Score one task-specific human and AI relationship. `publicScore` is
  * operational. Evidence never multiplies it; Evidence Strength is separate.
@@ -1198,9 +1372,22 @@ export function scoreAssessment(assessment = {}) {
   const consequence = normalizeConsequence(project.consequence);
   const proposedAuthority = normalizeAuthority(project.proposedAuthority);
   const systemAssessments = normalizeSystemRecords(normalizedAssessment);
+  const unknownQuestionIds = activeQuestionIds.filter((id) => itemScores[id]?.unknown === true);
+  const unknownInputs = collectScoreUnknowns(
+    normalizedAssessment, activeQuestions, itemScores, systemAssessments,
+  );
+  const scoreAvailable = unknownInputs.length === 0;
   const criticalUnknowns = findCriticalUnknowns(
     normalizedAssessment, itemScores, activeIds, consequence, systemAssessments,
   );
+  for (const unknown of unknownInputs) {
+    if (!criticalUnknowns.some((item) => item.id === `score_input:${unknown.id}`)) {
+      criticalUnknowns.push({
+        id: `score_input:${unknown.id}`,
+        label: `Missing information: ${unknown.label}.`,
+      });
+    }
+  }
   const { evidenceIndex, confidence: evidenceConfidence, strength: evidenceStrength } = evidenceStrengthFor(
     normalizedAssessment, itemScores, dimensionWeights, criticalUnknowns, systemAssessments,
   );
@@ -1237,7 +1424,7 @@ export function scoreAssessment(assessment = {}) {
     proposedRoleOperationallySupported &&
     authorityRank(proposedAuthority) <= authorityRank(conclusionAuthority) &&
     minimumEvidence;
-  const decisionStatus = getDecisionStatus({
+  const calculatedDecisionStatus = getDecisionStatus({
     publicScore,
     proposedAuthority,
     operationalMaxAuthority,
@@ -1247,9 +1434,14 @@ export function scoreAssessment(assessment = {}) {
     evidenceConfidence,
     gates,
   });
-  const triggers = chooseActionTriggers(gates, dimensions, criticalUnknowns);
-  const actions = buildActions(triggers);
-  const recommendations = buildRecommendations({
+  const decisionStatus = scoreAvailable ? calculatedDecisionStatus : {
+    id: "not_enough_information",
+    label: "Not enough information to calculate a score",
+    description: "At least one answer about the AI job, the human reviewer, or the workflow is unknown. The Load Test shows the missing information and suggested next steps without turning an unknown into a zero or a guess.",
+  };
+  const triggers = scoreAvailable ? chooseActionTriggers(gates, dimensions, criticalUnknowns) : [];
+  const actions = scoreAvailable ? buildActions(triggers) : [];
+  const calculatedRecommendations = buildRecommendations({
     triggers,
     gates,
     dimensions,
@@ -1260,7 +1452,10 @@ export function scoreAssessment(assessment = {}) {
     proposedAuthority,
     operationalMaxAuthority,
   });
-  const authorization = buildAuthorizationSummary({
+  const recommendations = scoreAvailable
+    ? calculatedRecommendations
+    : missingInformationRecommendations(unknownInputs);
+  const calculatedAuthorization = buildAuthorizationSummary({
     activeIds,
     dimensions,
     gates,
@@ -1268,7 +1463,7 @@ export function scoreAssessment(assessment = {}) {
     proposedAuthority,
     operationalMaxAuthority,
   });
-  const reportedSetupSummary = buildAuthorizationSummary({
+  const calculatedReportedSetupSummary = buildAuthorizationSummary({
     activeIds,
     dimensions,
     gates,
@@ -1276,25 +1471,52 @@ export function scoreAssessment(assessment = {}) {
     proposedAuthority,
     operationalMaxAuthority,
   });
-  const loadSummary = {
+  const informationGapText = unknownInputs.map(({ label }) => label);
+  const authorization = scoreAvailable ? calculatedAuthorization : {
+    delegate: ["No AI role conclusion is available until the missing information is added."],
+    relyOn: ["The current records do not support a role conclusion while required information is unknown."],
+    verify: informationGapText,
+    doNotAuthorize: ["The current information does not show whether this setup can carry the assigned AI role."],
+  };
+  const reportedSetupSummary = scoreAvailable ? calculatedReportedSetupSummary : authorization;
+  const loadSummary = scoreAvailable ? {
     currentSetupCanCarry: authorization.delegate,
     reportedSetupCanCarry: reportedSetupSummary.delegate,
     evidenceCovers: authorization.relyOn,
     stillNeedsCapableReview: authorization.verify,
     exposedLoad: reportedSetupSummary.doNotAuthorize,
+  } : {
+    currentSetupCanCarry: authorization.delegate,
+    reportedSetupCanCarry: authorization.delegate,
+    evidenceCovers: authorization.relyOn,
+    stillNeedsCapableReview: informationGapText,
+    exposedLoad: authorization.doNotAuthorize,
   };
+  const publicGates = scoreAvailable ? gates : unknownInputs.map((unknown) => buildGate({
+    id: `missing_information:${unknown.id}`,
+    title: `Information missing: ${unknown.label}`,
+    effect: "Until this is known, the Load Test cannot determine whether the current setup can carry the AI role.",
+    actionTrigger: "missing_information",
+    blocking: true,
+  }));
+  const publicDimensions = scoreAvailable
+    ? dimensions
+    : Object.fromEntries(DIMENSION_KEYS.map((dimension) => [dimension, null]));
 
   return {
     methodVersion: METHOD_VERSION,
     stage,
-    overallScore,
-    operationalScore: overallScore,
-    uncappedOperationalScore,
-    publicScore,
-    scoreBand,
+    scoreAvailable,
+    unknownQuestionIds,
+    unknownInputs,
+    overallScore: scoreAvailable ? overallScore : null,
+    operationalScore: scoreAvailable ? overallScore : null,
+    uncappedOperationalScore: scoreAvailable ? uncappedOperationalScore : null,
+    publicScore: scoreAvailable ? publicScore : null,
+    scoreBand: scoreAvailable ? scoreBand : null,
     band: decisionStatus.label,
     decisionStatus,
-    dimensions,
+    dimensions: publicDimensions,
     itemScores,
     activeQuestionIds,
     evidenceConfidence,
@@ -1306,19 +1528,19 @@ export function scoreAssessment(assessment = {}) {
     consequence,
     proposedAuthority,
     requiredScore,
-    scoreGap: Math.max(0, roundOne(requiredScore - overallScore)),
-    capacityCeiling: capacity.score,
-    capacityLimitReasons: capacity.reasons,
-    operationalMaxAuthority,
-    conclusionAuthority,
-    conclusionAuthorityCeiling,
-    maxAuthority: conclusionAuthority,
-    supportedAuthority: conclusionAuthority,
-    proposedRoleOperationallySupported,
-    proposedAuthoritySupported,
+    scoreGap: scoreAvailable ? Math.max(0, roundOne(requiredScore - overallScore)) : null,
+    capacityCeiling: scoreAvailable ? capacity.score : null,
+    capacityLimitReasons: scoreAvailable ? capacity.reasons : [],
+    operationalMaxAuthority: scoreAvailable ? operationalMaxAuthority : null,
+    conclusionAuthority: scoreAvailable ? conclusionAuthority : null,
+    conclusionAuthorityCeiling: scoreAvailable ? conclusionAuthorityCeiling : null,
+    maxAuthority: scoreAvailable ? conclusionAuthority : null,
+    supportedAuthority: scoreAvailable ? conclusionAuthority : null,
+    proposedRoleOperationallySupported: scoreAvailable ? proposedRoleOperationallySupported : null,
+    proposedAuthoritySupported: scoreAvailable ? proposedAuthoritySupported : null,
     systemAssessments,
-    limitingSystemIds: [...new Set(gates.map((gate) => gate.systemId).filter(Boolean))],
-    gates,
+    limitingSystemIds: scoreAvailable ? [...new Set(gates.map((gate) => gate.systemId).filter(Boolean))] : [],
+    gates: publicGates,
     authorization,
     loadSummary,
     actions,
