@@ -512,8 +512,8 @@ main [role="alert"] {
 }
 
 .credits-viewport {
-  --focus-glasses-width: min(92%, 440px);
-  --focus-glasses-height: clamp(88px, 28vw, 132px);
+  --focus-window-width: min(82%, 370px);
+  --focus-window-height: clamp(110px, 24vw, 150px);
   position: relative;
   height: 430px;
   overflow: hidden;
@@ -538,58 +538,72 @@ main [role="alert"] {
   inset: 0;
   padding: 2.25rem 1.5rem;
   overflow: hidden;
-  -webkit-mask-image: url('./assets/glasses-mask.svg');
+  -webkit-mask-image: linear-gradient(#000 0 0);
   -webkit-mask-position: center;
   -webkit-mask-repeat: no-repeat;
-  -webkit-mask-size: var(--focus-glasses-width) var(--focus-glasses-height);
-  mask-image: url('./assets/glasses-mask.svg');
+  -webkit-mask-size: var(--focus-window-width) var(--focus-window-height);
+  mask-image: linear-gradient(#000 0 0);
   mask-position: center;
   mask-repeat: no-repeat;
-  mask-size: var(--focus-glasses-width) var(--focus-glasses-height);
+  mask-size: var(--focus-window-width) var(--focus-window-height);
   pointer-events: none;
 }
 
-.focus-glasses {
+.focus-window {
   position: absolute;
   z-index: 3;
   top: 50%;
   left: 50%;
-  width: var(--focus-glasses-width);
-  height: var(--focus-glasses-height);
+  width: var(--focus-window-width);
+  height: var(--focus-window-height);
+  border: 1px solid rgba(232, 188, 104, 0.72);
+  border-radius: 8px;
   transform: translate(-50%, -50%);
-  color: rgba(232, 188, 104, 0.94);
-  filter: drop-shadow(0 5px 9px rgba(0, 0, 0, 0.28));
-  overflow: visible;
+  box-shadow:
+    inset 0 0 30px rgba(255, 250, 240, 0.05),
+    0 10px 30px rgba(0, 0, 0, 0.2);
   pointer-events: none;
 }
 
-.glasses-rim,
-.glasses-brow,
-.glasses-bridge,
-.glasses-arm {
-  fill: rgba(255, 250, 240, 0.025);
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+.focus-window::before,
+.focus-window::after {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+  content: "";
 }
 
-.glasses-rim {
-  stroke-width: 20;
+.focus-window::before {
+  top: -3px;
+  left: -3px;
+  border-top: 4px solid #e8bc68;
+  border-left: 4px solid #e8bc68;
+  border-radius: 8px 0 0;
 }
 
-.glasses-brow {
-  fill: none;
-  stroke-width: 30;
+.focus-window::after {
+  right: -3px;
+  bottom: -3px;
+  border-right: 4px solid #e8bc68;
+  border-bottom: 4px solid #e8bc68;
+  border-radius: 0 0 8px;
 }
 
-.glasses-bridge {
-  fill: none;
-  stroke-width: 22;
-}
-
-.glasses-arm {
-  fill: none;
-  stroke-width: 18;
+.focus-window > span {
+  position: absolute;
+  top: 0;
+  left: 1rem;
+  padding: 0.22rem 0.5rem;
+  border: 1px solid rgba(232, 188, 104, 0.62);
+  border-radius: 3px;
+  transform: translateY(-50%);
+  background: #082923;
+  color: #f8f1e3;
+  font-family: var(--mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .credits-sequence {
@@ -3260,7 +3274,7 @@ fieldset[aria-invalid="true"] {
   }
 
   .credits-focus-layer,
-  .focus-glasses {
+  .focus-window {
     display: none;
   }
 
