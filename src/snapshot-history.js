@@ -470,7 +470,7 @@ export function compareSnapshots(previous, current) {
     listChange("ai-entry-point", "What happened before AI entered", before.beforeAi, after.beforeAi),
     listChange("ai-roles", "What AI did", before.aiRoles, after.aiRoles),
     listChange("human-roles-checking", "What the human did and checked", before.humanRoles, after.humanRoles),
-    valueChange("authorization", "Final authority", before.finalAuthority, after.finalAuthority),
+    valueChange("authorization", "What AI could do before human review", before.finalAuthority, after.finalAuthority),
     coverageChange,
   ];
   const changes = dimensions.filter(({ changed }) => changed);
