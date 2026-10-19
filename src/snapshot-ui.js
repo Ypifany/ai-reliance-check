@@ -303,7 +303,12 @@ function renderSnapshotStepTwo(main, draft, error = '') {
 
 function buildFindings(draft) {
   const findings = [];
-  if (draft.chatReference) findings.push({ topic: 'AI conversation', summary: draft.chatReference.summary || draft.chatReference.label, status: FINDING_STATUS.SHOWN_IN_RECORDS, evidenceRefs: [draft.chatReference.id] });
+  if (draft.chatReference) findings.push({
+    topic: 'AI conversation',
+    summary: draft.chatReference.summary || draft.chatReference.label,
+    status: draft.chatReference.digest ? FINDING_STATUS.SHOWN_IN_RECORDS : FINDING_STATUS.CONFIRMED_BY_CREATOR,
+    evidenceRefs: [draft.chatReference.id],
+  });
   else findings.push({ topic: 'AI conversation', summary: 'No conversation record was added.', status: FINDING_STATUS.UNKNOWN });
 
   findings.push({ topic: 'What AI started with', summary: AI_SETUP_LABELS[draft.aiSetup] || 'Unknown', status: draft.aiSetup === 'unknown' ? FINDING_STATUS.UNKNOWN : FINDING_STATUS.CONFIRMED_BY_CREATOR });
@@ -312,7 +317,12 @@ function buildFindings(draft) {
   findings.push({ topic: 'Human work', summary: labelsFor(draft.humanRoles, HUMAN_ROLE_OPTIONS).join('; ') || 'Not identified', status: draft.humanRoles.includes('unknown') || !draft.humanRoles.length ? FINDING_STATUS.UNKNOWN : FINDING_STATUS.CONFIRMED_BY_CREATOR });
   findings.push({ topic: 'AI authorization', summary: AUTHORITY_LABELS[draft.authority] || 'Unknown', status: draft.authority === 'unknown' ? FINDING_STATUS.UNKNOWN : FINDING_STATUS.CONFIRMED_BY_CREATOR });
 
-  if (draft.sourceReferences.length) findings.push({ topic: 'Source material', summary: `${draft.sourceReferences.length} source record${draft.sourceReferences.length === 1 ? '' : 's'} supplied.`, status: FINDING_STATUS.SHOWN_IN_RECORDS, evidenceRefs: draft.sourceReferences.map(({ id }) => id) });
+  if (draft.sourceReferences.length) findings.push({
+    topic: 'Source material',
+    summary: `${draft.sourceReferences.length} source reference${draft.sourceReferences.length === 1 ? '' : 's'} supplied. File fingerprints are shown in the record; links and record names are not inspected.`,
+    status: draft.sourceReferences.some(({ digest }) => digest) ? FINDING_STATUS.SHOWN_IN_RECORDS : FINDING_STATUS.CONFIRMED_BY_CREATOR,
+    evidenceRefs: draft.sourceReferences.map(({ id }) => id),
+  });
   else findings.push({ topic: 'Source material', summary: 'No source-material record was added.', status: FINDING_STATUS.UNKNOWN });
 
   if (draft.githubUrl) findings.push({ topic: 'Version history', summary: 'A public GitHub repository was linked. This browser preview did not inspect its contents.', status: FINDING_STATUS.CONFIRMED_BY_CREATOR });
@@ -378,7 +388,7 @@ function changeTable(comparison) {
 
 function shortDisclosure(snapshot) {
   const systems = snapshot.aiSystems.map(({ product, model }) => [product, model].filter(Boolean).join(' ')).join(', ') || 'AI tools';
-  return `Human + AI work disclosure: ${systems} contributed by ${snapshot.aiRoles.join(', ') || 'an unspecified role'}. The human ${snapshot.humanRoles.join(', ') || 'did not specify their role'}. A dated evAIdence snapshot records the supplied evidence and confirmations.`;
+  return `Human + AI work disclosure: AI tools: ${systems}. AI contributions: ${snapshot.aiRoles.join('; ') || 'not specified'}. Human contributions: ${snapshot.humanRoles.join('; ') || 'not specified'}. A dated evAIdence snapshot records the supplied references and creator confirmations.`;
 }
 
 function downloadText(filename, content, type = 'application/json') {
