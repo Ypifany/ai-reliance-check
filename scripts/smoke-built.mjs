@@ -229,7 +229,7 @@ const routes = [
   { name: 'home', route: '#/', expected: 'See how your work with AI changes.' },
   { name: 'home-short-path', route: '#/', expected: 'Bring the records. Check the picture. Save the change.' },
   { name: 'home-neutral-change', route: '#/', expected: 'It shows what moved so you can decide whether the change was intentional and still fits the work.' },
-  { name: 'home-feedback', route: '#/', expected: 'Help improve evAIdence.' },
+  { name: 'home-feedback', route: '#/', expected: 'Try a Snapshot, then tell me how it went.' },
   { name: 'snapshot-step-1', route: '#/snapshot', expected: 'Add the records you already have.' },
   { name: 'legacy-creation-record-route', route: '#/creation-record', expected: 'Add the records you already have.' },
   { name: 'changes-empty', route: '#/changes', expected: 'Your first snapshot becomes the baseline.' },

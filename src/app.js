@@ -508,7 +508,13 @@ function renderHome() {
               ${homepageCreditsSequence(true)}
             </div>
           </div>
-          <div class="focus-lens" aria-hidden="true"><span></span><span></span></div>
+          <svg class="focus-glasses" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+            <path class="glasses-rim" d="M50 55 Q230 35 455 55 L438 218 Q432 252 390 264 Q250 296 110 262 Q70 252 64 218 Z" />
+            <path class="glasses-rim" d="M545 55 Q770 35 950 55 L936 218 Q930 252 890 262 Q750 296 610 264 Q568 252 562 218 Z" />
+            <path class="glasses-brow" d="M50 55 Q230 35 455 55 M545 55 Q770 35 950 55" />
+            <path class="glasses-bridge" d="M455 72 Q500 42 545 72" />
+            <path class="glasses-arm" d="M50 80 L4 70 M950 80 L996 70" />
+          </svg>
         </div>
         <p class="credits-screen-caption">A snapshot connects the credits to records from the work. Save another later and evAIdence shows what changed. <a href="#/sample">See the example.</a></p>
       </aside>
@@ -572,10 +578,10 @@ function renderHome() {
 
     <section class="section section-compact" aria-labelledby="feedback-heading">
       <div class="callout">
-        <p class="kicker">Founding feedback</p>
-        <h2 id="feedback-heading">Help improve evAIdence.</h2>
-        <p>Try a snapshot first. Then tell me what helped, what was confusing, or what should change. The form has four short questions.</p>
-        <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
+        <p class="kicker">Test the founding preview</p>
+        <h2 id="feedback-heading">Try a Snapshot, then tell me how it went.</h2>
+        <p>Tell me what became clearer, where you got stuck, and whether you would return when the work or your AI setup changes.</p>
+        <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share testing feedback <span class="new-tab-note">(opens in a new tab)</span></a>
       </div>
     </section>
   `;
