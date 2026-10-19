@@ -1,6 +1,7 @@
 {
-  "name": "ai-reliance-check",
-  "version": "0.3.0",
+  "name": "evaidence",
+  "version": "0.4.0",
+  "description": "A browser-based record of how a person's work with AI changes over time.",
   "private": true,
   "type": "module",
   "scripts": {
@@ -9,6 +10,7 @@
     "smoke": "node scripts/smoke-built.mjs",
     "preview": "vite preview --host 0.0.0.0",
     "test": "node --test",
+    "test:snapshots": "node --test tests/snapshot-history.test.js",
     "validate": "html-validate index.html"
   },
   "devDependencies": {

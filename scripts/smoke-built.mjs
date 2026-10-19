@@ -226,12 +226,15 @@ Object.values(unknownLoadTest.answers).forEach((answer) => {
 });
 
 const routes = [
-  { name: 'home', route: '#/', expected: 'Your credibility is being questioned.' },
+  { name: 'home', route: '#/', expected: 'See how your work with AI changes.' },
+  { name: 'home-short-path', route: '#/', expected: 'Bring the records. Check the picture. Save the change.' },
+  { name: 'home-neutral-change', route: '#/', expected: 'It shows what moved so you can decide whether the change was intentional and still fits the work.' },
   { name: 'home-feedback', route: '#/', expected: 'Help improve evAIdence.' },
-  { name: 'home-question-copy', route: '#/', expected: 'Does this sound like AI wrote it?', forbidden: '<span>Question</span><q>This sounds like AI wrote it.</q>' },
-  { name: 'home-cake-copy', route: '#/', expected: 'When working with AI, finished work cannot either.', forbidden: '</strong> Finished work cannot either.' },
-  { name: 'record-step-1', route: '#/creation-record', expected: 'What work are you documenting?' },
-  { name: 'sample', route: '#/sample', expected: 'Example: How this website and its methods were developed.' },
+  { name: 'snapshot-step-1', route: '#/snapshot', expected: 'Add the records you already have.' },
+  { name: 'legacy-creation-record-route', route: '#/creation-record', expected: 'Add the records you already have.' },
+  { name: 'changes-empty', route: '#/changes', expected: 'Your first snapshot becomes the baseline.' },
+  { name: 'detailed-record-step-1', route: '#/detailed-record', expected: 'What work are you documenting?' },
+  { name: 'sample', route: '#/sample', expected: 'One writer. Two snapshots. A changed relationship with AI.' },
   { name: 'load-test', route: '#/load-test', expected: 'How far along is the work?' },
   { name: 'load-test-result-copy', route: '#/load-test', expected: 'You get more than a score.', forbidden: 'You will not get only a score.' },
   { name: 'load-test-load-framing', route: '#/load-test', expected: 'what the role you gave AI requires from you and anyone else doing or checking the work' },
@@ -298,12 +301,60 @@ const routes = [
       },
     },
   },
-  { name: 'method', route: '#/method', expected: 'Choose the question you need to answer.' },
-  { name: 'research', route: '#/research', expected: 'Built from real AI-assisted work, then compared with existing research and standards.' },
-  { name: 'examples', route: '#/examples', expected: 'See which tool fits your situation.' },
+  { name: 'method', route: '#/method', expected: 'Create one clear Snapshot. Return later to see what changed.' },
+  { name: 'research', route: '#/research', expected: 'Informed by provenance, contributor roles, appropriate reliance, and human oversight.' },
+  { name: 'examples', route: '#/examples', expected: 'See what a Snapshot can reveal.' },
   { name: 'pricing', route: '#/pricing', expected: 'Full access is open during the Founding Preview.' },
   { name: 'faq', route: '#/faq', expected: 'Plain answers about what this tool can and cannot say.' },
 ];
+
+const snapshotHistory = {
+  schemaVersion: 1,
+  baselineId: 'snapshot-january',
+  snapshots: [
+    {
+      schemaVersion: 1,
+      id: 'snapshot-january',
+      createdAt: '2026-01-15T12:00:00.000Z',
+      projectName: 'Comparable writing project',
+      workType: 'writing',
+      stage: 'build',
+      aiSystems: [{ product: 'Example AI', model: 'Example model' }],
+      aiSetup: 'regular-chat',
+      beforeAi: ['The human outlined first'],
+      aiRoles: ['Edit'],
+      humanRoles: ['Draft'],
+      finalAuthority: 'Human approved the work',
+      findings: [],
+      intent: 'not-answered',
+    },
+    {
+      schemaVersion: 1,
+      id: 'snapshot-october',
+      createdAt: '2026-10-15T12:00:00.000Z',
+      projectName: 'Comparable writing project',
+      workType: 'writing',
+      stage: 'build',
+      aiSystems: [{ product: 'Example AI', model: 'Example model' }],
+      aiSetup: 'regular-chat',
+      beforeAi: ['The human outlined first'],
+      aiRoles: ['Draft'],
+      humanRoles: ['Draft'],
+      finalAuthority: 'Human approved the work',
+      findings: [],
+      intent: 'not-answered',
+    },
+  ],
+};
+
+routes.push({
+  name: 'changes-with-comparable-history',
+  route: '#/changes',
+  expected: '1 tracked change in the latest comparable work.',
+  initial: {
+    localStorage: { 'evaidence:snapshots:v1': JSON.stringify(snapshotHistory) },
+  },
+});
 
 const smokeRecord = {
   schemaVersion: 3,
@@ -340,7 +391,7 @@ for (const [step, expected] of [
 ]) {
   routes.push({
     name: `record-step-${step}`,
-    route: '#/creation-record',
+    route: '#/detailed-record',
     expected,
     initial: {
       localStorage: { 'ai-reliance-check:work-record:v0.3': JSON.stringify(smokeRecord) },
