@@ -14,6 +14,7 @@ import {
 const HISTORY_KEY = 'evaidence:snapshots:v1';
 const DRAFT_KEY = 'evaidence:snapshot-draft:v1';
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+const FEEDBACK_FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSef4UnjJR67d2zV0Osuu85TVtd5lqXrHCVWwdcOzPwCxNOrSw/viewform';
 
 const WORK_TYPES = [
   ['writing', 'Writing, research, or publishing'],
@@ -430,6 +431,7 @@ function renderSnapshotResult(main, snapshot, history, showToast) {
     <section class="section-inline" aria-labelledby="snapshot-findings-heading"><h2 id="snapshot-findings-heading">Findings and their basis</h2><ul class="finding-list">${snapshot.findings.map((finding) => `<li><div><strong>${escapeHTML(finding.topic)}</strong><p>${escapeHTML(finding.summary)}</p></div><span class="status-pill status-${escapeHTML(finding.status)}">${escapeHTML(FINDING_LABELS[finding.status])}</span></li>`).join('')}</ul></section>
     <section class="section-inline disclosure-box"><h2>Short disclosure</h2><p id="snapshot-disclosure">${escapeHTML(shortDisclosure(snapshot))}</p></section>
     <div class="button-row no-print"><button class="button" type="button" id="download-snapshot">Download snapshot</button><button class="button button-secondary" type="button" id="copy-snapshot-disclosure">Copy disclosure</button><button class="button button-secondary" type="button" id="print-snapshot">Print or save PDF</button><a class="button button-secondary" href="#/changes">View my changes</a><button class="text-button" type="button" id="new-snapshot">Start another snapshot</button></div>
+    <section class="section-inline feedback-prompt no-print" aria-labelledby="snapshot-feedback-heading"><p class="kicker">Help test the preview</p><h2 id="snapshot-feedback-heading">Did this bring the work into focus?</h2><p>Tell me what became clearer, where you got stuck, and whether you would return for another Snapshot.</p><a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share Snapshot feedback <span class="new-tab-note">(opens in a new tab)</span></a></section>
   </div>`;
 
   const credits = document.querySelector('.snapshot-credits');
@@ -587,6 +589,7 @@ export function renderChangesPage(main, { showToast = () => {} } = {}) {
     ${changeTable(comparison)}
     <section class="section-inline" aria-labelledby="snapshot-history-heading"><h2 id="snapshot-history-heading">Saved snapshots</h2><div class="snapshot-history-list">${[...history.snapshots].reverse().map((snapshot) => { const coverage = evidenceCoverage(snapshot); return `<article class="card"><p class="kicker">${snapshot.id === history.baselineId ? 'Baseline' : escapeHTML(new Date(snapshot.createdAt).toLocaleDateString())}</p><h3>${escapeHTML(snapshot.projectName || 'Unnamed work')}</h3><p>${escapeHTML(WORK_TYPE_LABELS[snapshot.workType] || snapshot.workType || 'Work type not recorded')} · ${escapeHTML(STAGE_LABELS[snapshot.stage] || snapshot.stage || 'Stage unknown')}</p><dl class="mini-facts"><div><dt>AI setup</dt><dd>${escapeHTML(AI_SETUP_LABELS[snapshot.aiSetup] || 'Unknown')}</dd></div><div><dt>Basis provided</dt><dd>${coverage.coveredFindings} of ${coverage.totalFindings} findings</dd></div><div><dt>Unknown</dt><dd>${coverage.unknown}</dd></div></dl></article>`; }).join('')}</div></section>
     <div class="button-row"><a class="button" href="#/snapshot">Create another snapshot</a><button class="button button-secondary" id="export-snapshot-history" type="button">Export private history</button><button class="button button-secondary" id="import-snapshot-history-trigger" type="button">Import history</button><input id="import-snapshot-history" type="file" accept="application/json" hidden /><button class="text-button danger-link" id="clear-snapshot-history" type="button">Erase this browser history</button></div>
+    ${comparison.comparable ? `<section class="section-inline feedback-prompt" aria-labelledby="changes-feedback-heading"><p class="kicker">Help test the preview</p><h2 id="changes-feedback-heading">Did this comparison show you something useful?</h2><p>Tell me what became clearer and what still needs work.</p><a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share comparison feedback <span class="new-tab-note">(opens in a new tab)</span></a></section>` : ''}
   </div>`;
   document.querySelector('#export-snapshot-history')?.addEventListener('click', () => downloadText('evaidence-private-snapshot-history.json', exportSnapshotHistory(history)));
   document.querySelector('#import-snapshot-history-trigger')?.addEventListener('click', () => document.querySelector('#import-snapshot-history')?.click());
