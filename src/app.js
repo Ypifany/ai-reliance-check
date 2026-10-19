@@ -508,13 +508,7 @@ function renderHome() {
               ${homepageCreditsSequence(true)}
             </div>
           </div>
-          <svg class="focus-glasses" viewBox="0 0 1000 300" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-            <path class="glasses-rim" d="M50 55 Q230 35 455 55 L438 218 Q432 252 390 264 Q250 296 110 262 Q70 252 64 218 Z" />
-            <path class="glasses-rim" d="M545 55 Q770 35 950 55 L936 218 Q930 252 890 262 Q750 296 610 264 Q568 252 562 218 Z" />
-            <path class="glasses-brow" d="M50 55 Q230 35 455 55 M545 55 Q770 35 950 55" />
-            <path class="glasses-bridge" d="M455 72 Q500 42 545 72" />
-            <path class="glasses-arm" d="M50 80 L4 70 M950 80 L996 70" />
-          </svg>
+          <div class="focus-window" aria-hidden="true"><span>In focus</span></div>
         </div>
         <p class="credits-screen-caption">A snapshot connects the credits to records from the work. Save another later and evAIdence shows what changed. <a href="#/sample">See the example.</a></p>
       </aside>
