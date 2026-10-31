@@ -68,11 +68,25 @@ test("createWorkRecord supports deterministic ids and timestamps", () => {
 
   assert.equal(record.schemaVersion, WORK_RECORD_SCHEMA_VERSION);
   assert.equal(record.id, "record-fixed");
+  assert.equal(record.projectId, "project-1");
   assert.equal(record.createdAt, NOW);
   assert.equal(record.updatedAt, NOW);
-  assert.equal(record.review.id, "review-1");
+  assert.equal(record.review.id, "review-2");
   assert.deepEqual(record.claims, []);
   assert.deepEqual(record.evidence, []);
+});
+
+test("a legacy Work Record receives a stable project identity from its record id", () => {
+  const first = normalizeWorkRecord({ id: "record-legacy", title: "Legacy work" }, deterministicOptions());
+  const second = normalizeWorkRecord({ id: "record-legacy", title: "Legacy work" }, deterministicOptions());
+  assert.equal(first.projectId, "project-record-legacy");
+  assert.equal(second.projectId, first.projectId);
+});
+
+test("project identity does not imply that a Load Test was completed", () => {
+  const record = normalizeWorkRecord({ projectId: "project-one", readiness: {} }, deterministicOptions());
+  assert.equal(record.projectId, "project-one");
+  assert.equal(record.readiness.workCheckId, "");
 });
 
 test("normalization migrates v0.2 fields without inventing authorship claims", () => {

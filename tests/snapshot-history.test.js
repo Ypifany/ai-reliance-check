@@ -13,6 +13,7 @@ import {
   exportSnapshotHistory,
   importSnapshotHistory,
   isComparableSnapshot,
+  isProjectBaseline,
   normalizeSnapshot,
 } from "../src/snapshot-history.js";
 
@@ -30,6 +31,7 @@ function deterministicOptions(now = JANUARY) {
 function writerSnapshot(overrides = {}) {
   return {
     id: "snapshot-january",
+    projectId: "project-monthly-essay",
     createdAt: JANUARY,
     projectName: "Monthly essay",
     workType: "Published writing",
@@ -79,6 +81,7 @@ test("createSnapshot creates a versioned, deterministic snapshot", () => {
 
   assert.equal(snapshot.schemaVersion, SNAPSHOT_SCHEMA_VERSION);
   assert.equal(snapshot.id, "snapshot-fixed");
+  assert.match(snapshot.projectId, /^project-/);
   assert.equal(snapshot.createdAt, JANUARY);
   assert.equal(snapshot.projectName, "Essay");
   assert.equal(snapshot.workType, "Writing");
@@ -154,7 +157,7 @@ test("a finding cannot claim that records show it without a record reference", (
   }, deterministicOptions());
 
   assert.equal(snapshot.findings[0].status, FINDING_STATUS.SHOWN_IN_RECORDS);
-  assert.equal(snapshot.findings[0].label, "Shown in records");
+  assert.equal(snapshot.findings[0].label, "Record provided");
   assert.equal(snapshot.findings[1].status, FINDING_STATUS.UNKNOWN);
   assert.equal(snapshot.findings[1].label, "Unknown");
   assert.equal(snapshot.findings[2].status, FINDING_STATUS.CONFIRMED_BY_CREATOR);
@@ -187,23 +190,19 @@ test("evidenceCoverage reports record, creator, and unknown coverage without a m
   assert.equal(evidenceCoverage({ findings: [] }).percent, null);
 });
 
-test("comparability supports a named project over time and like-for-like work", () => {
+test("comparability follows stable project identity across names and stages", () => {
   assert.equal(isComparableSnapshot(
-    writerSnapshot({ stage: "build" }),
-    writerSnapshot({ stage: "release", createdAt: APRIL }),
+    writerSnapshot({ projectName: "Old name", stage: "build" }),
+    writerSnapshot({ projectName: "New name", stage: "release", createdAt: APRIL }),
   ), true);
   assert.equal(isComparableSnapshot(
-    writerSnapshot({ id: "a", projectName: "Essay one" }),
-    writerSnapshot({ id: "b", projectName: "Essay two" }),
+    writerSnapshot({ id: "a", projectId: "project-one", projectName: "Same name" }),
+    writerSnapshot({ id: "b", projectId: "project-two", projectName: "Same name" }),
+  ), false);
+  assert.equal(isComparableSnapshot(
+    { id: "legacy-a", projectName: "Legacy essay", workType: "Writing" },
+    { id: "legacy-b", projectName: "Legacy essay", workType: "Writing" },
   ), true);
-  assert.equal(isComparableSnapshot(
-    writerSnapshot({ id: "a", projectName: "Essay", stage: "release" }),
-    writerSnapshot({ id: "b", projectName: "App", workType: "Software", stage: "release" }),
-  ), false);
-  assert.equal(isComparableSnapshot(
-    writerSnapshot({ id: "a", projectName: "Essay one", stage: "plan" }),
-    writerSnapshot({ id: "b", projectName: "Essay two", stage: "live" }),
-  ), false);
 });
 
 test("the first comparison establishes a baseline", () => {
@@ -267,7 +266,7 @@ test("comparison distinguishes no tracked change from an invalid comparison", ()
 
   const mismatched = compareSnapshots(
     writerSnapshot(),
-    writerSnapshot({ id: "snapshot-app", projectName: "Software tool", workType: "Software", createdAt: APRIL }),
+    writerSnapshot({ id: "snapshot-app", projectId: "project-app", projectName: "Software tool", workType: "Software", createdAt: APRIL }),
   );
   assert.equal(mismatched.comparable, false);
   assert.match(mismatched.reason, /direct comparison could mislead/i);
@@ -287,6 +286,29 @@ test("appendSnapshot makes the first entry the durable baseline", () => {
   assert.deepEqual(second.snapshots.map(({ id }) => id), ["snapshot-january", "snapshot-april"]);
 });
 
+test("each project has its own baseline", () => {
+  const firstProject = appendSnapshot(null, writerSnapshot(), deterministicOptions());
+  const withSecondProject = appendSnapshot(firstProject, writerSnapshot({
+    id: "snapshot-app",
+    projectId: "project-app",
+    projectName: "Application",
+    workType: "Software",
+  }), deterministicOptions(APRIL));
+
+  assert.equal(isProjectBaseline(withSecondProject, withSecondProject.snapshots[0], deterministicOptions()), true);
+  assert.equal(isProjectBaseline(withSecondProject, withSecondProject.snapshots[1], deterministicOptions()), true);
+
+  const outOfOrder = importSnapshotHistory({
+    schemaVersion: SNAPSHOT_HISTORY_SCHEMA_VERSION,
+    snapshots: [
+      writerSnapshot({ id: "snapshot-april", createdAt: APRIL }),
+      writerSnapshot(),
+    ],
+  }, deterministicOptions());
+  assert.equal(isProjectBaseline(outOfOrder, outOfOrder.snapshots[0], deterministicOptions()), false);
+  assert.equal(isProjectBaseline(outOfOrder, outOfOrder.snapshots[1], deterministicOptions()), true);
+});
+
 test("an imported array of id-less snapshots receives distinct ids", () => {
   const imported = importSnapshotHistory([
     { projectName: "January essay", workType: "Writing" },
@@ -296,6 +318,21 @@ test("an imported array of id-less snapshots receives distinct ids", () => {
   assert.equal(imported.snapshots.length, 2);
   assert.notEqual(imported.snapshots[0].id, imported.snapshots[1].id);
   assert.equal(imported.baselineId, imported.snapshots[0].id);
+});
+
+test("schema 1 history receives stable project identities without losing snapshots", () => {
+  const imported = importSnapshotHistory({
+    schemaVersion: 1,
+    snapshots: [
+      { id: "legacy-one", projectName: "Renovation plan", workType: "Writing" },
+      { id: "legacy-two", projectName: "Renovation plan", workType: "Writing" },
+      { id: "legacy-three", projectName: "Another plan", workType: "Writing" },
+    ],
+  }, deterministicOptions());
+
+  assert.equal(imported.snapshots.length, 3);
+  assert.equal(imported.snapshots[0].projectId, imported.snapshots[1].projectId);
+  assert.notEqual(imported.snapshots[0].projectId, imported.snapshots[2].projectId);
 });
 
 test("appendSnapshot merges a draft with an existing id instead of duplicating it", () => {

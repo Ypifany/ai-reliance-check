@@ -4,11 +4,13 @@ import {
   FINDING_STATUS,
   appendSnapshot,
   compareSnapshots,
+  createProjectId,
   createSnapshot,
   evidenceCoverage,
   exportSnapshotHistory,
   importSnapshotHistory,
   isComparableSnapshot,
+  isProjectBaseline,
 } from './snapshot-history.js';
 
 const HISTORY_KEY = 'evaidence:snapshots:v1';
@@ -88,6 +90,8 @@ const HUMAN_ROLE_OPTIONS = [
 function makeDraft() {
   return {
     step: 1,
+    projectMode: 'new',
+    projectId: '',
     projectName: '',
     workType: '',
     stage: 'build',
@@ -146,12 +150,47 @@ function saveJSON(key, value) {
   }
 }
 
+function snapshotTime(snapshot) {
+  const value = Date.parse(snapshot?.createdAt);
+  return Number.isNaN(value) ? 0 : value;
+}
+
+function chronologicalSnapshots(snapshots) {
+  return [...snapshots].sort((left, right) => snapshotTime(left) - snapshotTime(right));
+}
+
 function loadHistory() {
   try {
     return importSnapshotHistory(loadJSON(HISTORY_KEY, { snapshots: [] }));
   } catch {
     return importSnapshotHistory({ snapshots: [] });
   }
+}
+
+function savedProjects(history) {
+  const latestByProject = new Map();
+  chronologicalSnapshots(history.snapshots).forEach((snapshot) => latestByProject.set(snapshot.projectId, snapshot));
+  return [...latestByProject.values()].sort((left, right) => snapshotTime(right) - snapshotTime(left));
+}
+
+function availableProjects(history, additionalProjects = []) {
+  const projects = new Map();
+  const add = (project) => {
+    if (!project?.projectId) return;
+    const current = projects.get(project.projectId);
+    if (!current || snapshotTime(project) >= snapshotTime(current)) projects.set(project.projectId, project);
+  };
+  additionalProjects.forEach(add);
+  savedProjects(history).forEach(add);
+  return [...projects.values()].sort((left, right) => snapshotTime(right) - snapshotTime(left));
+}
+
+function projectChoiceLabel(project) {
+  const name = project.projectName || 'Unnamed work';
+  const type = WORK_TYPE_LABELS[project.workType] || project.workType || 'Type not recorded';
+  const dateValue = Date.parse(project.createdAt);
+  const date = Number.isNaN(dateValue) ? 'Date not recorded' : new Date(dateValue).toLocaleDateString();
+  return `${name} · ${type} · ${date}`;
 }
 
 function loadDraft() {
@@ -254,13 +293,17 @@ function recordInventory(draft) {
   return `<dl class="snapshot-inventory">${rows.map(([term, value]) => `<div><dt>${escapeHTML(term)}</dt><dd>${escapeHTML(value)}</dd></div>`).join('')}</dl>`;
 }
 
-function renderSnapshotStepOne(main, draft, error = '') {
+function renderSnapshotStepOne(main, draft, history, additionalProjects, error = '') {
+  const projects = availableProjects(history, additionalProjects);
+  const selectedProjectId = draft.projectMode === 'existing' ? draft.projectId : '';
+  const projectChooser = projects.length ? `<div class="field field-span-2"><label for="snapshot-project-choice">Which project are you adding a snapshot to?</label><select id="snapshot-project-choice" name="projectChoice"><option value="">Start a new project</option>${projects.map((project) => `<option value="${escapeHTML(project.projectId)}"${project.projectId === selectedProjectId ? ' selected' : ''}>Continue: ${escapeHTML(projectChoiceLabel(project))}</option>`).join('')}</select><small>Each project keeps the same identity even if you rename it later.</small></div>` : '';
   main.innerHTML = `<div class="page snapshot-page">
     <header class="page-header"><p class="eyebrow">New snapshot · Step 1 of 2</p><h1>Add the records you already have.</h1><p>Start with the AI conversation, what AI already had, and the work or version history. Raw conversation and file contents stay on this page. The saved snapshot keeps only references, short summaries, and fingerprints.</p></header>
     ${renderError(error)}
     <form id="snapshot-records-form" class="snapshot-form setup-card" novalidate>
       <section aria-labelledby="snapshot-project-heading"><h2 id="snapshot-project-heading" class="form-section-heading">The work</h2>
         <div class="field-grid">
+          ${projectChooser}
           <div class="field field-span-2"><label for="snapshot-project-name">Project or work name <span class="required">Required</span></label><input id="snapshot-project-name" name="projectName" value="${escapeHTML(draft.projectName)}" required /></div>
           <div class="field"><label for="snapshot-work-type">What kind of work is it? <span class="required">Required</span></label><select id="snapshot-work-type" name="workType" required><option value="">Choose one</option>${selectOptions(WORK_TYPES, draft.workType)}</select></div>
           <div class="field"><label for="snapshot-stage">Where is the work now?</label><select id="snapshot-stage" name="stage">${selectOptions(STAGES, draft.stage)}</select></div>
@@ -337,6 +380,7 @@ function snapshotFromDraft(draft) {
   if (draft.githubUrl) otherEvidence.push({ id: 'github-history', label: 'GitHub repository', url: draft.githubUrl, summary: 'Repository link supplied by the creator.' });
   if (draft.artifactUrl) otherEvidence.push({ id: 'current-work', label: 'Current or finished work', url: draft.artifactUrl });
   return createSnapshot({
+    projectId: draft.projectId,
     projectName: draft.projectName,
     workType: draft.workType,
     stage: draft.stage,
@@ -357,7 +401,10 @@ function snapshotFromDraft(draft) {
 }
 
 function findPreviousComparable(history, snapshot) {
-  return [...history.snapshots].reverse().find((item) => item.id !== snapshot.id && isComparableSnapshot(item, snapshot)) || null;
+  const currentTime = snapshotTime(snapshot);
+  return chronologicalSnapshots(history.snapshots)
+    .filter((item) => item.id !== snapshot.id && snapshotTime(item) <= currentTime && isComparableSnapshot(item, snapshot))
+    .at(-1) || null;
 }
 
 function listText(value, key = '') {
@@ -377,7 +424,7 @@ function snapshotCreditsSequence(snapshot, duplicate = false) {
     <div class="credits-entry"><p>Human work</p><strong>Human</strong><span>${escapeHTML(snapshot.humanRoles.join('; ') || 'Unknown')}</span></div>
     <div class="credits-entry"><p>AI work</p><strong>${escapeHTML(systems)}</strong><span>${escapeHTML(snapshot.aiRoles.join('; ') || 'Unknown')}</span></div>
     <div class="credits-entry"><p>Authorization</p><strong>Human decision</strong><span>${escapeHTML(snapshot.finalAuthority || 'Unknown')}</span></div>
-    <div class="credits-entry credits-evidence"><p>Basis for the findings</p><strong>${coverage.shownInRecords} shown in records · ${coverage.confirmedByCreator} confirmed by the creator · ${coverage.unknown} unknown</strong></div>
+    <div class="credits-entry credits-evidence"><p>Basis for the findings</p><strong>${coverage.shownInRecords} record${coverage.shownInRecords === 1 ? '' : 's'} provided · ${coverage.confirmedByCreator} confirmed by the creator · ${coverage.unknown} unknown</strong></div>
     <p class="credits-end">End of snapshot</p>
   </div>`;
 }
@@ -406,7 +453,7 @@ function slug(value) {
   return String(value || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'snapshot';
 }
 
-function renderSnapshotResult(main, snapshot, history, showToast) {
+function renderSnapshotResult(main, snapshot, history, showToast, onCreateWorkRecord, knownProjects) {
   const previous = findPreviousComparable(history, snapshot);
   const comparison = compareSnapshots(previous, snapshot);
   const coverage = evidenceCoverage(snapshot);
@@ -423,14 +470,14 @@ function renderSnapshotResult(main, snapshot, history, showToast) {
         <div class="credits-viewport"><div class="credits-track">${snapshotCreditsSequence(snapshot)}${snapshotCreditsSequence(snapshot, true)}</div></div>
       </aside>
       <section class="record-panel" aria-labelledby="snapshot-summary-heading"><h2 id="snapshot-summary-heading">What this snapshot shows</h2>
-        <dl class="record-facts"><div><dt>Project</dt><dd>${escapeHTML(snapshot.projectName)}</dd></div><div><dt>Work type</dt><dd>${escapeHTML(WORK_TYPE_LABELS[snapshot.workType] || snapshot.workType)}</dd></div><div><dt>Saved</dt><dd>${escapeHTML(new Date(snapshot.createdAt).toLocaleString())}</dd></div><div><dt>Basis provided</dt><dd>${coverage.coveredFindings} of ${coverage.totalFindings} findings</dd></div><div><dt>Shown in records</dt><dd>${coverage.shownInRecords}</dd></div><div><dt>Confirmed by creator</dt><dd>${coverage.confirmedByCreator}</dd></div><div><dt>Unknown</dt><dd>${coverage.unknown}</dd></div></dl>
+        <dl class="record-facts"><div><dt>Project</dt><dd>${escapeHTML(snapshot.projectName)}</dd></div><div><dt>Work type</dt><dd>${escapeHTML(WORK_TYPE_LABELS[snapshot.workType] || snapshot.workType)}</dd></div><div><dt>Saved</dt><dd>${escapeHTML(new Date(snapshot.createdAt).toLocaleString())}</dd></div><div><dt>Basis provided</dt><dd>${coverage.coveredFindings} of ${coverage.totalFindings} findings</dd></div><div><dt>Records provided</dt><dd>${coverage.shownInRecords}</dd></div><div><dt>Confirmed by creator</dt><dd>${coverage.confirmedByCreator}</dd></div><div><dt>Unknown</dt><dd>${coverage.unknown}</dd></div></dl>
         <p class="helper-text"><strong>These counts are not an authorship or trust score.</strong> They separate what supplied records show, what the creator confirmed, and what remains unknown.</p>
       </section>
     </div>
     ${comparison.comparable && comparison.changes.length ? `<section class="section-inline" aria-labelledby="snapshot-changes-heading"><p class="kicker">Compared with ${escapeHTML(new Date(previous.createdAt).toLocaleDateString())}</p><h2 id="snapshot-changes-heading">Here is what moved.</h2>${changeTable(comparison)}<form id="snapshot-intent-form" class="intent-form"><fieldset class="fieldset"><legend>Was this change intentional?</legend><div class="choice-list choice-list-inline">${radioOptions('intent', [['intentional', 'Yes'], ['not-intentional', 'No'], ['unsure', 'Not sure']], snapshot.intent)}</div></fieldset><button class="button button-secondary" type="submit">Save this answer</button></form><div class="callout"><p><strong>Does the current arrangement still fit what matters in this work and what you can personally judge?</strong></p><p>If the answer is unclear, use the optional Load Test for a closer look at capacity, workflow, and consequences.</p><a href="#/load-test">Run a Load Test</a></div></section>` : ''}
     <section class="section-inline" aria-labelledby="snapshot-findings-heading"><h2 id="snapshot-findings-heading">Findings and their basis</h2><ul class="finding-list">${snapshot.findings.map((finding) => `<li><div><strong>${escapeHTML(finding.topic)}</strong><p>${escapeHTML(finding.summary)}</p></div><span class="status-pill status-${escapeHTML(finding.status)}">${escapeHTML(FINDING_LABELS[finding.status])}</span></li>`).join('')}</ul></section>
     <section class="section-inline disclosure-box"><h2>Short disclosure</h2><p id="snapshot-disclosure">${escapeHTML(shortDisclosure(snapshot))}</p></section>
-    <div class="button-row no-print"><button class="button" type="button" id="download-snapshot">Download snapshot</button><button class="button button-secondary" type="button" id="copy-snapshot-disclosure">Copy disclosure</button><button class="button button-secondary" type="button" id="print-snapshot">Print or save PDF</button><a class="button button-secondary" href="#/changes">View my changes</a><button class="text-button" type="button" id="new-snapshot">Start another snapshot</button></div>
+    <div class="button-row no-print"><button class="button" type="button" id="create-detailed-work-record">Create Detailed Work Record</button><button class="button button-secondary" type="button" id="download-snapshot">Download snapshot</button><button class="button button-secondary" type="button" id="copy-snapshot-disclosure">Copy disclosure</button><button class="button button-secondary" type="button" id="print-snapshot">Print or save PDF</button><a class="button button-secondary" href="#/changes">View my changes</a><button class="text-button" type="button" id="new-snapshot">Start another snapshot</button></div>
     <section class="section-inline feedback-prompt no-print" aria-labelledby="snapshot-feedback-heading"><p class="kicker">Help test the preview</p><h2 id="snapshot-feedback-heading">Did this bring the work into focus?</h2><p>Tell me what became clearer, where you got stuck, and whether you would return for another Snapshot.</p><a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share Snapshot feedback <span class="new-tab-note">(opens in a new tab)</span></a></section>
   </div>`;
 
@@ -449,10 +496,14 @@ function renderSnapshotResult(main, snapshot, history, showToast) {
     }
   });
   document.querySelector('#print-snapshot')?.addEventListener('click', () => window.print());
+  document.querySelector('#create-detailed-work-record')?.addEventListener('click', () => {
+    if (typeof onCreateWorkRecord !== 'function' || onCreateWorkRecord(snapshot) === false) return;
+    location.hash = '#/detailed-record';
+  });
   document.querySelector('#new-snapshot')?.addEventListener('click', () => {
     localStorage.removeItem(DRAFT_KEY);
     location.hash = '#/snapshot';
-    renderSnapshotPage(main, { showToast });
+    renderSnapshotPage(main, { showToast, onCreateWorkRecord, knownProjects });
   });
   document.querySelector('#snapshot-intent-form')?.addEventListener('submit', (event) => {
     event.preventDefault();
@@ -464,13 +515,13 @@ function renderSnapshotResult(main, snapshot, history, showToast) {
   });
 }
 
-export function renderSnapshotPage(main, { showToast = () => {} } = {}) {
+export function renderSnapshotPage(main, { showToast = () => {}, onCreateWorkRecord, knownProjects = [] } = {}) {
   document.title = 'New Snapshot | evAIdence';
   let draft = loadDraft();
   const history = loadHistory();
   if (draft.step === 3 && draft.savedSnapshotId) {
     const snapshot = history.snapshots.find(({ id }) => id === draft.savedSnapshotId);
-    if (snapshot) return renderSnapshotResult(main, snapshot, history, showToast);
+    if (snapshot) return renderSnapshotResult(main, snapshot, history, showToast, onCreateWorkRecord, knownProjects);
   }
   const showFormError = (form, message) => {
     document.querySelector('.snapshot-form-error')?.remove();
@@ -487,7 +538,7 @@ export function renderSnapshotPage(main, { showToast = () => {} } = {}) {
     document.querySelector('#snapshot-back')?.addEventListener('click', () => {
       draft.step = 1;
       saveDraft(draft);
-      renderSnapshotPage(main, { showToast });
+      renderSnapshotPage(main, { showToast, onCreateWorkRecord, knownProjects });
     });
     document.querySelector('#snapshot-confirm-form')?.addEventListener('submit', (event) => {
       event.preventDefault();
@@ -509,12 +560,52 @@ export function renderSnapshotPage(main, { showToast = () => {} } = {}) {
       }
       draft = { ...draft, step: 3, savedSnapshotId: snapshot.id };
       saveDraft(draft);
-      renderSnapshotResult(main, snapshot, updatedHistory, showToast);
+      renderSnapshotResult(main, snapshot, updatedHistory, showToast, onCreateWorkRecord, knownProjects);
       main.focus();
     });
   };
 
   const bindStepOne = () => {
+    const projectsById = new Map(availableProjects(history, knownProjects).map((project) => [project.projectId, project]));
+    document.querySelector('#snapshot-project-choice')?.addEventListener('change', (event) => {
+      const projectId = String(event.currentTarget.value || '');
+      const previousProjectId = draft.projectMode === 'existing' ? draft.projectId : '';
+      if (projectId === previousProjectId) return;
+      const currentForm = event.currentTarget.form;
+      const currentValues = new FormData(currentForm);
+      const hasEnteredInformation = Boolean(
+        ['projectName', 'workType', 'artifactUrl', 'aiSystemsText', 'conversationUrl', 'conversationText', 'sourceText', 'githubUrl', 'otherEvidenceText']
+          .some((name) => String(currentValues.get(name) || '').trim()) ||
+        currentForm.elements.conversationFile.files?.length || currentForm.elements.sourceFiles.files?.length ||
+        draft.chatReference || draft.sourceReferences.length || draft.otherEvidence.length,
+      );
+      if (hasEnteredInformation && !window.confirm('Change projects and clear the information entered on this page? This prevents records from one project being saved under another project.')) {
+        event.currentTarget.value = previousProjectId;
+        return;
+      }
+      if (!projectId) {
+        draft = makeDraft();
+        saveDraft(draft);
+        renderSnapshotPage(main, { showToast, onCreateWorkRecord, knownProjects });
+        showToast('New project selected.');
+        window.requestAnimationFrame(() => document.querySelector('#snapshot-project-choice')?.focus());
+        return;
+      }
+      const project = projectsById.get(projectId);
+      if (!project) return;
+      draft = {
+        ...makeDraft(),
+        projectMode: 'existing',
+        projectId,
+        projectName: project.projectName,
+        workType: project.workType,
+        stage: project.stage,
+      };
+      saveDraft(draft);
+      renderSnapshotPage(main, { showToast, onCreateWorkRecord, knownProjects });
+      showToast('Project selected. Review the current details before saving this snapshot.');
+      window.requestAnimationFrame(() => document.querySelector('#snapshot-project-name')?.focus());
+    });
     document.querySelector('#snapshot-records-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
       const form = event.currentTarget;
@@ -528,11 +619,20 @@ export function renderSnapshotPage(main, { showToast = () => {} } = {}) {
         return;
       }
       try {
+        const selectedProjectId = String(formData.get('projectChoice') || '');
+        if (selectedProjectId && !projectsById.has(selectedProjectId)) {
+          showFormError(form, 'Choose a saved project again or start a new project.');
+          return;
+        }
+        const projectMode = selectedProjectId ? 'existing' : 'new';
+        const projectId = selectedProjectId || (draft.projectMode === 'new' && draft.projectId ? draft.projectId : createProjectId());
         const chatReference = await buildChatReference(form);
         const sourceFiles = await buildFileReferences(form.elements.sourceFiles.files, 'source-file', 'Source file');
         draft = {
           ...draft,
           step: 2,
+          projectMode,
+          projectId,
           projectName,
           workType,
           stage: String(formData.get('stage') || 'build'),
@@ -563,34 +663,52 @@ export function renderSnapshotPage(main, { showToast = () => {} } = {}) {
     renderSnapshotStepTwo(main, draft);
     bindStepTwo();
   } else {
-    renderSnapshotStepOne(main, draft);
+    renderSnapshotStepOne(main, draft, history, knownProjects);
     bindStepOne();
   }
 }
 
-function latestComparablePair(history) {
-  const current = history.snapshots.at(-1);
+function latestComparablePair(history, projectId = '') {
+  const candidates = chronologicalSnapshots(projectId
+    ? history.snapshots.filter((snapshot) => snapshot.projectId === projectId)
+    : history.snapshots);
+  const current = candidates.at(-1);
   if (!current) return { previous: null, current: null };
   const previous = findPreviousComparable(history, current);
   return { previous, current };
 }
 
-export function renderChangesPage(main, { showToast = () => {} } = {}) {
+export function renderChangesPage(main, { showToast = () => {}, selectedProjectId = '' } = {}) {
   document.title = 'My Changes | evAIdence';
   const history = loadHistory();
   if (!history.snapshots.length) {
-    main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">My changes</p><h1>Your first snapshot becomes the baseline.</h1><p>No snapshots are stored in this browser yet.</p></header><a class="button" href="#/snapshot">Create your first snapshot</a></div>`;
+    main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">My changes</p><h1>Each project starts with its own baseline.</h1><p>No snapshots are stored in this browser yet.</p></header><a class="button" href="#/snapshot">Create your first snapshot</a></div>`;
     return;
   }
-  const { previous, current } = latestComparablePair(history);
+  const projects = savedProjects(history);
+  const activeProjectId = projects.some(({ projectId }) => projectId === selectedProjectId)
+    ? selectedProjectId
+    : history.snapshots.at(-1).projectId;
+  const { previous, current } = latestComparablePair(history, activeProjectId);
+  const projectSnapshots = chronologicalSnapshots(history.snapshots.filter((snapshot) => snapshot.projectId === activeProjectId));
   const comparison = compareSnapshots(previous, current);
+  const projectName = current.projectName || 'this project';
+  const headline = comparison.baseline
+    ? `The baseline for ${projectName} is saved.`
+    : comparison.comparable && comparison.changes.length
+      ? `${comparison.changes.length} tracked change${comparison.changes.length === 1 ? '' : 's'} for ${projectName}.`
+      : comparison.reason;
   main.innerHTML = `<div class="page changes-page">
-    <header class="page-header"><p class="eyebrow">Private change view</p><h1>${comparison.baseline ? 'Your baseline is saved.' : comparison.comparable && comparison.changes.length ? `${comparison.changes.length} tracked change${comparison.changes.length === 1 ? '' : 's'} in the latest comparable work.` : escapeHTML(comparison.reason)}</h1><p>This history stays in this browser unless you export it. A public Work Record for one project does not include this complete timeline.</p></header>
+    <header class="page-header"><p class="eyebrow">Private change view</p><h1>${escapeHTML(headline)}</h1><p>This history stays in this browser unless you export it. A public Work Record for one project does not include this complete timeline.</p><div class="field"><label for="changes-project-choice">Project to compare</label><select id="changes-project-choice">${projects.map((project) => `<option value="${escapeHTML(project.projectId)}"${project.projectId === activeProjectId ? ' selected' : ''}>${escapeHTML(projectChoiceLabel(project))}</option>`).join('')}</select></div></header>
     ${changeTable(comparison)}
-    <section class="section-inline" aria-labelledby="snapshot-history-heading"><h2 id="snapshot-history-heading">Saved snapshots</h2><div class="snapshot-history-list">${[...history.snapshots].reverse().map((snapshot) => { const coverage = evidenceCoverage(snapshot); return `<article class="card"><p class="kicker">${snapshot.id === history.baselineId ? 'Baseline' : escapeHTML(new Date(snapshot.createdAt).toLocaleDateString())}</p><h3>${escapeHTML(snapshot.projectName || 'Unnamed work')}</h3><p>${escapeHTML(WORK_TYPE_LABELS[snapshot.workType] || snapshot.workType || 'Work type not recorded')} · ${escapeHTML(STAGE_LABELS[snapshot.stage] || snapshot.stage || 'Stage unknown')}</p><dl class="mini-facts"><div><dt>AI setup</dt><dd>${escapeHTML(AI_SETUP_LABELS[snapshot.aiSetup] || 'Unknown')}</dd></div><div><dt>Basis provided</dt><dd>${coverage.coveredFindings} of ${coverage.totalFindings} findings</dd></div><div><dt>Unknown</dt><dd>${coverage.unknown}</dd></div></dl></article>`; }).join('')}</div></section>
+    <section class="section-inline" aria-labelledby="snapshot-history-heading"><h2 id="snapshot-history-heading">Snapshots for ${escapeHTML(projectName)}</h2><div class="snapshot-history-list">${[...projectSnapshots].reverse().map((snapshot) => { const coverage = evidenceCoverage(snapshot); return `<article class="card"><p class="kicker">${isProjectBaseline(history, snapshot) ? 'Baseline' : escapeHTML(new Date(snapshot.createdAt).toLocaleDateString())}</p><h3>${escapeHTML(snapshot.projectName || 'Unnamed work')}</h3><p>${escapeHTML(WORK_TYPE_LABELS[snapshot.workType] || snapshot.workType || 'Work type not recorded')} · ${escapeHTML(STAGE_LABELS[snapshot.stage] || snapshot.stage || 'Stage unknown')}</p><dl class="mini-facts"><div><dt>AI setup</dt><dd>${escapeHTML(AI_SETUP_LABELS[snapshot.aiSetup] || 'Unknown')}</dd></div><div><dt>Basis provided</dt><dd>${coverage.coveredFindings} of ${coverage.totalFindings} findings</dd></div><div><dt>Unknown</dt><dd>${coverage.unknown}</dd></div></dl></article>`; }).join('')}</div></section>
     <div class="button-row"><a class="button" href="#/snapshot">Create another snapshot</a><button class="button button-secondary" id="export-snapshot-history" type="button">Export private history</button><button class="button button-secondary" id="import-snapshot-history-trigger" type="button">Import history</button><input id="import-snapshot-history" type="file" accept="application/json" hidden /><button class="text-button danger-link" id="clear-snapshot-history" type="button">Erase this browser history</button></div>
     ${comparison.comparable ? `<section class="section-inline feedback-prompt" aria-labelledby="changes-feedback-heading"><p class="kicker">Help test the preview</p><h2 id="changes-feedback-heading">Did this comparison show you something useful?</h2><p>Tell me what became clearer and what still needs work.</p><a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share comparison feedback <span class="new-tab-note">(opens in a new tab)</span></a></section>` : ''}
   </div>`;
+  document.querySelector('#changes-project-choice')?.addEventListener('change', (event) => {
+    renderChangesPage(main, { showToast, selectedProjectId: String(event.currentTarget.value || '') });
+    main.focus();
+  });
   document.querySelector('#export-snapshot-history')?.addEventListener('click', () => downloadText('evaidence-private-snapshot-history.json', exportSnapshotHistory(history)));
   document.querySelector('#import-snapshot-history-trigger')?.addEventListener('click', () => document.querySelector('#import-snapshot-history')?.click());
   document.querySelector('#import-snapshot-history')?.addEventListener('change', async (event) => {

@@ -1,5 +1,7 @@
-export const SNAPSHOT_SCHEMA_VERSION = 1;
-export const SNAPSHOT_HISTORY_SCHEMA_VERSION = 1;
+import { canonicalProjectId } from './project-identity.js';
+
+export const SNAPSHOT_SCHEMA_VERSION = 2;
+export const SNAPSHOT_HISTORY_SCHEMA_VERSION = 2;
 
 export const FINDING_STATUS = Object.freeze({
   SHOWN_IN_RECORDS: "shown-in-records",
@@ -8,7 +10,7 @@ export const FINDING_STATUS = Object.freeze({
 });
 
 export const FINDING_LABELS = Object.freeze({
-  [FINDING_STATUS.SHOWN_IN_RECORDS]: "Shown in records",
+  [FINDING_STATUS.SHOWN_IN_RECORDS]: "Record provided",
   [FINDING_STATUS.CONFIRMED_BY_CREATOR]: "Confirmed by creator",
   [FINDING_STATUS.UNKNOWN]: "Unknown",
 });
@@ -77,6 +79,28 @@ function safeToken(value, prefix = "snapshot") {
   return token.slice(0, 128);
 }
 
+function stableHash(value) {
+  let hash = 2166136261;
+  for (const character of String(value || "")) {
+    hash ^= character.codePointAt(0);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+function legacyProjectId(source = {}) {
+  const projectName = cleanText(source.projectName).toLocaleLowerCase();
+  if (projectName) {
+    const readable = projectName
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 72) || "named-work";
+    return safeToken(`project-${readable}-${stableHash(projectName)}`, "project");
+  }
+  const snapshotId = cleanText(source.id, 128);
+  return snapshotId ? safeToken(`project-legacy-${stableHash(snapshotId)}`, "project") : "";
+}
+
 function makeIdFactory(options = {}) {
   let sequence = 0;
   const used = new Set();
@@ -102,6 +126,10 @@ function makeIdFactory(options = {}) {
     used.add(candidate);
     return candidate;
   };
+}
+
+export function createProjectId(options = {}) {
+  return makeIdFactory(options)("project", options.id);
 }
 
 function safeUrl(value) {
@@ -224,6 +252,7 @@ function normalizeFindingStatus(value) {
   const normalized = cleanText(value).toLocaleLowerCase();
   const aliases = {
     "shown in records": FINDING_STATUS.SHOWN_IN_RECORDS,
+    "record provided": FINDING_STATUS.SHOWN_IN_RECORDS,
     "shown-in-records": FINDING_STATUS.SHOWN_IN_RECORDS,
     documented: FINDING_STATUS.SHOWN_IN_RECORDS,
     "confirmed by creator": FINDING_STATUS.CONFIRMED_BY_CREATOR,
@@ -303,6 +332,7 @@ export function normalizeSnapshot(input = {}, options = {}) {
     schemaVersion: SNAPSHOT_SCHEMA_VERSION,
     sourceSchemaVersion: Number.isInteger(source.schemaVersion) ? source.schemaVersion : 0,
     id: makeId("snapshot", preferredId),
+    projectId: canonicalProjectId(source.projectId) || legacyProjectId(source) || makeId("project"),
     createdAt: validDate(source.createdAt, now),
     projectName: cleanText(source.projectName),
     workType: cleanText(source.workType),
@@ -332,24 +362,15 @@ function comparisonText(value) {
 }
 
 /**
- * Snapshots are comparable when they represent the same named project, or
- * when they represent the same type of work at the same stage. A missing stage
- * is treated as unknown rather than as a mismatch.
+ * Snapshots are comparable only when they carry the same stable project
+ * identity. The project name and stage may change without breaking the
+ * timeline.
  */
 export function isComparableSnapshot(a, b) {
   if (!a || !b) return false;
   const left = normalizeSnapshot(a);
   const right = normalizeSnapshot(b);
-  const sameNamedProject = comparisonText(left.projectName)
-    && comparisonText(left.projectName) === comparisonText(right.projectName);
-  if (sameNamedProject) return true;
-
-  const sameWorkType = comparisonText(left.workType)
-    && comparisonText(left.workType) === comparisonText(right.workType);
-  if (!sameWorkType) return false;
-  const leftStage = comparisonText(left.stage);
-  const rightStage = comparisonText(right.stage);
-  return leftStage === rightStage || leftStage === "unknown" || rightStage === "unknown";
+  return Boolean(left.projectId && left.projectId === right.projectId);
 }
 
 export function evidenceCoverage(snapshot) {
@@ -428,7 +449,7 @@ export function compareSnapshots(previous, current) {
     return {
       baseline: true,
       comparable: false,
-      reason: "This is the first snapshot. It is the baseline for future comparisons.",
+      reason: "This is the first snapshot for this project. It is the baseline for future comparisons.",
       previousId: null,
       currentId: after.id,
       changes: [],
@@ -444,7 +465,7 @@ export function compareSnapshots(previous, current) {
     return {
       baseline: false,
       comparable: false,
-      reason: "These snapshots describe different kinds or stages of work, so a direct comparison could mislead.",
+      reason: "These snapshots belong to different projects, so a direct comparison could mislead.",
       previousId: before.id,
       currentId: after.id,
       changes: [],
@@ -566,6 +587,16 @@ export function appendSnapshot(history, snapshot, options = {}) {
   normalizedHistory.snapshots.push(normalized);
   if (!normalizedHistory.baselineId) normalizedHistory.baselineId = normalized.id;
   return normalizedHistory;
+}
+
+export function isProjectBaseline(history, snapshot, options = {}) {
+  if (!snapshot) return false;
+  const normalizedHistory = normalizeHistory(history, options);
+  const target = normalizeSnapshot(snapshot, options);
+  const firstForProject = normalizedHistory.snapshots
+    .filter(({ projectId }) => projectId === target.projectId)
+    .sort((left, right) => Date.parse(left.createdAt) - Date.parse(right.createdAt))[0];
+  return Boolean(firstForProject && firstForProject.id === target.id);
 }
 
 export function exportSnapshotHistory(history, options = {}) {
