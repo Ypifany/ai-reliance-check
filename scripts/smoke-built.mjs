@@ -8,6 +8,10 @@ import { getAssessmentScopeKey } from '../src/questions.js';
 const assets = path.resolve('dist/assets');
 const appSource = fs.readFileSync(path.resolve('src/app.js'), 'utf8');
 const snapshotUiSource = fs.readFileSync(path.resolve('src/snapshot-ui.js'), 'utf8');
+const indexSource = fs.readFileSync(path.resolve('index.html'), 'utf8');
+assert.match(indexSource, /<nav id="site-nav"[^>]*>[\s\S]*href="#\/pricing">Pricing<\/a>/, 'Pricing must appear in the primary navigation');
+assert.match(indexSource, /Founding Preview v0\.5\. Free access for now\./, 'The top notice must state that access is currently free');
+assert.match(indexSource, /No payment is required to use this version\./, 'The free-access notice must explain what free means');
 assert.doesNotMatch(appSource, /href=["']#raise-score["']/, 'The score-actions control must not replace the hash route');
 assert.doesNotMatch(
   appSource,
