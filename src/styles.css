@@ -322,6 +322,11 @@ main [role="alert"] {
   font-size: clamp(2.75rem, 5.3vw, 4.7rem);
 }
 
+.hero-copy h1.credibility-headline {
+  max-width: 18ch;
+  font-size: clamp(2.55rem, 4.7vw, 4.25rem);
+}
+
 .hero-copy h1 span {
   display: block;
   color: var(--teal);
@@ -1029,6 +1034,47 @@ button.button {
   gap: 3rem;
   align-items: start;
   margin-bottom: 3rem;
+}
+
+.founder-section {
+  padding-block: clamp(2.5rem, 6vw, 5rem);
+}
+
+.founder-card {
+  display: grid;
+  grid-template-columns: minmax(190px, 300px) minmax(0, 1fr);
+  gap: clamp(2rem, 5vw, 4.5rem);
+  align-items: center;
+  padding: clamp(1.5rem, 4vw, 3rem);
+  border: 1px solid var(--border-dark);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.founder-portrait-frame {
+  width: min(100%, 300px);
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: 1px solid var(--amber);
+  border-radius: 50%;
+  background: #fff;
+}
+
+.founder-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.founder-copy h2 {
+  max-width: 18ch;
+}
+
+.founder-copy > p:not(.kicker) {
+  max-width: 760px;
+  color: var(--muted);
+  font-size: clamp(1.05rem, 2vw, 1.22rem);
 }
 
 .grid-2,
@@ -2568,6 +2614,78 @@ fieldset[aria-invalid="true"] {
   margin-bottom: 1.5rem;
 }
 
+.retained-records,
+.selected-file-list {
+  margin-top: 0.7rem;
+}
+
+.retained-records ul,
+.selected-file-list {
+  margin-bottom: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.retained-records li,
+.selected-file-list li {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.6rem 0;
+  border-bottom: 1px solid var(--border);
+  overflow-wrap: anywhere;
+}
+
+.retained-records li > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.selected-file-list span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.retained-records .text-button {
+  flex: 0 0 auto;
+}
+
+.record-review-groups {
+  margin: 1rem 0;
+}
+
+.record-review-groups details {
+  padding: 0.7rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.record-review-groups summary {
+  cursor: pointer;
+  font-weight: 750;
+}
+
+.record-review-groups ul {
+  margin-bottom: 0;
+  padding-left: 1.2rem;
+}
+
+.record-review-groups li {
+  margin: 0.55rem 0;
+  overflow-wrap: anywhere;
+}
+
+.record-review-groups li > span,
+.record-review-groups li > small {
+  display: block;
+}
+
+.record-review-groups li > small {
+  margin-top: 0.15rem;
+  color: var(--muted);
+}
+
 .snapshot-inventory {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2675,9 +2793,64 @@ fieldset[aria-invalid="true"] {
   color: var(--brick);
 }
 
+.change-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  background: white;
+}
+
 .change-table td,
 .change-table th {
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--border);
+  overflow-wrap: anywhere;
+  text-align: left;
   vertical-align: top;
+}
+
+.change-table thead th {
+  background: var(--ink);
+  color: #fffaf0;
+  font-family: var(--mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.change-table tbody th {
+  width: 24%;
+  background: var(--paper-deep);
+}
+
+.change-table td {
+  width: 38%;
+}
+
+.change-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.58);
+}
+
+.table-scroll-cue {
+  display: none;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.receipt-created-by {
+  margin: 0.75rem 0;
+  font-size: 1.05rem;
+}
+
+.receipt-created-by span,
+.receipt-meta {
+  color: var(--muted);
+}
+
+.receipt-meta {
+  margin-bottom: 0;
+  font-family: var(--mono);
+  font-size: 0.76rem;
 }
 
 .disclosure-box {
@@ -2881,6 +3054,7 @@ fieldset[aria-invalid="true"] {
 @media (max-width: 900px) {
   .hero,
   .section-heading,
+  .founder-card,
   .missing-middle-grid,
   .sample-result,
   .assessment-shell,
@@ -2891,6 +3065,10 @@ fieldset[aria-invalid="true"] {
 
   .hero {
     min-height: auto;
+  }
+
+  .founder-portrait-frame {
+    width: min(58vw, 240px);
   }
 
   .hero .sample-card,
@@ -3026,6 +3204,11 @@ fieldset[aria-invalid="true"] {
 
   .hero {
     padding-block: 3.5rem;
+  }
+
+  .hero-copy h1.credibility-headline {
+    max-width: none;
+    font-size: clamp(2.4rem, 11.5vw, 3.6rem);
   }
 
   .kitchen-figure img {
@@ -3209,6 +3392,10 @@ fieldset[aria-invalid="true"] {
 }
 
 @media (max-width: 680px) {
+  .table-scroll-cue {
+    display: block;
+  }
+
   .change-demo-heading {
     display: none;
   }

@@ -1,8 +1,8 @@
 # evAIdence
 
-**See how your work with AI changes.**
+**AI can help with the work. It should not cost you your credibility.**
 
-evAIdence is a browser-based prototype from Ypifany. It turns records that already exist, such as an AI conversation, source material, and version history, into a snapshot of what the person did, what AI did, and what remains unknown. A later snapshot shows what changed.
+evAIdence is a browser-based prototype from Ypifany. It combines the creator’s account of the work with records that already exist, such as AI conversations, source material, current work, and version history. The result is a dated Work Receipt that shows what the person did, what AI did, which records were provided, and what remains unknown. A later Work Receipt shows what changed.
 
 The name is pronounced “evidence.” AI appears inside the word because AI is part of the work, not the whole work.
 
@@ -10,20 +10,22 @@ The name is pronounced “evidence.” AI appears inside the word because AI is 
 
 The main path is intentionally short:
 
-1. **Add your records.** Name the work and AI tools, describe what AI already had, and add the relevant conversation, source material, finished work, or public GitHub repository that you have.
-2. **Check the picture.** Confirm when AI entered, what AI materially did, and what you materially did.
-3. **Save the snapshot.** The first snapshot for each project becomes its baseline. Later snapshots for that project show which parts of the working relationship moved.
+1. **Name the work and describe the setup.** Identify the creator and AI tools, what AI already had, what you added during the project, the highest access or action level AI had, and when your approval was required.
+2. **Add the records you have.** Add multiple conversation links or exports, source links or files, the current work, repository or version history, and other useful records. The review separates your account of the work from the records you actually provided.
+3. **Check the picture and save the Work Receipt.** Confirm when AI entered, what AI materially did, and what you materially did. The receipt presents human-first work credits and gives you controls to edit the information or add records without creating a duplicate receipt.
+
+The first Work Receipt for each project becomes its baseline. Later comparable receipts for that project show which parts of the working relationship moved.
 
 The change view is descriptive. It does not treat more AI as automatically bad, call a person dependent, or produce a human-versus-AI percentage. It asks whether the change was intentional and leaves the decision with the person.
 
 ## Connected tools
 
-- **Snapshot:** Creates a short record of one human and AI arrangement.
-- **My Changes:** Compares the latest snapshot with earlier comparable work and preserves a private timeline in the current browser.
+- **Work Receipt:** Creates a dated, human-first record of one human and AI arrangement. The application stores this internally as a Snapshot.
+- **My Changes:** Compares the latest Work Receipt with earlier comparable work and preserves a private timeline in the current browser.
 - **Detailed Work Record:** Preserves the earlier six-step tool for detailed credits, claims, selected evidence, review, and a specific work version.
 - **Load Test:** Remains an optional deeper check when an AI role, access level, consequence, or change deserves closer examination.
 
-**Before You Ship** is planned as a separate, focused companion for nondevelopers releasing software made with AI. It can share the evAIdence snapshot and comparison foundation without adding software due-diligence questions to the simpler evAIdence path.
+**Before You Ship** is planned as a separate, focused companion for nondevelopers releasing software made with AI. It can share the evAIdence receipt and comparison foundation without adding software due-diligence questions to the simpler evAIdence path.
 
 ## Current status
 
@@ -32,17 +34,22 @@ This repository contains the v0.5 Founding Preview. It is a transparent, practic
 The prototype:
 
 - Runs entirely in the browser
-- Stores snapshots and drafts locally on the device
+- Stores Work Receipts and drafts locally on the device
 - Saves references, short summaries, and file fingerprints instead of raw pasted conversations or uploaded file contents
 - Labels findings as **Record provided**, **Confirmed by creator**, or **Unknown**
-- Gives each project a stable identity, so its snapshots remain comparable after a rename
-- Starts a Detailed Work Record from a Snapshot without overwriting a different saved record unless the person confirms it
-- Exports and imports private snapshot history as JSON
+- Separates creator statements about the working arrangement from records that were actually provided
+- Accepts multiple AI conversation records and multiple source files
+- Records starting context, context added during the work, AI access or action level, connected tools, and the approval boundary as separate fields
+- Presents the creator first in concise work credits, followed by the recorded AI assistance
+- Lets the person edit receipt information or add and remove records while preserving the same receipt identity
+- Gives each project a stable identity, so its Work Receipts remain comparable after a rename
+- Starts a Detailed Work Record from a Work Receipt without overwriting a different saved record unless the person confirms it
+- Exports and imports private Work Receipt history as JSON
 - Keeps the detailed Work Record and Load Test available
 - Supports public, private, and redacted evidence in the detailed Work Record
 - Produces a privacy-safe public HTML record and private JSON backup from the detailed Work Record
 
-A supplied link is recorded as a reference. The browser prototype does not inspect the linked conversation, repository, or finished work. A fingerprint can show that the same file or pasted text was supplied again, but it does not prove authorship or establish when the source was created. Link access and content review are planned for a later connected version, not this browser preview.
+A supplied link is recorded as a reference. The browser prototype does not inspect the linked conversation, repository, or finished work. A fingerprint can show that the same file or pasted text was supplied again, but it does not prove authorship or establish when the source was created. Link access, permission-aware retrieval, and content review are planned for a later connected version, not this browser preview.
 
 Browser storage can be cleared and does not automatically move between devices. Export the private history if it matters. Do not enter confidential, regulated, or sensitive information.
 
@@ -72,7 +79,7 @@ The included GitHub Actions workflow builds and deploys the `dist` directory to 
 
 ## Method summary
 
-evAIdence follows the work instead of guessing from the surface of a finished product. A snapshot records the AI setup, when AI entered, the material roles of the person and AI, the person’s authorization decision, and the basis for each finding. A later snapshot reports movement in those recorded areas without grading the change as good or bad.
+evAIdence follows the work instead of guessing from the surface of a finished product. A Work Receipt records what AI started with, what the person added, what AI could access or do, when approval was required, when AI entered, the material roles of the person and AI, and the basis for each finding. It clearly separates the creator’s account from supplied records. A later Work Receipt reports movement in those recorded areas without grading the change as good or bad.
 
 This is not an AI detector. It does not scan writing style, classify a finished product as human or AI, help someone bypass detection, or assign authorship from a percentage.
 

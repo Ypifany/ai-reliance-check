@@ -33,13 +33,19 @@ function writerSnapshot(overrides = {}) {
     id: "snapshot-january",
     projectId: "project-monthly-essay",
     createdAt: JANUARY,
+    creatorName: "Avery Writer",
     projectName: "Monthly essay",
     workType: "Published writing",
     stage: "release",
     artifactUrl: "https://example.com/essay",
     aiSystems: [{ product: "ChatGPT", model: "6.1 Sol" }],
     aiSetup: "regular-chat",
-    chatReference: { id: "chat-1", label: "Writing conversation", url: "https://example.com/chat" },
+    startingContext: ["nothing-added"],
+    addedContext: ["conversation", "documents"],
+    accessLevel: "chat-only",
+    approvalMode: "no-external-actions",
+    connectedTools: [],
+    chatReferences: [{ id: "chat-1", label: "Writing conversation", url: "https://example.com/chat" }],
     sourceReferences: [{ id: "source-1", label: "Interview notes", version: "January" }],
     githubUrl: "",
     otherEvidence: [],
@@ -86,6 +92,11 @@ test("createSnapshot creates a versioned, deterministic snapshot", () => {
   assert.equal(snapshot.projectName, "Essay");
   assert.equal(snapshot.workType, "Writing");
   assert.equal(snapshot.aiSetup, "unknown");
+  assert.deepEqual(snapshot.startingContext, ["unknown"]);
+  assert.deepEqual(snapshot.addedContext, []);
+  assert.equal(snapshot.accessLevel, "unknown");
+  assert.equal(snapshot.approvalMode, "unknown");
+  assert.deepEqual(snapshot.chatReferences, []);
   assert.equal(snapshot.intent, "not-answered");
   assert.deepEqual(snapshot.findings, []);
 });
@@ -97,18 +108,19 @@ test("normalization keeps summaries and references but discards raw conversation
     chatHistory: [{ role: "user", content: "RAW MESSAGE" }],
     prompt: "RAW PROMPT",
     response: "RAW RESPONSE",
-    chatReference: {
+    chatReferences: [{
       id: "chat-1",
       label: "Development chat",
       url: "https://example.com/chat",
       summary: "The writer set the direction and challenged revisions.",
       content: "RAW CONTENT IN REFERENCE",
       transcript: "RAW TRANSCRIPT IN REFERENCE",
-    },
+    }],
   }, deterministicOptions());
   const serialized = JSON.stringify(snapshot);
 
   assert.equal(snapshot.chatReference.summary, "The writer set the direction and challenged revisions.");
+  assert.equal(snapshot.chatReferences.length, 1);
   assert.equal(Object.hasOwn(snapshot, "conversation"), false);
   assert.equal(Object.hasOwn(snapshot.chatReference, "content"), false);
   assert.doesNotMatch(serialized, /RAW CONVERSATION|RAW MESSAGE|RAW PROMPT|RAW RESPONSE|RAW CONTENT|RAW TRANSCRIPT/);
@@ -125,6 +137,7 @@ test("normalization rejects unsafe links and pasted chat text masquerading as a 
   assert.equal(snapshot.artifactUrl, "");
   assert.equal(snapshot.githubUrl, "");
   assert.equal(snapshot.chatReference, null);
+  assert.deepEqual(snapshot.chatReferences, []);
   assert.equal(snapshot.sourceReferences.length, 1);
   assert.equal(snapshot.sourceReferences[0].label, "notes.pdf");
 });
@@ -141,6 +154,7 @@ test("AI setup aliases and repeated role labels normalize consistently", () => {
   }, deterministicOptions());
 
   assert.equal(snapshot.aiSetup, "custom-ai");
+  assert.deepEqual(snapshot.startingContext, ["custom-ai"]);
   assert.deepEqual(snapshot.aiSystems, [{ product: "ChatGPT", model: "6.1" }]);
   assert.deepEqual(snapshot.aiRoles, ["Drafted language", "Compared alternatives"]);
   assert.equal(snapshot.intent, "intentional");
@@ -166,6 +180,76 @@ test("a finding cannot claim that records show it without a record reference", (
     FINDING_LABELS[FINDING_STATUS.UNKNOWN],
     FINDING_LABELS[FINDING_STATUS.CONFIRMED_BY_CREATOR],
   ]);
+});
+
+test("multiple conversation records survive normalization and can support a finding", () => {
+  const snapshot = normalizeSnapshot({
+    chatReferences: [
+      { id: "chat-one", label: "Planning chat", url: "https://example.com/chat-one" },
+      { id: "chat-two", label: "Revision chat", digest: "sha256:second" },
+    ],
+    findings: [
+      { topic: "Revision decision", status: "record provided", evidenceRefs: ["chat-two"] },
+    ],
+  }, deterministicOptions());
+
+  assert.deepEqual(snapshot.chatReferences.map(({ id }) => id), ["chat-one", "chat-two"]);
+  assert.equal(snapshot.chatReference.id, "chat-one");
+  assert.equal(snapshot.findings[0].status, FINDING_STATUS.SHOWN_IN_RECORDS);
+
+  const roundTrip = importSnapshotHistory(exportSnapshotHistory([snapshot], deterministicOptions()), deterministicOptions());
+  assert.deepEqual(roundTrip.snapshots[0].chatReferences.map(({ label }) => label), ["Planning chat", "Revision chat"]);
+});
+
+test("duplicate imported evidence ids cannot attach a finding to the wrong record", () => {
+  const snapshot = normalizeSnapshot({
+    chatReferences: [
+      { id: "shared-record", label: "Planning conversation" },
+    ],
+    sourceReferences: [
+      { id: "shared-record", label: "Source brief" },
+    ],
+    findings: [
+      { topic: "Origin of the plan", status: "record provided", evidenceRefs: ["shared-record"] },
+    ],
+  }, deterministicOptions());
+
+  assert.notEqual(snapshot.chatReferences[0].id, snapshot.sourceReferences[0].id);
+  assert.equal(snapshot.findings[0].status, FINDING_STATUS.UNKNOWN);
+  assert.equal(snapshot.findings[0].label, FINDING_LABELS[FINDING_STATUS.UNKNOWN]);
+});
+
+test("schema 2 setup answers migrate without inventing precise context or permissions", () => {
+  const imported = importSnapshotHistory({
+    schemaVersion: 2,
+    snapshots: [
+      { id: "broad-context", projectName: "Guide", aiSetup: "context-enabled-chat" },
+      { id: "broad-multiple", projectName: "Application", aiSetup: "multiple" },
+      { id: "legacy-chat", projectName: "Essay", aiSetup: "regular-chat", chatReference: { id: "legacy-chat-one", label: "Old chat" } },
+    ],
+  }, deterministicOptions());
+
+  assert.deepEqual(imported.snapshots[0].startingContext, ["legacy-context-enabled"]);
+  assert.deepEqual(imported.snapshots[1].startingContext, ["legacy-multiple"]);
+  assert.deepEqual(imported.snapshots[2].startingContext, ["nothing-added"]);
+  assert.equal(imported.snapshots[2].chatReferences[0].label, "Old chat");
+  assert.ok(imported.snapshots.every(({ accessLevel, approvalMode }) => accessLevel === "unknown" && approvalMode === "unknown"));
+});
+
+test("structured context removes contradictory exclusive answers", () => {
+  const snapshot = normalizeSnapshot({
+    startingContext: ["nothing-added", "custom-ai", "unknown", "connected-apps-tools"],
+    addedContext: ["nothing-else", "documents", "unknown"],
+    accessLevel: "edit",
+    approvalMode: "standing permission",
+    connectedTools: ["GitHub | read and write", " github | read and write ", "Canva | create"],
+  }, deterministicOptions());
+
+  assert.deepEqual(snapshot.startingContext, ["custom-ai", "connected-apps-tools"]);
+  assert.deepEqual(snapshot.addedContext, ["documents"]);
+  assert.equal(snapshot.accessLevel, "edit-run");
+  assert.equal(snapshot.approvalMode, "standing-permission");
+  assert.deepEqual(snapshot.connectedTools, ["GitHub | read and write", "Canva | create"]);
 });
 
 test("evidenceCoverage reports record, creator, and unknown coverage without a master score", () => {
@@ -223,7 +307,12 @@ test("comparison detects changes in setup, entry point, roles, checking, authori
     createdAt: APRIL,
     aiSystems: [{ product: "ChatGPT", model: "6.2 Pro" }],
     aiSetup: "context-enabled-chat",
-    chatReference: { id: "chat-2", label: "April writing conversation", url: "https://example.com/chat-april" },
+    startingContext: ["custom-ai", "existing-project-workspace"],
+    addedContext: ["conversation", "documents", "links"],
+    connectedTools: ["GitHub | read and write"],
+    accessLevel: "edit-run",
+    approvalMode: "before-external-action",
+    chatReferences: [{ id: "chat-2", label: "April writing conversation", url: "https://example.com/chat-april" }],
     beforeAi: ["Chose a topic"],
     aiRoles: ["Proposed initial ideas", "Wrote the first draft"],
     humanRoles: ["Spot-checked sources", "Approved publication"],
@@ -242,11 +331,14 @@ test("comparison detects changes in setup, entry point, roles, checking, authori
   assert.equal(result.reason, "Something changed.");
   assert.deepEqual(changedKeys, [
     "ai-systems",
-    "ai-setup",
+    "starting-context",
+    "added-context",
+    "connected-tools",
+    "access-level",
+    "approval-mode",
     "ai-entry-point",
     "ai-roles",
     "human-roles-checking",
-    "authorization",
     "evidence-coverage",
   ]);
   assert.equal(result.changes.find(({ key }) => key === "ai-roles").added.includes("Wrote the first draft"), true);
@@ -256,6 +348,28 @@ test("comparison detects changes in setup, entry point, roles, checking, authori
   assert.equal(result.intent, "unsure");
   assert.equal(Object.hasOwn(result, "humanReliance"), false);
   assert.equal(Object.hasOwn(result, "aiPercentage"), false);
+});
+
+test("comparison preserves legacy authorization changes when structured permission answers are unavailable", () => {
+  const previous = writerSnapshot({
+    accessLevel: "unknown",
+    approvalMode: "unknown",
+    finalAuthority: "AI could draft, but the writer approved publication.",
+  });
+  const current = writerSnapshot({
+    id: "snapshot-april",
+    createdAt: APRIL,
+    accessLevel: "unknown",
+    approvalMode: "unknown",
+    finalAuthority: "AI could publish after the writer gave approval.",
+  });
+
+  const result = compareSnapshots(previous, current);
+  const authorization = result.changes.find(({ key }) => key === "recorded-authorization");
+
+  assert.equal(authorization.label, "Recorded authorization details");
+  assert.equal(authorization.before, "AI could draft, but the writer approved publication.");
+  assert.equal(authorization.after, "AI could publish after the writer gave approval.");
 });
 
 test("comparison distinguishes no tracked change from an invalid comparison", () => {
@@ -401,12 +515,12 @@ test("exported history cannot leak discarded raw conversation fields", () => {
     ...writerSnapshot(),
     messages: [{ role: "user", content: "PRIVATE CHAT BODY" }],
     transcript: "PRIVATE TRANSCRIPT",
-    chatReference: {
+    chatReferences: [{
       label: "Chat record",
       url: "https://example.com/chat",
       summary: "Project decisions and revisions.",
       content: "PRIVATE REFERENCE BODY",
-    },
+    }],
   };
   const exported = exportSnapshotHistory([raw], deterministicOptions());
 

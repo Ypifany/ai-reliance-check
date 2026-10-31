@@ -19,13 +19,22 @@ function snapshot(overrides = {}) {
     id: 'snapshot-one',
     projectId: 'project-one',
     createdAt: NOW,
+    creatorName: 'Cheryl Abram',
     projectName: 'Research guide',
     workType: 'writing',
     stage: 'release',
     artifactUrl: 'https://example.com/guide',
     aiSystems: [{ product: 'ChatGPT', model: '6.1 Sol' }],
     aiSetup: 'context-enabled-chat',
-    chatReference: { id: 'chat-one', label: 'Development conversation', url: 'https://example.com/chat' },
+    startingContext: ['saved-instructions-memory', 'existing-project-workspace'],
+    addedContext: ['conversation', 'documents'],
+    accessLevel: 'edit-run',
+    approvalMode: 'before-external-action',
+    connectedTools: ['GitHub | read and write'],
+    chatReferences: [
+      { id: 'chat-one', label: 'Development conversation', url: 'https://example.com/chat' },
+      { id: 'chat-two', label: 'Revision conversation', digest: 'sha256:def' },
+    ],
     sourceReferences: [{ id: 'source-one', label: 'Source notes', digest: 'sha256:abc' }],
     githubUrl: 'https://github.com/example/guide',
     otherEvidence: [
@@ -54,18 +63,45 @@ test('a Snapshot starts a conservative Detailed Work Record for the same project
   assert.equal(record.artifact.url, 'https://example.com/guide');
   assert.equal(record.aiUse, 'yes');
   assert.equal(record.systems[0].product, 'ChatGPT');
-  assert.match(record.systems[0].setup, /saved instructions/i);
+    assert.equal(record.creator.name, 'Cheryl Abram');
+    assert.equal(record.creator.role, 'Creator');
+    assert.match(record.systems[0].setup, /saved instructions/i);
+    assert.match(record.systems[0].setup, /GitHub/i);
   assert.match(record.systems[0].setup, /could not publish/i);
   assert.equal(record.ideaSource, 'The human chose the purpose before AI entered');
   assert.equal(record.humanActions, 'Direct, evaluate, and approve');
   assert.equal(record.aiContributions, 'Organize and revise');
   assert.equal(record.readiness.stage, 'release');
   assert.equal(record.readiness.workCheckId, '');
-  assert.equal(record.creator.name, '');
   assert.deepEqual(record.claims, []);
-  assert.equal(record.evidence.length, 4);
+    assert.equal(record.evidence.length, 5);
   assert.ok(record.evidence.every(({ visibility, integrity, relationship }) => visibility === 'private' && integrity === 'unlinked' && relationship === 'unknown'));
   assert.equal(record.evidence.some(({ url }) => url === 'https://example.com/guide'), false);
+});
+
+test('multiple AI tools do not each inherit the overall access arrangement', () => {
+  const record = workRecordFromSnapshot(snapshot({
+    aiSystems: [
+      { product: 'ChatGPT', model: '6.1 Sol' },
+      { product: 'Claude', model: 'model unknown' },
+    ],
+  }), deterministicOptions());
+
+  assert.equal(record.systems.length, 2);
+  assert.ok(record.systems.every(({ setup }) => /overall arrangement across the listed ai tools/i.test(setup)));
+  assert.ok(record.systems.every(({ setup }) => /per-tool access was not recorded/i.test(setup)));
+});
+
+test('repository evidence uses service-neutral Work Receipt language', () => {
+  const record = workRecordFromSnapshot(snapshot({
+    githubUrl: 'https://example.com/version-history',
+    otherEvidence: [],
+  }), deterministicOptions());
+  const repository = record.evidence.find(({ url }) => url === 'https://example.com/version-history');
+
+  assert.equal(repository.label, 'Repository or version history');
+  assert.match(repository.description, /Work Receipt/);
+  assert.doesNotMatch(repository.description, /Snapshot|GitHub/);
 });
 
 test('adding another Snapshot for the same project preserves Work Record edits', () => {

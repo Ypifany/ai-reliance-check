@@ -7,6 +7,7 @@ import { getAssessmentScopeKey } from '../src/questions.js';
 
 const assets = path.resolve('dist/assets');
 const appSource = fs.readFileSync(path.resolve('src/app.js'), 'utf8');
+const snapshotUiSource = fs.readFileSync(path.resolve('src/snapshot-ui.js'), 'utf8');
 assert.doesNotMatch(appSource, /href=["']#raise-score["']/, 'The score-actions control must not replace the hash route');
 assert.doesNotMatch(
   appSource,
@@ -55,7 +56,33 @@ assert.match(appSource, /Records provided/, 'The public copy must use the approv
 assert.match(appSource, /projectId: makeId\('project'\)/, 'A Load Test must keep a project identity separate from its check identity');
 assert.doesNotMatch(appSource, /creationRecord\.projectId = assessment\.id/, 'A Load Test must not replace the stable project identity');
 assert.match(appSource, /same exact work version/, 'A Snapshot must not silently merge into a Work Record for another version');
+assert.match(appSource, /AI can help with the work\. It should not cost you your credibility\./, 'The homepage must lead with the credibility risk that brings a visitor to evAIdence');
+assert.match(appSource, /A receipt for work made with AI/, 'The homepage must identify the product at first glance');
+assert.match(appSource, /document\.title = 'evAIdence \| Protect your credibility when AI helps'/, 'The loaded homepage title must keep the credibility promise');
+assert.match(appSource, /Created by Cheryl Abram\./, 'The homepage must identify the creator');
+assert.match(appSource, /https:\/\/www\.ypifany\.org\/about/, 'The homepage must link to the creator’s About page');
+assert.match(snapshotUiSource, /name="creatorName"/, 'A Work Receipt must collect the creator name');
+assert.match(snapshotUiSource, /checkboxOptions\('startingContext'/, 'Starting AI context must permit more than one answer');
+assert.match(snapshotUiSource, /checkboxOptions\('addedContext'/, 'Context added during the work must permit more than one answer');
+assert.match(snapshotUiSource, /radioOptions\('accessLevel'/, 'AI access and action must be recorded separately');
+assert.match(snapshotUiSource, /radioOptions\('approvalMode'/, 'The human approval boundary must be recorded separately');
+assert.match(
+  snapshotUiSource,
+  /name="conversationFiles"[^>]*multiple/,
+  'A Work Receipt must accept more than one conversation export',
+);
+assert.match(snapshotUiSource, /\['AI conversations', recordCountText\(draft\.chatReferences\)\]/, 'Conversation records must use the provided-versus-named count');
+assert.match(snapshotUiSource, /return parts\.join\('; '\) \|\| 'Not provided';/, 'Missing records must be labeled Not provided');
+assert.match(snapshotUiSource, /<h2 id="work-credits-heading">Work credits<\/h2>/, 'The saved result must show human-first Work credits');
+assert.match(snapshotUiSource, /with a record ·.*creator-confirmed ·.*unknown/, 'Change comparisons must show how the evidence basis changed, not only a combined coverage total');
+assert.match(snapshotUiSource, /id="edit-snapshot-information">Edit information<\/button>/, 'The saved result must let the creator edit its information');
+assert.match(snapshotUiSource, /id="add-snapshot-records">Add or change records<\/button>/, 'The saved result must let the creator add or change records');
+assert.match(snapshotUiSource, /saveDraft\(draftFromSnapshot\(snapshot\)\);/, 'Editing must reopen the saved receipt rather than an unrelated browser draft');
+assert.match(snapshotUiSource, /beforeAi: draftValues\(draft\.retainedBeforeAi, draft\.entryPoint, ENTRY_OPTIONS\)/, 'Editing must preserve imported starting-point wording the current choices cannot represent');
+assert.match(snapshotUiSource, /aiRoles: draftValues\(draft\.retainedAiRoles, draft\.aiRoles, AI_ROLE_OPTIONS\)/, 'Editing must preserve imported AI-role wording the current choices cannot represent');
+assert.match(snapshotUiSource, /humanRoles: draftValues\(draft\.retainedHumanRoles, draft\.humanRoles, HUMAN_ROLE_OPTIONS\)/, 'Editing must preserve imported human-role wording the current choices cannot represent');
 const builtIndex = fs.readFileSync(path.resolve('dist/index.html'), 'utf8');
+assert.match(builtIndex, /<title>evAIdence \| Protect your credibility when AI helps<\/title>/, 'The page title must lead with credibility, not change tracking');
 const bundleName = builtIndex.match(/assets\/(index-[^"']+\.js)/)?.[1];
 assert.ok(bundleName, 'Built JavaScript bundle not found in dist/index.html. Run npm run build first.');
 const bundle = fs.readFileSync(path.join(assets, bundleName), 'utf8')
@@ -94,6 +121,10 @@ function renderRoute(hash, initial = {}) {
     hidden: false,
     disabled: false,
     inert: false,
+  };
+  generic.elements = {
+    conversationFiles: { ...generic, files: [] },
+    sourceFiles: { ...generic, files: [] },
   };
   const main = { ...generic };
   Object.defineProperty(main, 'innerHTML', {
@@ -230,15 +261,16 @@ Object.values(unknownLoadTest.answers).forEach((answer) => {
 });
 
 const routes = [
-  { name: 'home', route: '#/', expected: 'See how your work with AI changes.' },
-  { name: 'home-short-path', route: '#/', expected: 'Bring the records. Check the picture. Save the change.' },
-  { name: 'home-neutral-change', route: '#/', expected: 'It shows what moved so you can decide whether the change was intentional and still fits the work.' },
-  { name: 'home-feedback', route: '#/', expected: 'Try a Snapshot, then tell me how it went.' },
-  { name: 'snapshot-step-1', route: '#/snapshot', expected: 'Add the records you already have.' },
-  { name: 'legacy-creation-record-route', route: '#/creation-record', expected: 'Add the records you already have.' },
+  { name: 'home', route: '#/', expected: 'AI can help with the work. It should not cost you your credibility.' },
+  { name: 'home-product', route: '#/', expected: 'A receipt for work made with AI' },
+  { name: 'home-human-first', route: '#/', expected: 'A Work Receipt connects the credits to records from the work.' },
+  { name: 'home-founder', route: '#/', expected: 'Created by Cheryl Abram.' },
+  { name: 'home-feedback', route: '#/', expected: 'Was evAIdence useful?' },
+  { name: 'snapshot-step-1', route: '#/snapshot', expected: 'Name the work and add what you have.' },
+  { name: 'legacy-creation-record-route', route: '#/creation-record', expected: 'Name the work and add what you have.' },
   { name: 'changes-empty', route: '#/changes', expected: 'Each project starts with its own baseline.' },
   { name: 'detailed-record-step-1', route: '#/detailed-record', expected: 'What work are you documenting?' },
-  { name: 'sample', route: '#/sample', expected: 'One writer. Two snapshots. A changed relationship with AI.' },
+  { name: 'sample', route: '#/sample', expected: 'Community Grant Guide' },
   { name: 'load-test', route: '#/load-test', expected: 'How far along is the work?' },
   { name: 'load-test-result-copy', route: '#/load-test', expected: 'You get more than a score.', forbidden: 'You will not get only a score.' },
   { name: 'load-test-load-framing', route: '#/load-test', expected: 'what the role you gave AI requires from you and anyone else doing or checking the work' },
@@ -305,27 +337,34 @@ const routes = [
       },
     },
   },
-  { name: 'method', route: '#/method', expected: 'Create one clear Snapshot. Return later to see what changed.' },
+  { name: 'method', route: '#/method', expected: 'Create one clear Work Receipt. Return later to see what changed.' },
   { name: 'research', route: '#/research', expected: 'Informed by provenance, contributor roles, appropriate reliance, and human oversight.' },
-  { name: 'examples', route: '#/examples', expected: 'See what a Snapshot can reveal.' },
+  { name: 'examples', route: '#/examples', expected: 'See what a Work Receipt can reveal.' },
   { name: 'pricing', route: '#/pricing', expected: 'Full access is open during the Founding Preview.' },
   { name: 'faq', route: '#/faq', expected: 'Plain answers about what this tool can and cannot say.' },
 ];
 
 const snapshotHistory = {
-  schemaVersion: 2,
+  schemaVersion: 3,
   baselineId: 'snapshot-january',
   snapshots: [
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: 'snapshot-january',
       projectId: 'project-comparable-writing',
       createdAt: '2026-01-15T12:00:00.000Z',
+      creatorName: 'Jordan Ellis',
       projectName: 'Comparable writing project',
       workType: 'writing',
       stage: 'build',
       aiSystems: [{ product: 'Example AI', model: 'Example model' }],
       aiSetup: 'regular-chat',
+      startingContext: ['nothing-added'],
+      addedContext: ['conversation'],
+      accessLevel: 'chat-only',
+      approvalMode: 'no-external-actions',
+      connectedTools: [],
+      chatReferences: [],
       beforeAi: ['The human outlined first'],
       aiRoles: ['Edit'],
       humanRoles: ['Draft'],
@@ -334,15 +373,22 @@ const snapshotHistory = {
       intent: 'not-answered',
     },
     {
-      schemaVersion: 2,
+      schemaVersion: 3,
       id: 'snapshot-october',
       projectId: 'project-comparable-writing',
       createdAt: '2026-10-15T12:00:00.000Z',
+      creatorName: 'Jordan Ellis',
       projectName: 'Comparable writing project',
       workType: 'writing',
       stage: 'build',
       aiSystems: [{ product: 'Example AI', model: 'Example model' }],
       aiSetup: 'regular-chat',
+      startingContext: ['nothing-added'],
+      addedContext: ['conversation'],
+      accessLevel: 'chat-only',
+      approvalMode: 'no-external-actions',
+      connectedTools: [],
+      chatReferences: [],
       beforeAi: ['The human outlined first'],
       aiRoles: ['Draft'],
       humanRoles: ['Draft'],
@@ -394,7 +440,7 @@ routes.push({
 routes.push({
   name: 'snapshot-result-to-detailed-record',
   route: '#/snapshot',
-  expected: 'Create Detailed Work Record',
+  expected: 'evAIdence Work Receipt saved',
   initial: {
     localStorage: {
       'evaidence:snapshots:v1': JSON.stringify(snapshotHistory),
@@ -402,6 +448,96 @@ routes.push({
     },
   },
 });
+
+for (const [name, expected] of [
+  ['snapshot-result-work-credits', 'Work credits'],
+  ['snapshot-result-edit', 'Edit information'],
+  ['snapshot-result-add-records', 'Add or change records'],
+]) {
+  routes.push({
+    name,
+    route: '#/snapshot',
+    expected,
+    initial: {
+      localStorage: {
+        'evaidence:snapshots:v1': JSON.stringify(snapshotHistory),
+        'evaidence:snapshot-draft:v1': JSON.stringify({ step: 3, savedSnapshotId: 'snapshot-october' }),
+      },
+    },
+  });
+}
+
+routes.push({
+  name: 'snapshot-review-no-conversation',
+  route: '#/snapshot',
+  expected: 'AI conversations</dt><dd>Not provided',
+  initial: {
+    localStorage: {
+      'evaidence:snapshot-draft:v1': JSON.stringify({
+        step: 2,
+        projectId: 'project-no-conversation',
+        projectName: 'No conversation example',
+        creatorName: 'Jordan Ellis',
+        workType: 'writing',
+        stage: 'build',
+        aiSystemsText: 'Example AI | Example model',
+        startingContext: ['nothing-added'],
+        addedContext: ['conversation'],
+        accessLevel: 'chat-only',
+        approvalMode: 'no-external-actions',
+        chatReferences: [],
+        sourceReferences: [],
+        otherEvidence: [],
+      }),
+    },
+  },
+});
+
+routes.push({
+  name: 'legacy-output-only-does-not-invent-chat-access',
+  route: '#/snapshot',
+  expected: 'name="accessLevel" value="unknown" checked',
+  forbidden: 'name="accessLevel" value="chat-only" checked',
+  initial: {
+    localStorage: {
+      'evaidence:snapshot-draft:v1': JSON.stringify({ authority: 'output-only' }),
+    },
+  },
+});
+
+for (const expected of [
+  'Some wording came from an older or imported Work Receipt.',
+  'Custom imported AI role',
+]) {
+  routes.push({
+    name: `snapshot-retains-imported-role-${expected.startsWith('Custom') ? 'value' : 'notice'}`,
+    route: '#/snapshot',
+    expected,
+    initial: {
+      localStorage: {
+        'evaidence:snapshot-draft:v1': JSON.stringify({
+          step: 2,
+          projectId: 'project-imported-role',
+          projectName: 'Imported role example',
+          creatorName: 'Jordan Ellis',
+          workType: 'writing',
+          aiSystemsText: 'Example AI | Example model',
+          startingContext: ['unknown'],
+          addedContext: ['unknown'],
+          accessLevel: 'unknown',
+          approvalMode: 'unknown',
+          chatReferences: [],
+          sourceReferences: [],
+          otherEvidence: [],
+          entryPoint: 'unknown',
+          aiRoles: ['unknown'],
+          humanRoles: ['unknown'],
+          retainedAiRoles: ['Custom imported AI role'],
+        }),
+      },
+    },
+  });
+}
 
 const smokeRecord = {
   schemaVersion: 3,

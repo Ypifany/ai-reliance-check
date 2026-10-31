@@ -1,4 +1,5 @@
 import './styles.css';
+import cherylPortraitUrl from './cheryl-abram.png';
 import { canonicalProjectId } from './project-identity.js';
 import {
   DIMENSIONS,
@@ -22,7 +23,6 @@ import {
   WORK_RECORD_SCHEMA_VERSION,
   WORK_RECORD_STATUS_OPTIONS,
   buildCredits,
-  buildDisclosure,
   createWorkRecord,
   getClaimSupport,
   getEvidenceIntegrity,
@@ -499,8 +499,9 @@ function setActiveNav(path) {
 
 function homepageCreditsSequence(duplicate = false) {
   return `<div class="credits-sequence"${duplicate ? ' aria-hidden="true"' : ''}>
-    <p class="credits-overline">A collaboration snapshot for</p>
+    <p class="credits-overline">evAIdence Work Receipt</p>
     <h2${duplicate ? '' : ' id="credits-screen-title"'}>evAIdence</h2>
+    <div class="credits-entry"><p>Created by</p><strong>Cheryl Abram</strong><span>Originated the problem, developed the method, directed the product, and made the final decisions.</span></div>
     <div class="credits-entry"><p>Originating idea and purpose</p><strong>Human</strong><span>Identified the problem and decided what the product should accomplish.</span></div>
     <div class="credits-entry"><p>Source material and core method</p><strong>Human</strong><span>Supplied the experience, examples, principles, and method behind the product.</span></div>
     <div class="credits-entry"><p>Product direction and requirements</p><strong>Human</strong><span>Defined the audience, boundaries, features, and changes to keep or reject.</span></div>
@@ -511,24 +512,25 @@ function homepageCreditsSequence(duplicate = false) {
     <div class="credits-entry"><p>Verification and testing</p><strong>Human + AI tool</strong><span>The AI tool ran automated checks. The human reviewed visible behavior. Independent technical review is not claimed.</span></div>
     <div class="credits-entry"><p>Final release decision</p><strong>Human</strong><span>Approved the documented version and decided it was ready to publish.</span></div>
     <div class="credits-entry credits-evidence"><p>Records provided</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
-    <p class="credits-end">End of example credits</p>
+    <p class="credits-end">End of Work Receipt</p>
   </div>`;
 }
 
 function renderHome() {
-  document.title = 'Home | evAIdence';
+  document.title = 'evAIdence | Protect your credibility when AI helps';
   main.innerHTML = `
     <section class="hero">
       <div class="hero-copy">
-        <p class="hero-kicker">Human + AI, brought into focus</p>
-        <h1>See how your work with AI changes.</h1>
-        <p class="hero-definition">Add the records your work already creates. With three short confirmations, evAIdence turns them into a clear snapshot of what you did, what AI did, and what remains unknown.</p>
+        <p class="hero-kicker">A receipt for work made with AI</p>
+        <h1 class="credibility-headline">AI can help with the work. It should not cost you your credibility.</h1>
+        <p class="hero-definition">evAIdence creates a dated receipt showing what you originated, directed, checked, and approved, what AI contributed, and which records support that account.</p>
+        <p class="assurance-note">You do not have to hide AI or let its involvement erase your contribution.</p>
         <div class="hero-actions">
-          <a class="button" href="#/snapshot">Create your first snapshot <span aria-hidden="true">→</span></a>
-          <a class="button button-secondary" href="#/sample">See an example</a>
+          <a class="button" href="#/snapshot">Create a Work Receipt <span aria-hidden="true">→</span></a>
+          <a class="button button-secondary" href="#/sample">See a fictional receipt</a>
         </div>
         <p class="brand-explainer"><strong>evAIdence is pronounced “evidence.”</strong> AI is inside the evidence, just as it is inside the work. It is part of the process, not the whole work.</p>
-        <p class="hero-limit"><strong>Not an AI detector.</strong> It does not guess from writing style or assign a human-versus-AI percentage. It uses records of the process.</p>
+        <p class="hero-limit"><strong>Not an AI detector.</strong> It does not guess from finished work or assign a human-versus-AI percentage. It records the process you provide.</p>
       </div>
       <aside class="credits-screen" aria-labelledby="credits-screen-title">
         <div class="credits-screen-toolbar">
@@ -548,21 +550,35 @@ function renderHome() {
           </div>
           <div class="focus-window" aria-hidden="true"><span>In focus</span></div>
         </div>
-        <p class="credits-screen-caption">A snapshot connects the credits to records from the work. Save another later and evAIdence shows what changed. <a href="#/sample">See the example.</a></p>
+        <p class="credits-screen-caption"><strong>Make your hand on the wheel visible.</strong> A Work Receipt connects the credits to records from the work. Save another later and evAIdence shows what changed. <a href="#/sample">See the fictional receipt.</a></p>
       </aside>
     </section>
 
     <section class="section">
       <div class="section-heading">
-        <div><p class="kicker">A shorter path</p><h2>Bring the records. Check the picture. Save the change.</h2></div>
-        <p class="lede">You should not have to answer a long questionnaire before the tool becomes useful. Start with the conversation, the context AI began with, and any source or version history you already have.</p>
+        <div><p class="kicker">How it works</p><h2>Add the records. Check the credits. Save the receipt.</h2></div>
+        <p class="lede">Start with the records you already have. evAIdence keeps your account of the work separate from the records you provide.</p>
       </div>
       <div class="grid-3 snapshot-steps">
-        <article class="card"><span class="card-number">01</span><h3>Add your records</h3><p>Give evAIdence the relevant AI conversation, what AI already had, the finished work, source material, and an optional GitHub repository.</p></article>
-        <article class="card"><span class="card-number">02</span><h3>Check the picture</h3><p>Use the records and three short questions to identify your role, AI’s role, and anything that is still unclear.</p></article>
-        <article class="card"><span class="card-number">03</span><h3>Return and compare</h3><p>Your first snapshot becomes a baseline. Later snapshots show exactly where the relationship moved.</p></article>
+        <article class="card"><span class="card-number">01</span><h3>Add the project and records</h3><p>Name the work. Add any conversations, sources, current work, and repository history you have.</p></article>
+        <article class="card"><span class="card-number">02</span><h3>Confirm the working arrangement</h3><p>Record what AI started with, what you added, what AI could do, and when it needed approval.</p></article>
+        <article class="card"><span class="card-number">03</span><h3>Save and compare</h3><p>Save the Work Receipt. Later receipts show how the relationship changed.</p></article>
       </div>
-      <div class="button-row"><a class="button" href="#/snapshot">Start a snapshot</a><a class="button button-secondary" href="#/method">See how it works</a></div>
+      <div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/method">See how it works</a></div>
+    </section>
+
+    <section class="section section-compact founder-section" aria-labelledby="founder-heading">
+      <div class="founder-card">
+        <div class="founder-portrait-frame">
+          <img class="founder-portrait" src="${cherylPortraitUrl}" alt="Cheryl Abram, creator of evAIdence" width="1080" height="1080" loading="lazy" decoding="async" />
+        </div>
+        <div class="founder-copy">
+          <p class="kicker">Meet the creator</p>
+          <h2 id="founder-heading">Created by Cheryl Abram.</h2>
+          <p>Cheryl is an author, curriculum designer, cybersecurity strategist, and learning systems architect. She created evAIdence to make human judgment, work, and accountability visible when AI is part of the process.</p>
+          <a class="button button-secondary" href="https://www.ypifany.org/about" target="_blank" rel="noreferrer">Meet Cheryl and see her work <span class="new-tab-note">(opens in a new tab)</span></a>
+        </div>
+      </div>
     </section>
 
     <section class="section section-compact change-section" aria-labelledby="change-example-heading">
@@ -573,8 +589,8 @@ function renderHome() {
         </div>
         <p class="lede">evAIdence does not tell you that more AI is automatically bad. It shows what moved so you can decide whether the change was intentional and still fits the work.</p>
       </div>
-      <div class="change-demo" role="group" aria-label="Example of changes between two snapshots">
-        <div class="change-demo-heading"><span>January snapshot</span><span>October snapshot</span></div>
+      <div class="change-demo" role="group" aria-label="Example of changes between two Work Receipts">
+        <div class="change-demo-heading"><span>January receipt</span><span>October receipt</span></div>
         <div class="change-row"><strong>Starting point</strong><span>You outlined first</span><span>AI proposes the first direction</span></div>
         <div class="change-row"><strong>AI’s role</strong><span>Challenge and edit</span><span>Generate ideas and first drafts</span></div>
         <div class="change-row"><strong>Your source check</strong><span>Checked each important source</span><span>Checked a sample</span></div>
@@ -585,12 +601,12 @@ function renderHome() {
 
     <section class="section">
       <div class="section-heading">
-        <div><p class="kicker">One record, several uses</p><h2>A private history and a snapshot you can share.</h2></div>
-        <p class="lede">Keep your longer relationship history private. Export one project snapshot or its short disclosure when you want to explain how that work was made.</p>
+        <div><p class="kicker">One record, several uses</p><h2>A private history and a Work Receipt you can share.</h2></div>
+        <p class="lede">Keep your longer relationship history private. Export one project receipt or its work credits when you want to explain how that work was made.</p>
       </div>
       <div class="grid-2">
-        ${featureCard('01', 'Your private change view', 'See how AI’s starting context, entry point, work, permissions, and your checking changed across comparable snapshots.')}
-        ${featureCard('02', 'A shareable project snapshot', 'Export clear credits, findings, and a short disclosure for one project without publishing your complete history or private conversations.')}
+        ${featureCard('01', 'Your private change view', 'See how AI’s starting context, entry point, work, permissions, and your checking changed across comparable Work Receipts.')}
+        ${featureCard('02', 'A shareable Work Receipt', 'Export clear credits, findings, and a concise account for one project without publishing your complete history or private conversations.')}
       </div>
       <div class="callout optional-check-callout">
         <p class="kicker">When a change needs a closer look</p>
@@ -610,10 +626,10 @@ function renderHome() {
 
     <section class="section section-compact" aria-labelledby="feedback-heading">
       <div class="callout">
-        <p class="kicker">Test the founding preview</p>
-        <h2 id="feedback-heading">Try a Snapshot, then tell me how it went.</h2>
-        <p>Tell me what became clearer, where you got stuck, and whether you would return when the work or your AI setup changes.</p>
-        <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share testing feedback <span class="new-tab-note">(opens in a new tab)</span></a>
+        <p class="kicker">Review the founding preview</p>
+        <h2 id="feedback-heading">Was evAIdence useful?</h2>
+        <p>Use this short Google Form to tell me what was clear, confusing, or missing. Your feedback will help make evAIdence more meaningful before public release.</p>
+        <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Review this preview <span class="new-tab-note">(opens a Google Form in a new tab)</span></a>
       </div>
     </section>
   `;
@@ -2169,7 +2185,7 @@ function renderResult() {
       <button class="button" type="button" id="print-result">Print result summary</button>
       <button class="button button-secondary" type="button" id="export-result">Export Load Test</button>
       <a class="button button-secondary" href="#/detailed-record" id="start-record-from-result">Create a detailed Work Record</a>
-      <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
+      <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Review this preview <span class="new-tab-note">(opens a Google Form in a new tab)</span></a>
       <button class="button button-danger" type="button" id="new-check">Start a new Load Test</button>
     </div>
   </div>`;
@@ -2331,10 +2347,10 @@ function prepareWorkRecordFromSnapshot(snapshot) {
     const currentStage = creationRecord.readiness?.stage || '';
     const differentStage = Boolean(currentStage && snapshot.stage && currentStage !== snapshot.stage);
     if (differentArtifact || differentStage) {
-      if (!window.confirm('This Snapshot appears to describe a different version of the same project. Start a new Detailed Work Record from it? This will replace the record currently saved in this browser. Export the current record first if you want to keep it.')) return false;
+      if (!window.confirm('This Work Receipt appears to describe a different version of the same project. Start a new Detailed Work Record from it? This will replace the record currently saved in this browser. Export the current record first if you want to keep it.')) return false;
       creationRecord = workRecordFromSnapshot(snapshot, options);
     } else {
-      if (!window.confirm('A Detailed Work Record already exists for this project. Add only missing details from this Snapshot? Choose OK only if both describe the same exact work version.')) return false;
+      if (!window.confirm('A Detailed Work Record already exists for this project. Add only missing details from this Work Receipt? Choose OK only if both describe the same exact work version.')) return false;
       creationRecord = mergeSnapshotIntoWorkRecord(creationRecord, snapshot, options);
       mergedSameVersion = true;
     }
@@ -2344,7 +2360,7 @@ function prepareWorkRecordFromSnapshot(snapshot) {
   recordStep = 1;
   saveRecordStep();
   saveCreationRecord();
-  showToast(mergedSameVersion ? 'Missing Snapshot details added without replacing your Work Record edits.' : 'Detailed Work Record started from this Snapshot.');
+  showToast(mergedSameVersion ? 'Missing Work Receipt details added without replacing your Work Record edits.' : 'Detailed Work Record started from this Work Receipt.');
   return true;
 }
 
@@ -2568,17 +2584,18 @@ function assessmentCanShowResult(value) {
 }
 
 function renderSample() {
-  document.title = 'Example Snapshot | evAIdence';
+  document.title = 'Example Work Receipt | evAIdence';
   main.innerHTML = `<div class="page sample-record-page">
     <header class="page-header">
       <p class="eyebrow">Fictional example</p>
-      <h1>One writer. Two snapshots. A changed relationship with AI.</h1>
+      <h1>One creator. Two receipts. A changed relationship with AI.</h1>
       <p>This example shows what evAIdence makes visible without grading the change as good or bad.</p>
     </header>
     <article class="record-preview public-record">
-      <header class="public-record-header"><p class="kicker">evAIdence™ collaboration snapshot</p><h2>Community Grant Guide</h2><p class="record-summary">Three material changes were recorded between January and October.</p><p>The writer is preparing a public guide that explains how neighborhood groups can apply for local grants.</p></header>
+      <header class="public-record-header"><p class="kicker">evAIdence™ Work Receipt</p><h2>Community Grant Guide</h2><p class="receipt-created-by"><strong>Created by Jordan Ellis</strong> <span>(fictional)</span></p><p class="record-summary">Three material changes were recorded between January and October.</p><p>Jordan is preparing a public guide that explains how neighborhood groups can apply for local grants.</p></header>
       <section class="record-output-section"><h3>What changed</h3>
-        <div class="table-scroll" role="region" aria-label="Example snapshot changes" tabindex="0"><table class="change-table"><thead><tr><th scope="col">Area</th><th scope="col">January</th><th scope="col">October</th></tr></thead><tbody>
+        <p class="table-scroll-cue">Scroll horizontally to compare all columns.</p>
+        <div class="table-scroll" role="region" aria-label="Example Work Receipt changes" tabindex="0"><table class="change-table"><caption class="sr-only">Changes recorded between the January and October Work Receipts</caption><thead><tr><th scope="col">Area</th><th scope="col">January</th><th scope="col">October</th></tr></thead><tbody>
           <tr><th scope="row">Starting point</th><td>The writer outlined first</td><td>AI proposed the first outline</td></tr>
           <tr><th scope="row">AI’s role</th><td>Challenge and edit</td><td>Generate ideas and first drafts</td></tr>
           <tr><th scope="row">Source checking</th><td>The writer checked every important source</td><td>The writer checked a sample</td></tr>
@@ -2586,22 +2603,15 @@ function renderSample() {
         </tbody></table></div>
         <p><strong>Was the change intentional?</strong> The writer confirmed that two changes were intentional. The reduced source checking was not intentional.</p>
       </section>
-      <section class="record-output-section"><h3>October credits</h3><ul class="mini-record-list credit-role-list">
-        <li><span><strong>Purpose and final meaning</strong><small>Defined the audience, requirements, claims, and release decision.</small></span><strong>Human</strong></li>
-        <li><span><strong>Initial outline and first drafts</strong><small>Proposed structure and produced draft language.</small></span><strong>AI tool</strong></li>
-        <li><span><strong>Direction and revision</strong><small>Questioned suggestions, rewrote key sections, and selected what remained.</small></span><strong>Human</strong></li>
-        <li><span><strong>Source checking</strong><small>AI located sources. The human checked a selected sample.</small></span><strong>Human + AI tool</strong></li>
-        <li><span><strong>Final approval</strong><small>Decided the guide was ready to share.</small></span><strong>Human</strong></li>
-      </ul></section>
-      <section class="record-output-section"><h3>What supports this snapshot</h3><ul class="claim-support-list">
+      <section class="record-output-section disclosure-box"><h3>Work credits</h3><p><strong>Community Grant Guide, created by Jordan Ellis.</strong></p><p>Jordan originated and directed the guide, supplied its requirements, revised the important sections, made the final decisions, and approved this version. An AI tool assisted with the outline, draft language, and source finding.</p><p class="receipt-meta">evAIdence Work Receipt · October version</p></section>
+      <section class="record-output-section"><h3>What supports this receipt</h3><ul class="claim-support-list">
         <li><span>AI conversation and attached source list</span><strong class="status-pill status-shown-in-records">Record provided</strong></li>
         <li><span>The writer’s offline revisions and final approval</span><strong class="status-pill status-confirmed-by-creator">Confirmed by creator</strong></li>
         <li><span>Whether every factual claim was independently verified</span><strong class="status-pill status-unknown">Unknown</strong></li>
       </ul></section>
-      <section class="record-output-section disclosure-box"><h3>Short disclosure</h3><p><strong>Human + AI work disclosure:</strong> The writer set the purpose, supplied the requirements, revised the guide, and approved the final version. An AI tool proposed the outline, drafted language, and located possible sources. The writer independently checked a sample of the cited sources.</p></section>
-      <footer class="public-record-footer"><p>This is a fictional example. A snapshot records supplied references and creator confirmations. It does not infer authorship from the surface of finished work or assign a human-versus-AI percentage.</p></footer>
+      <footer class="public-record-footer"><p>This is a fictional example. A Work Receipt records supplied references and creator confirmations. It does not infer authorship from the surface of finished work or assign a human-versus-AI percentage.</p></footer>
     </article>
-    <div class="button-row"><a class="button" href="#/snapshot">Create your first snapshot</a><a class="button button-secondary" href="#/method">See how it works</a></div>
+    <div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/method">See how it works</a></div>
   </div>`;
 }
 
@@ -3173,6 +3183,30 @@ function bindWorkRecordDynamicActions(form, stepId) {
   });
 }
 
+function workRecordCreditsText(recordInput) {
+  const record = normalizeWorkRecord(recordInput);
+  const title = record.title || 'Untitled work';
+  const creator = record.creator.name || 'Creator not named';
+  const humanContribution = record.humanActions || 'The human contribution has not yet been described.';
+  const humanLine = /[.!?]$/.test(humanContribution) ? humanContribution : `${humanContribution}.`;
+  let aiLine = 'Whether AI contributed has not been answered or established.';
+  if (record.aiUse === 'no-ai-reported') aiLine = 'No AI use was reported in the documented workflow.';
+  if (record.aiUse === 'uncertain') aiLine = 'AI use was reported as uncertain or incompletely documented.';
+  if (record.aiUse === 'yes') {
+    const systems = record.systems.map(({ product, model }) => [product, model].filter(Boolean).join(' ')).filter(Boolean).join(', ') || 'An AI tool';
+    const contributions = record.aiContributions || record.systems.map(({ role }) => role).filter(Boolean).join('; ') || 'the assistance described in the Detailed Work Record';
+    aiLine = `${systems} assisted with ${contributions}.`;
+  }
+  const decisionLine = record.finalDecision.name
+    ? `${record.finalDecision.name} made the recorded final release decision${record.finalDecision.date ? ` on ${record.finalDecision.date}` : ''}.`
+    : 'The final release decision is not yet recorded.';
+  return `${title}\nCreated by ${creator}\n\n${creator}: ${humanLine}\nAI assistance: ${aiLine}\n${decisionLine}`;
+}
+
+function workRecordCreditsHTML(record) {
+  return workRecordCreditsText(record).split('\n').filter(Boolean).map((line) => `<p>${escapeHTML(line)}</p>`).join('');
+}
+
 function renderWorkRecordResult() {
   document.title = `${creationRecord.title || 'Work Record'} | evAIdence`;
   const publicRecord = toPublicWorkRecord(creationRecord);
@@ -3189,8 +3223,8 @@ function renderWorkRecordResult() {
       <button class="button" type="button" id="print-record-v03">${completeness.publicReady ? 'Print or save as PDF' : 'Print draft'}</button>
       <button class="button button-secondary" type="button" id="download-public-record">${completeness.publicReady ? 'Download public record' : 'Download draft record'}</button>
       <button class="button button-secondary" type="button" id="export-private-record">Export private backup</button>
-      <button class="button button-secondary" type="button" id="copy-disclosure-v03">Copy short disclosure</button>
-      <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Share feedback <span class="new-tab-note">(opens in a new tab)</span></a>
+      <button class="button button-secondary" type="button" id="copy-work-credits-v03">Copy work credits</button>
+      <a class="button button-secondary" href="${FEEDBACK_FORM_URL}" target="_blank" rel="noreferrer">Review this preview <span class="new-tab-note">(opens a Google Form in a new tab)</span></a>
       <button class="text-button" type="button" id="edit-work-record">Edit record</button>
     </div>
     <section class="optional-next-step card">
@@ -3208,12 +3242,12 @@ function renderWorkRecordResult() {
       kind: 'human-ai-work-record-private-backup', schemaVersion: WORK_RECORD_SCHEMA_VERSION, exportedAt: new Date().toISOString(), record: creationRecord,
     });
   });
-  document.querySelector('#copy-disclosure-v03').addEventListener('click', async () => {
+  document.querySelector('#copy-work-credits-v03').addEventListener('click', async () => {
     try {
-      await navigator.clipboard.writeText(buildDisclosure(creationRecord));
-      showToast('Short disclosure copied.');
+      await navigator.clipboard.writeText(workRecordCreditsText(creationRecord));
+      showToast('Work credits copied.');
     } catch {
-      showToast('Copy was unavailable. Select the disclosure in the record instead.');
+      showToast('Copy was unavailable. Select the work credits in the record instead.');
     }
   });
   document.querySelector('#edit-work-record').addEventListener('click', () => {
@@ -3284,7 +3318,7 @@ function workRecordPreview(recordInput, options = {}) {
     </section>
     <section class="record-output-section"><h3>Final release decision</h3><p>${escapeHTML(finalDecision || 'No final release decision is recorded for this draft.')}</p></section>
     <section class="record-output-section"><h3>Known limits</h3><ul>${limitations.map((item) => `<li>${escapeHTML(item)}</li>`).join('')}</ul></section>
-    <section class="record-output-section disclosure-box"><h3>Short disclosure</h3><p>${escapeHTML(buildDisclosure(record))}</p></section>
+    <section class="record-output-section disclosure-box"><h3>Work credits</h3>${workRecordCreditsHTML(record)}</section>
     <footer class="public-record-footer"><p>The Work Record creates a dated account of where the work began, what people and AI tools did, who made the decisions, and which records support that account. It can connect those records to one exact work version.</p><p>Record schema ${WORK_RECORD_SCHEMA_VERSION}. This is a practice-based public prototype. Records are self-reported unless an independent evidence review is named.</p></footer>`;
 }
 
@@ -3422,20 +3456,20 @@ function focusCurrentStep(preferredSelector = '') {
 function renderMethod() {
   document.title = 'How It Works | evAIdence';
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">How it works</p><h1>Create one clear Snapshot. Return later to see what changed.</h1><p>Start with records your work already creates. evAIdence turns them into a Snapshot of what you did, what AI did, and what remains unknown. Save another Snapshot for comparable work and My Changes shows what moved.</p></header>
-    <div class="button-row"><a class="button" href="#/snapshot">Create a Snapshot</a><a class="button button-secondary" href="#/changes">View My Changes</a></div>
+    <header class="page-header"><p class="eyebrow">How it works</p><h1>Create one clear Work Receipt. Return later to see what changed.</h1><p>Start with records your work already creates. evAIdence turns them into a Work Receipt showing what you did, what AI did, what records you provided, and what remains unknown. Save another Work Receipt for comparable work and My Changes shows what moved.</p></header>
+    <div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/changes">View My Changes</a></div>
     <div class="prose">
       <h2>The main method</h2>
-      <h3>1. Snapshot: What happened in this work?</h3>
-      <p>A Snapshot uses the AI conversation, what AI already had, source material, the finished work, and available version history to bring one collaboration into focus.</p>
-      <ol><li>Add the records you already have.</li><li>Confirm what you did, what AI did, and when AI entered the work.</li><li>Save the Snapshot as a baseline or compare it with earlier work.</li></ol>
-      <p>You can export one Snapshot and a short disclosure without sharing your complete private history.</p>
+      <h3>1. Work Receipt: What happened in this work?</h3>
+      <p>A Work Receipt uses the AI conversation, what AI already had, what you added, source material, the finished work, and available version history to bring one collaboration into focus.</p>
+      <ol><li>Name the project and add the records you have.</li><li>Confirm what you did, what AI did, what AI could access or do, and when it needed approval.</li><li>Save the Work Receipt as a baseline or compare it with earlier work.</li></ol>
+      <p>You can export one private Work Receipt data file, print the receipt, or copy its work credits without sharing your complete private history.</p>
       <h3>Why this is not an AI detector</h3>
-      <p>An AI detector guesses from patterns in a finished product. A Snapshot uses records from the process. It does not classify the work as human or AI, assign a human-versus-AI percentage, or help someone bypass detection.</p>
+      <p>An AI detector guesses from patterns in a finished product. A Work Receipt uses records from the process. It does not classify the work as human or AI, assign a human-versus-AI percentage, or help someone bypass detection.</p>
       <h3>2. My Changes: What moved over time?</h3>
-      <p>My Changes compares Snapshots from similar work. It can show that AI entered earlier, performed different work, received more permission, or that your checking changed. It does not grade the change as good or bad. It shows what moved so you can decide whether the change was intentional and still fits the work.</p>
+      <p>My Changes compares Work Receipts from similar work. It can show that AI entered earlier, performed different work, received more permission, or that your checking changed. It does not grade the change as good or bad. It shows what moved so you can decide whether the change was intentional and still fits the work.</p>
       <h3>Optional: Load Test when a change needs a closer look</h3>
-      <p>Use the Load Test when a Snapshot shows that AI entered earlier, gained access, acted before review, or took on work you may not be able to judge fully. It compares the assigned AI role with human capacity, workflow controls, evidence, and possible consequences.</p>
+      <p>Use the Load Test when a Work Receipt shows that AI entered earlier, gained access, acted before review, or took on work you may not be able to judge fully. It compares the assigned AI role with human capacity, workflow controls, evidence, and possible consequences.</p>
       <ol><li>Choose whether the work is planned, in progress, ready to launch, or already in use.</li><li>Describe what you are making, what each AI tool does, who works directly with it, what people do, and what could go wrong.</li><li>See what the current setup can carry, where the wager is exposed, and what could change it.</li></ol>
       <h2>Load Test central question</h2>
       <blockquote class="callout"><p><strong>What does the role you gave AI require from you and anyone else doing or checking the work? Can those people and the workflow carry that load? What could happen if they cannot?</strong></p></blockquote>
@@ -3499,58 +3533,58 @@ function renderMethod() {
       <h2>Research and standards basis</h2>
       <p>This practice-based method is informed by established work on digital provenance, contributor roles, appropriate reliance, levels of automation, model documentation, and human oversight. Those sources informed the method. They have not tested or validated this tool or its scoring.</p>
       <p><a class="button button-secondary" href="#/research">Read the research basis</a></p>
-      <div class="callout callout-warning"><p><strong>Current status:</strong> Snapshots, My Changes, Work Records, and the optional Load Test are transparent, practice-based working methods. They have not been independently validated as scientific instruments. Their findings and comparisons should improve through testing and real use.</p></div>
+      <div class="callout callout-warning"><p><strong>Current status:</strong> Work Receipts, My Changes, Detailed Work Records, and the optional Load Test are transparent, practice-based working methods. They have not been independently validated as scientific instruments. Their findings and comparisons should improve through testing and real use.</p></div>
     </div>
-    <div class="button-row"><a class="button" href="#/snapshot">Create a Snapshot</a><a class="button button-secondary" href="#/changes">View My Changes</a><a class="text-button" href="#/load-test">Run the optional Load Test</a></div>
+    <div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/changes">View My Changes</a><a class="text-button" href="#/load-test">Run the optional Load Test</a></div>
   </div>`;
 }
 
 function renderResearch() {
   document.title = 'Research Basis | evAIdence';
   const sources = [
-    ['AI Fluency Framework', 'https://aifluencyframework.org/', 'AI fluency includes human competencies for deciding how to use AI, describing the work, judging AI outputs and behavior, and using AI responsibly.', 'Snapshots record how a person described, directed, judged, and used AI in actual work. My Changes shows how that pattern moves over time.'],
+    ['AI Fluency Framework', 'https://aifluencyframework.org/', 'AI fluency includes human competencies for deciding how to use AI, describing the work, judging AI outputs and behavior, and using AI responsibly.', 'Work Receipts record how a person described, directed, judged, and used AI in actual work. My Changes shows how that pattern moves over time.'],
     ['NIST AI Risk Management Framework', 'https://www.nist.gov/itl/ai-risk-management-framework', 'AI risk depends on the tool, its use, the people involved, the operating context, and possible consequences.', 'The optional Load Test examines the person, AI tool, assigned job, workflow, controls, and possible consequences together.'],
-    ['Levels of automation', 'https://doi.org/10.1109/3468.844354', 'Automation can support information gathering, analysis, decision selection, and action. The right level can differ at each stage.', 'Snapshots record how far AI could act before human review. My Changes reveals when that authority changes.'],
-    ['Appropriate reliance in human-AI decision-making', 'https://doi.org/10.1145/3544548.3581058', 'Appropriate reliance depends on more than the chance that AI is right. The person’s ability also matters.', 'Snapshots record the human role and checking pattern. The optional Load Test examines the person’s capacity more closely.'],
-    ['Model Cards for Model Reporting', 'https://research.google/pubs/model-cards-for-model-reporting/', 'Models should be documented with intended uses, tested conditions, performance, and limits.', 'Snapshots record the AI product, model, setup, and job so later comparisons do not treat every AI arrangement as the same.'],
-    ['AI Usage Cards', 'https://doi.org/10.1109/JCDL57899.2023.00060', 'AI use can be disclosed through a structured record covering transparency, integrity, and accountability.', 'Snapshots apply a related disclosure approach to project records and comparable change over time.'],
-    ['W3C PROV', 'https://www.w3.org/TR/prov-overview/', 'Provenance can record people, software, activities, sources, and changes involved in producing something.', 'Snapshots connect people, AI tools, actions, sources, and artifact versions. My Changes compares those structured records.'],
-    ['CRediT Contributor Role Taxonomy', 'https://credit.niso.org/contributor-roles-defined/', 'Contributions can be described by role. CRediT describes contributions but does not determine authorship.', 'Snapshot credits describe what each human and AI tool did instead of reducing the relationship to a percentage.'],
-    ['C2PA Content Credentials', 'https://c2pa.org/', 'Signed credentials can create a tamper-evident history tied to a digital asset. Integrity does not prove every statement is true.', 'A Snapshot can identify whether evidence is merely named, connected to a version, or protected against unnoticed changes.'],
-    ['U.S. Copyright Office: Copyright and Artificial Intelligence, Part 2', 'https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-2-Copyrightability-Report.pdf', 'Using AI does not automatically erase human-created expression. Human selection, arrangement, and creative modification can matter, and each work depends on its facts.', 'A Snapshot records human origination, direction, selection, revision, and final decisions. A Work Record can share that account for one project.'],
+    ['Levels of automation', 'https://doi.org/10.1109/3468.844354', 'Automation can support information gathering, analysis, decision selection, and action. The right level can differ at each stage.', 'Work Receipts record how far AI could act before human review. My Changes reveals when that authority changes.'],
+    ['Appropriate reliance in human-AI decision-making', 'https://doi.org/10.1145/3544548.3581058', 'Appropriate reliance depends on more than the chance that AI is right. The person’s ability also matters.', 'Work Receipts record the human role and checking pattern. The optional Load Test examines the person’s capacity more closely.'],
+    ['Model Cards for Model Reporting', 'https://research.google/pubs/model-cards-for-model-reporting/', 'Models should be documented with intended uses, tested conditions, performance, and limits.', 'Work Receipts record the AI product, model, setup, and job so later comparisons do not treat every AI arrangement as the same.'],
+    ['AI Usage Cards', 'https://doi.org/10.1109/JCDL57899.2023.00060', 'AI use can be disclosed through a structured record covering transparency, integrity, and accountability.', 'Work Receipts apply a related disclosure approach to project records and comparable change over time.'],
+    ['W3C PROV', 'https://www.w3.org/TR/prov-overview/', 'Provenance can record people, software, activities, sources, and changes involved in producing something.', 'Work Receipts connect people, AI tools, actions, sources, and artifact versions. My Changes compares those structured records.'],
+    ['CRediT Contributor Role Taxonomy', 'https://credit.niso.org/contributor-roles-defined/', 'Contributions can be described by role. CRediT describes contributions but does not determine authorship.', 'Work Receipt credits describe what each human and AI tool did instead of reducing the relationship to a percentage.'],
+    ['C2PA Content Credentials', 'https://c2pa.org/', 'Signed credentials can create a tamper-evident history tied to a digital asset. Integrity does not prove every statement is true.', 'A Work Receipt can identify whether evidence is merely named, connected to a version, or protected against unnoticed changes.'],
+    ['U.S. Copyright Office: Copyright and Artificial Intelligence, Part 2', 'https://www.copyright.gov/ai/Copyright-and-Artificial-Intelligence-Part-2-Copyrightability-Report.pdf', 'Using AI does not automatically erase human-created expression. Human selection, arrangement, and creative modification can matter, and each work depends on its facts.', 'A Work Receipt records human origination, direction, selection, revision, and final decisions. A Detailed Work Record can share a richer account for one project.'],
   ];
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">Research basis</p><h1>Informed by provenance, contributor roles, appropriate reliance, and human oversight.</h1><p>These sources helped determine what a Snapshot records and what the optional Load Test examines. They have not validated this tool, its comparisons, or its results.</p></header>
+    <header class="page-header"><p class="eyebrow">Research basis</p><h1>Informed by provenance, contributor roles, appropriate reliance, and human oversight.</h1><p>These sources helped determine what a Work Receipt records and what the optional Load Test examines. They have not validated this tool, its comparisons, or its results.</p></header>
     <div class="callout callout-warning"><p><strong>Important:</strong> These sources inform the method. They have not tested or validated this tool, its questions, or its results.</p></div>
     <div class="table-scroll research-table" role="region" aria-label="Research and standards informing the method" tabindex="0"><table><thead><tr><th scope="col">Source</th><th scope="col">Plain-language point</th><th scope="col">How it informs this tool</th></tr></thead><tbody>${sources.map(([name, url, point, use]) => `<tr><th scope="row"><a href="${url}" target="_blank" rel="noreferrer">${escapeHTML(name)} <span class="new-tab-note">(opens in a new tab)</span></a></th><td>${escapeHTML(point)}</td><td>${escapeHTML(use)}</td></tr>`).join('')}</tbody></table></div>
-    <section class="prose"><h2>How these sources shaped the method</h2><p>Together, these sources led the Snapshot to examine more than the model or finished product. It records where the work began, what the human and AI did, what AI already had, what authority it received, what records exist, and what remains unknown.</p><p>My Changes compares the same fields across similar work. It describes movement without assuming that more or less AI is automatically better. The optional Load Test adds a closer examination of capacity, workflow, and consequences when needed.</p><p>The result is not an AI detector or a human-versus-AI percentage. It is a structured account of the work and the records behind it.</p></section>
-    <div class="button-row"><a class="button" href="#/snapshot">Create a Snapshot</a><a class="button button-secondary" href="#/changes">View My Changes</a></div>
+    <section class="prose"><h2>How these sources shaped the method</h2><p>Together, these sources led the Work Receipt to examine more than the model or finished product. It records where the work began, what the human and AI did, what AI already had, what authority it received, what records exist, and what remains unknown.</p><p>My Changes compares the same fields across similar work. It describes movement without assuming that more or less AI is automatically better. The optional Load Test adds a closer examination of capacity, workflow, and consequences when needed.</p><p>The result is not an AI detector or a human-versus-AI percentage. It is a structured account of the work and the records behind it.</p></section>
+    <div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/changes">View My Changes</a></div>
   </div>`;
 }
 
 function renderExamples() {
   document.title = 'Examples | evAIdence';
   const examples = [
-    ['Track changes in your writing practice', 'Create a Snapshot showing where the direction began, when AI entered, what you drafted or changed, and how you checked the work. Save another later to see whether those roles moved.', 'Snapshot, then My Changes.'],
-    ['Build a website with AI', 'Link the relevant AI conversation, source material, current website, and optional public GitHub repository. Later Snapshots can show whether AI gained more access or your review changed.', 'Snapshot, then My Changes.'],
-    ['Change from regular chat to a custom AI', 'Record whether AI began with only the conversation, saved memory or files, or a custom assistant. A later Snapshot makes the setup change visible.', 'Snapshot.'],
-    ['Share how one finished project was made', 'Use a Snapshot to create clear credits and an exported project record without publishing your complete private history.', 'Snapshot, then export.'],
-    ['Give AI access or consequential authority', 'If AI can act, publish, change accounts, or perform work you cannot fully judge, use the optional Load Test to examine whether the current setup can carry that arrangement.', 'Snapshot, then an optional Load Test.'],
+    ['Track changes in your writing practice', 'Create a Work Receipt showing where the direction began, when AI entered, what you drafted or changed, and how you checked the work. Save another later to see whether those roles moved.', 'Work Receipt, then My Changes.'],
+    ['Build a website with AI', 'Link the relevant AI conversation, source material, current website, and optional repository. Later Work Receipts can show whether AI gained more access or your review changed.', 'Work Receipt, then My Changes.'],
+    ['Change from regular chat to a custom AI', 'Record whether AI began with only the conversation, saved memory or files, or a custom assistant. A later Work Receipt makes the setup change visible.', 'Work Receipt.'],
+    ['Share how one finished project was made', 'Use a Work Receipt to create clear credits and an exported project record without publishing your complete private history.', 'Work Receipt, then export.'],
+    ['Give AI access or consequential authority', 'If AI can act, publish, change accounts, or perform work you cannot fully judge, use the optional Load Test to examine whether the current setup can carry that arrangement.', 'Work Receipt, then an optional Load Test.'],
   ];
-  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">Examples</p><h1>See what a Snapshot can reveal.</h1><p>Start with one project. Return with comparable work and My Changes shows what moved. Use the optional Load Test only when the arrangement needs a closer review.</p></header><section aria-labelledby="example-types-heading"><h2 class="sr-only" id="example-types-heading">Project examples</h2><div class="grid-2">${examples.map(([title, copy, output], index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${title}</h3><p>${copy}</p><p class="kicker">Start with</p><p><strong>${output}</strong></p></article>`).join('')}</div></section><div class="button-row"><a class="button" href="#/snapshot">Create a Snapshot</a><a class="button button-secondary" href="#/changes">View My Changes</a></div></div>`;
+  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">Examples</p><h1>See what a Work Receipt can reveal.</h1><p>Start with one project. Return with comparable work and My Changes shows what moved. Use the optional Load Test only when the arrangement needs a closer review.</p></header><section aria-labelledby="example-types-heading"><h2 class="sr-only" id="example-types-heading">Project examples</h2><div class="grid-2">${examples.map(([title, copy, output], index) => `<article class="card"><span class="card-number">0${index + 1}</span><h3>${title}</h3><p>${copy}</p><p class="kicker">Start with</p><p><strong>${output}</strong></p></article>`).join('')}</div></section><div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/changes">View My Changes</a></div></div>`;
 }
 
 function renderPricing() {
   document.title = 'Pricing | evAIdence';
   main.innerHTML = `<div class="page">
-    <header class="page-header"><p class="eyebrow">Pricing</p><h1>Full access is open during the Founding Preview.</h1><p>Create Snapshots, build a private change history, and try the optional Load Test free while the product is being tested. Future paid plans will make it easier to preserve longer histories, manage several projects, and publish complete Work Records.</p></header>
+    <header class="page-header"><p class="eyebrow">Pricing</p><h1>Full access is open during the Founding Preview.</h1><p>Create Work Receipts, build a private change history, and try the optional Load Test free while the product is being tested. Future paid plans will make it easier to preserve longer histories, manage several projects, and publish complete Detailed Work Records.</p></header>
     <div class="grid-2">
-      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Create a useful baseline and see what changes in later comparable work.</p><ul><li>Create and save Snapshots in this browser</li><li>Compare comparable work in My Changes</li><li>See human work, AI work, authorization, and unknowns</li><li>Export and import private Snapshot history</li><li>Download a Snapshot and short disclosure</li><li>Try the optional Load Test</li></ul><a class="button" href="#/snapshot">Create a Snapshot</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned one-time purchase</span><h2>Project Record</h2><p class="price">Price to be announced</p><p>Create one evidence-linked Snapshot and a shareable Work Record for a work product you plan to publish, submit, deliver, or defend.</p><ul><li>One complete Snapshot</li><li>AI setup, roles, and supporting records</li><li>Evidence-linked credits</li><li>Downloadable Work Record and disclosure</li><li>Optional Load Test for the same project</li></ul><a class="button button-secondary" href="#/sample">See an example</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Creator</h2><p class="price">Monthly pricing to be announced</p><p>Keep a private history of how your relationship with AI changes across projects.</p><ul><li>Ongoing Snapshots</li><li>My Changes timeline</li><li>Comparisons of AI entry point, work, permission, and human checking</li><li>Reusable creator and AI profiles</li><li>Evidence library</li><li>Shareable Work Records for selected projects</li></ul><a class="button button-secondary" href="#/examples">See when to use it</a></article>
-      <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Team</h2><p class="price">Pricing to be announced</p><p>See how people, AI tools, review roles, and permissions change across shared work.</p><ul><li>Shared project Snapshots</li><li>Contributor confirmations</li><li>Reviewer and approval records</li><li>Role and workflow changes over time</li><li>Reusable team profiles</li><li>Organization history and audit export</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
+      <article class="card pricing-card featured"><span class="stamp">Available now</span><h2>Founding Preview</h2><p class="price">$0 during testing</p><p>Create a useful baseline and see what changes in later comparable work.</p><ul><li>Create and save Work Receipts in this browser</li><li>Compare comparable work in My Changes</li><li>See human work, AI work, authorization, records, and unknowns</li><li>Export and import private Work Receipt history</li><li>Export private receipt data, print the receipt, and copy its work credits</li><li>Try the optional Load Test</li></ul><a class="button" href="#/snapshot">Create a Work Receipt</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned one-time purchase</span><h2>Project Record</h2><p class="price">Price to be announced</p><p>Create one evidence-linked Work Receipt and a shareable Detailed Work Record for a work product you plan to publish, submit, deliver, or defend.</p><ul><li>One complete Work Receipt</li><li>AI setup, roles, and supporting records</li><li>Evidence-linked work credits</li><li>Downloadable Detailed Work Record</li><li>Optional Load Test for the same project</li></ul><a class="button button-secondary" href="#/sample">See an example</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Creator</h2><p class="price">Monthly pricing to be announced</p><p>Keep a private history of how your relationship with AI changes across projects.</p><ul><li>Ongoing Work Receipts</li><li>My Changes timeline</li><li>Comparisons of AI entry point, work, permission, and human checking</li><li>Reusable creator and AI profiles</li><li>Evidence library</li><li>Shareable Detailed Work Records for selected projects</li></ul><a class="button button-secondary" href="#/examples">See when to use it</a></article>
+      <article class="card pricing-card"><span class="stamp stamp-warning">Planned subscription</span><h2>Team</h2><p class="price">Pricing to be announced</p><p>See how people, AI tools, review roles, and permissions change across shared work.</p><ul><li>Shared project Work Receipts</li><li>Contributor confirmations</li><li>Reviewer and approval records</li><li>Role and workflow changes over time</li><li>Reusable team profiles</li><li>Organization history and audit export</li></ul><a class="button button-secondary" href="#/method">Review the method</a></article>
     </div>
-    <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> Free access should let someone create a useful baseline and see what changes in a later Snapshot. Paid plans will make it easier to preserve longer histories, manage several projects, collaborate, and publish complete Work Records. Payment will never produce a more favorable finding.</p></div>
+    <div class="callout" style="margin-top:2rem"><p><strong>Pricing principle:</strong> Free access should let someone create a useful baseline and see what changes in a later Work Receipt. Paid plans will make it easier to preserve longer histories, manage several projects, collaborate, and publish complete Detailed Work Records. Payment will never produce a more favorable finding.</p></div>
   </div>`;
 }
 
@@ -3577,31 +3611,31 @@ function renderFAQ() {
   document.title = 'FAQ | evAIdence';
   const faqs = [
     ['How do you pronounce evAIdence?', 'Evidence. The letters AI are emphasized because AI is inside the evidence and the workflow. It is part of the work, not the whole work.'],
-    ['What does this site do?', 'evAIdence creates a Snapshot of one human and AI collaboration from records the work already produced. Save another Snapshot for comparable work and My Changes shows what moved. You can export one project record or use the optional Load Test when an arrangement needs closer review.'],
-    ['Where should I start?', 'Start with a Snapshot. Add the AI conversation, what AI already had, and any source, finished-work, or version-history records you have. Your first Snapshot becomes the baseline.'],
-    ['What is My Changes?', 'My Changes compares similar Snapshots and shows where AI entered, what it did, what you did, what authority it had, and what the records support. It describes change without calling more or less AI automatically good or bad.'],
-    ['What is a Work Record?', 'A Work Record is a shareable account for one project. It can show credits and selected supporting records without revealing your full private Snapshot history.'],
+    ['What does this site do?', 'evAIdence creates a Work Receipt for one human and AI collaboration from the account and records you provide. Save another Work Receipt for comparable work and My Changes shows what moved. You can also create a Detailed Work Record or use the optional Load Test when an arrangement needs closer review.'],
+    ['Where should I start?', 'Start with a Work Receipt. Add the AI conversation, what AI already had, what you added, and any source, finished-work, or version-history records you have. Your first Work Receipt becomes the baseline.'],
+    ['What is My Changes?', 'My Changes compares similar Work Receipts and shows where AI entered, what it did, what you did, what access it had, when it needed approval, and what the records support. It describes change without calling more or less AI automatically good or bad.'],
+    ['What is a Detailed Work Record?', 'A Detailed Work Record is a richer shareable account for one project. It can connect claims and credits to selected supporting records without revealing your full private Work Receipt history.'],
     ['When should I use the Load Test?', 'Use the optional Load Test when AI can act outside the conversation, receives more access, enters an important workflow, influences consequential work, or performs work you may not be able to judge fully.'],
     ['How does this tool define trust?', 'Trust is the decision to rely on a tool for a defined role. The Load Test asks whether your capacity and the capacity of anyone else doing or checking the work, together with the workflow, controls, and stakes, support that reliance.'],
     ['Is having a human in the loop enough?', 'No. The person needs the knowledge, access, authority, time, attention, and stamina to recognize a serious problem, correct it, or stop the work. A named reviewer counts only if that person is actually in the workflow and has what the role requires.'],
-    ['Is this an AI detector?', 'No. AI detectors guess from patterns in a finished product. A Snapshot records the process, contributions, decisions, and available evidence. It does not scan writing style or help people bypass detection.'],
+    ['Is this an AI detector?', 'No. AI detectors guess from patterns in a finished product. A Work Receipt records the process, contributions, decisions, and records you provide. It does not scan writing style or help people bypass detection.'],
     ['Can the Work Record support an authorship claim?', 'The Work Record creates a dated account of where the work began, what the human and AI did, and who made the final decisions. It can connect that account to one exact work version and supporting records. The account becomes stronger when important statements are linked to evidence and another person reviews that evidence.'],
-    ['Does evAIdence score how much of the work is human?', 'No. A single percentage cannot honestly represent originating, directing, drafting, revising, checking, authorizing, and approving. A Snapshot shows those actions separately.'],
+    ['Does evAIdence score how much of the work is human?', 'No. A single percentage cannot honestly represent originating, directing, drafting, revising, checking, authorizing, and approving. A Work Receipt shows those actions separately.'],
     ['What does “basis provided” mean?', 'It counts findings that are either shown in supplied records or confirmed by the creator. The result also reports those categories separately from what remains unknown. It is not an authorship score, trust score, or judgment about whether the collaboration was good.'],
     ['If I run the optional Load Test, is its score the probability that AI is correct?', 'No. The Load Test score shows how the recorded answers about human review capacity, AI role fit, AI behavior, workflow controls, and outcome checks line up for this work. Evidence Strength separately shows which answers have supporting records identified.'],
     ['What happens if I do not know a Load Test answer?', 'The Load Test does not turn “I do not know” into zero or ask you to guess. It shows which information is missing and does not calculate a score until the required answers are known.'],
     ['What is Evidence Strength?', 'Evidence Strength shows which answers you tied to a current supporting record and whether an independent review was recorded. The tool does not inspect those records. It is separate from the Load Test score. Missing evidence creates uncertainty, not automatic proof of poor ability.'],
     ['Does a newer or more powerful model automatically improve the result?', 'No. Another model may perform better in a specific role, but it needs to be compared on the same representative tasks. A model change does not improve human capacity, permissions, workflow controls, or outcome evidence.'],
     ['What if several AI tools were used?', 'Record each tool, model or version, setup, and job. Identify the most important or risky job for this Load Test. Run another Load Test if a second important job needs separate evaluation.'],
-    ['Do I have to make my AI conversations public?', 'No. The Snapshot stores a reference and optional fingerprint, not raw pasted conversation text. You decide whether any evidence is later shared. If key records are unavailable, the Snapshot shows the gap as unknown.'],
+    ['Do I have to make my AI conversations public?', 'No. The Work Receipt stores a reference and optional fingerprint, not raw pasted conversation text. You decide whether any record is later shared. If key records are unavailable, the Work Receipt shows the gap as unknown.'],
     ['What if I did not use AI?', 'The detailed Work Record can state: “No AI use reported in the documented workflow.” That is a bounded statement, not proof that no AI was used anywhere.'],
     ['Does a lower Load Test score mean I cannot publish or launch?', 'No. The Load Test does not decide whether you proceed. A lower score means the assigned AI role places more load on people or the workflow than the current answers show they can carry. The result shows that wager and ways to change it.'],
     ['Who remains accountable?', 'Accountability follows agency. You remain accountable for choices you had the authority and capacity to make, including how much authority you gave the AI tool.'],
-    ['When should I create another Snapshot?', 'Create another Snapshot after comparable work or when the model, AI setup, instructions, source material, permissions, your role, or your checking changes. Run the optional Load Test again when a change could materially affect capacity, workflow, or consequences.'],
-    ['Where is my information stored?', 'In this preview, Snapshots and My Changes stay in the current browser unless you export them. Do not enter confidential, regulated, or sensitive information.'],
-    ['Is this scientifically validated?', 'No. Snapshots, comparisons, Work Records, and Load Test results use transparent, practice-based working methods. They have not been independently validated as scientific instruments.'],
+    ['When should I create another Work Receipt?', 'Create another Work Receipt after comparable work or when the model, AI setup, instructions, source material, permissions, your role, or your checking changes. Run the optional Load Test again when a change could materially affect capacity, workflow, or consequences.'],
+    ['Where is my information stored?', 'In this preview, Work Receipts and My Changes stay in the current browser unless you export them. Do not enter confidential, regulated, or sensitive information.'],
+    ['Is this scientifically validated?', 'No. Work Receipts, comparisons, Detailed Work Records, and Load Test results use transparent, practice-based working methods. They have not been independently validated as scientific instruments.'],
   ];
-  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">FAQ</p><h1>Plain answers about what this tool can and cannot say.</h1></header><div class="faq-list">${faqs.map(([question, answer]) => `<details><summary>${question}</summary><p>${answer}</p></details>`).join('')}</div><div class="button-row"><a class="button" href="#/snapshot">Create a Snapshot</a><a class="button button-secondary" href="#/changes">View My Changes</a></div></div>`;
+  main.innerHTML = `<div class="page"><header class="page-header"><p class="eyebrow">FAQ</p><h1>Plain answers about what this tool can and cannot say.</h1></header><div class="faq-list">${faqs.map(([question, answer]) => `<details><summary>${question}</summary><p>${answer}</p></details>`).join('')}</div><div class="button-row"><a class="button" href="#/snapshot">Create a Work Receipt</a><a class="button button-secondary" href="#/changes">View My Changes</a></div></div>`;
 }
 
 function renderNotFound() {

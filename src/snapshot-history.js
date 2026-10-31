@@ -1,7 +1,7 @@
 import { canonicalProjectId } from './project-identity.js';
 
-export const SNAPSHOT_SCHEMA_VERSION = 2;
-export const SNAPSHOT_HISTORY_SCHEMA_VERSION = 2;
+export const SNAPSHOT_SCHEMA_VERSION = 3;
+export const SNAPSHOT_HISTORY_SCHEMA_VERSION = 3;
 
 export const FINDING_STATUS = Object.freeze({
   SHOWN_IN_RECORDS: "shown-in-records",
@@ -23,7 +23,53 @@ export const AI_SETUP_OPTIONS = Object.freeze([
   "unknown",
 ]);
 
+export const STARTING_CONTEXT_OPTIONS = Object.freeze([
+  "nothing-added",
+  "saved-instructions-memory",
+  "custom-ai",
+  "existing-project-workspace",
+  "prior-conversations",
+  "connected-apps-tools",
+  // These two values preserve broad answers collected by the older form. They
+  // must not be expanded into more precise claims during migration.
+  "legacy-context-enabled",
+  "legacy-multiple",
+  "unknown",
+]);
+
+export const ADDED_CONTEXT_OPTIONS = Object.freeze([
+  "conversation",
+  "documents",
+  "links",
+  "examples",
+  "instructions",
+  "connected-apps-tools",
+  "nothing-else",
+  "unknown",
+]);
+
+export const ACCESS_LEVEL_OPTIONS = Object.freeze([
+  "chat-only",
+  "read",
+  "create",
+  "edit-run",
+  "external-action",
+  "unknown",
+]);
+
+export const APPROVAL_MODE_OPTIONS = Object.freeze([
+  "per-change",
+  "before-external-action",
+  "standing-permission",
+  "no-external-actions",
+  "unknown",
+]);
+
 const AI_SETUP_VALUES = new Set(AI_SETUP_OPTIONS);
+const STARTING_CONTEXT_VALUES = new Set(STARTING_CONTEXT_OPTIONS);
+const ADDED_CONTEXT_VALUES = new Set(ADDED_CONTEXT_OPTIONS);
+const ACCESS_LEVEL_VALUES = new Set(ACCESS_LEVEL_OPTIONS);
+const APPROVAL_MODE_VALUES = new Set(APPROVAL_MODE_OPTIONS);
 const INTENT_VALUES = new Set(["intentional", "not-intentional", "unsure", "not-answered"]);
 const FINDING_STATUS_VALUES = new Set(Object.values(FINDING_STATUS));
 const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
@@ -169,6 +215,106 @@ function normalizeAiSetup(value) {
   return AI_SETUP_VALUES.has(candidate) ? candidate : "unknown";
 }
 
+function normalizeChoiceList(value, allowed, aliases = {}, emptyValue = []) {
+  const normalized = cleanList(value)
+    .map((item) => aliases[item.toLocaleLowerCase()] || item.toLocaleLowerCase())
+    .filter((item) => allowed.has(item));
+  if (!normalized.length) return [...emptyValue];
+  return [...new Set(normalized)];
+}
+
+function migratedStartingContext(aiSetup) {
+  return ({
+    "regular-chat": ["nothing-added"],
+    "context-enabled-chat": ["legacy-context-enabled"],
+    "custom-ai": ["custom-ai"],
+    multiple: ["legacy-multiple"],
+    unknown: ["unknown"],
+  })[aiSetup] || ["unknown"];
+}
+
+function normalizeStartingContext(value, aiSetup) {
+  const aliases = {
+    "nothing i added": "nothing-added",
+    "saved instructions or memory": "saved-instructions-memory",
+    "custom gpt": "custom-ai",
+    "custom assistant": "custom-ai",
+    workspace: "existing-project-workspace",
+    project: "existing-project-workspace",
+    "earlier conversations": "prior-conversations",
+    "connected tools": "connected-apps-tools",
+    "connected apps": "connected-apps-tools",
+    "i do not know": "unknown",
+  };
+  const normalized = normalizeChoiceList(value, STARTING_CONTEXT_VALUES, aliases);
+  if (!normalized.length) return migratedStartingContext(aiSetup);
+  const known = normalized.filter((item) => item !== "unknown" && item !== "nothing-added");
+  if (known.length) return known;
+  if (normalized.includes("nothing-added")) return ["nothing-added"];
+  return ["unknown"];
+}
+
+function normalizeAddedContext(value) {
+  const aliases = {
+    conversations: "conversation",
+    files: "documents",
+    sources: "documents",
+    websites: "links",
+    templates: "examples",
+    requirements: "instructions",
+    "connected tools": "connected-apps-tools",
+    "connected apps": "connected-apps-tools",
+    "nothing else": "nothing-else",
+    "i do not know": "unknown",
+  };
+  const normalized = normalizeChoiceList(value, ADDED_CONTEXT_VALUES, aliases);
+  if (!normalized.length) return [];
+  const known = normalized.filter((item) => item !== "unknown" && item !== "nothing-else");
+  if (known.length) return known;
+  if (normalized.includes("nothing-else")) return ["nothing-else"];
+  return ["unknown"];
+}
+
+function legacyAiSetup(startingContext) {
+  if (startingContext.includes("unknown")) return "unknown";
+  if (startingContext.includes("legacy-multiple") || startingContext.length > 1) return "multiple";
+  if (startingContext.includes("nothing-added")) return "regular-chat";
+  if (startingContext.includes("custom-ai")) return "custom-ai";
+  return "context-enabled-chat";
+}
+
+function normalizeAccessLevel(value) {
+  const normalized = cleanText(value).toLocaleLowerCase();
+  const aliases = {
+    "respond only": "chat-only",
+    "chat only": "chat-only",
+    "read only": "read",
+    write: "create",
+    edit: "edit-run",
+    run: "edit-run",
+    publish: "external-action",
+    deploy: "external-action",
+    "i do not know": "unknown",
+  };
+  const candidate = aliases[normalized] || normalized;
+  return ACCESS_LEVEL_VALUES.has(candidate) ? candidate : "unknown";
+}
+
+function normalizeApprovalMode(value) {
+  const normalized = cleanText(value).toLocaleLowerCase();
+  const aliases = {
+    "approval each time": "per-change",
+    "each action": "per-change",
+    "before publishing": "before-external-action",
+    "standing permission": "standing-permission",
+    "no external action": "no-external-actions",
+    "no external actions": "no-external-actions",
+    "i do not know": "unknown",
+  };
+  const candidate = aliases[normalized] || normalized;
+  return APPROVAL_MODE_VALUES.has(candidate) ? candidate : "unknown";
+}
+
 function normalizeIntent(value) {
   const normalized = cleanText(value).toLocaleLowerCase();
   const aliases = {
@@ -248,6 +394,27 @@ function normalizeReferences(value, makeId, prefix) {
     .filter(Boolean);
 }
 
+function duplicateSuppliedReferenceIds(source) {
+  const chatValues = Array.isArray(source.chatReferences)
+    ? source.chatReferences
+    : source.chatReference
+      ? [source.chatReference]
+      : [];
+  const values = [
+    ...chatValues,
+    ...list(source.sourceReferences),
+    ...list(source.otherEvidence),
+  ];
+  const counts = new Map();
+  values.forEach((value) => {
+    if (!value || typeof value !== "object" || Array.isArray(value)) return;
+    const id = cleanText(value.id, 128);
+    if (!SAFE_ID.test(id)) return;
+    counts.set(id, (counts.get(id) || 0) + 1);
+  });
+  return new Set([...counts].filter(([, count]) => count > 1).map(([id]) => id));
+}
+
 function normalizeFindingStatus(value) {
   const normalized = cleanText(value).toLocaleLowerCase();
   const aliases = {
@@ -301,16 +468,23 @@ export function normalizeSnapshot(input = {}, options = {}) {
   const now = suppliedNow(options);
   const makeId = makeIdFactory(options);
   const preferredId = options.id || source.id;
-  const chatReference = normalizeReference(source.chatReference, makeId, "chat");
+  const legacyAiSetupValue = normalizeAiSetup(source.aiSetup);
+  const startingContext = normalizeStartingContext(source.startingContext || source.startingContexts, legacyAiSetupValue);
+  const chatReferences = Array.isArray(source.chatReferences)
+    ? normalizeReferences(source.chatReferences, makeId, "chat")
+    : source.chatReference
+      ? normalizeReferences([source.chatReference], makeId, "chat")
+      : [];
+  const chatReference = chatReferences[0] || null;
   const sourceReferences = normalizeReferences(source.sourceReferences, makeId, "source");
   const otherEvidence = normalizeReferences(source.otherEvidence, makeId, "evidence");
+  const duplicateReferenceIds = duplicateSuppliedReferenceIds(source);
   const artifactUrl = safeUrl(source.artifactUrl);
   const githubUrl = safeUrl(source.githubUrl);
   const evidenceKeys = new Set([
-    chatReference?.id,
-    chatReference?.url,
-    ...sourceReferences.flatMap(({ id, url }) => [id, url]),
-    ...otherEvidence.flatMap(({ id, url }) => [id, url]),
+    ...chatReferences.flatMap(({ id, url }) => [duplicateReferenceIds.has(id) ? "" : id, url]),
+    ...sourceReferences.flatMap(({ id, url }) => [duplicateReferenceIds.has(id) ? "" : id, url]),
+    ...otherEvidence.flatMap(({ id, url }) => [duplicateReferenceIds.has(id) ? "" : id, url]),
     githubUrl ? "github" : "",
     githubUrl ? "githubUrl" : "",
     githubUrl,
@@ -334,12 +508,21 @@ export function normalizeSnapshot(input = {}, options = {}) {
     id: makeId("snapshot", preferredId),
     projectId: canonicalProjectId(source.projectId) || legacyProjectId(source) || makeId("project"),
     createdAt: validDate(source.createdAt, now),
+    creatorName: cleanText(source.creatorName),
     projectName: cleanText(source.projectName),
     workType: cleanText(source.workType),
     stage: cleanText(source.stage || "unknown").toLocaleLowerCase() || "unknown",
     artifactUrl,
     aiSystems: normalizeAiSystems(source.aiSystems),
-    aiSetup: normalizeAiSetup(source.aiSetup),
+    aiSetup: source.aiSetup ? legacyAiSetupValue : legacyAiSetup(startingContext),
+    startingContext,
+    addedContext: normalizeAddedContext(source.addedContext || source.addedContexts),
+    accessLevel: normalizeAccessLevel(source.accessLevel),
+    approvalMode: normalizeApprovalMode(source.approvalMode),
+    connectedTools: cleanList(source.connectedTools, MAX_SUMMARY_TEXT),
+    chatReferences,
+    // Retain the first-reference alias so older code can read v3 snapshots
+    // while the UI moves to the multiple-record field.
     chatReference,
     sourceReferences,
     githubUrl,
@@ -485,13 +668,27 @@ export function compareSnapshots(previous, current) {
       ? null
       : afterCoverage.percent - beforeCoverage.percent,
   };
+  const legacyAuthorizationChange = valueChange(
+    "recorded-authorization",
+    "Recorded authorization details",
+    before.finalAuthority,
+    after.finalAuthority,
+  );
+  const needsLegacyAuthorizationComparison = (
+    (before.accessLevel === "unknown" && before.approvalMode === "unknown")
+    || (after.accessLevel === "unknown" && after.approvalMode === "unknown")
+  );
   const dimensions = [
     listChange("ai-systems", "AI systems and models", displayAiSystems(before.aiSystems), displayAiSystems(after.aiSystems)),
-    valueChange("ai-setup", "What AI started with", before.aiSetup, after.aiSetup),
+    listChange("starting-context", "What AI already had", before.startingContext, after.startingContext),
+    listChange("added-context", "What was added during the work", before.addedContext, after.addedContext),
+    listChange("connected-tools", "Connected apps and tools", before.connectedTools, after.connectedTools),
+    valueChange("access-level", "What AI could access or do", before.accessLevel, after.accessLevel),
+    valueChange("approval-mode", "When AI needed approval", before.approvalMode, after.approvalMode),
+    ...(needsLegacyAuthorizationComparison ? [legacyAuthorizationChange] : []),
     listChange("ai-entry-point", "What happened before AI entered", before.beforeAi, after.beforeAi),
     listChange("ai-roles", "What AI did", before.aiRoles, after.aiRoles),
     listChange("human-roles-checking", "What the human did and checked", before.humanRoles, after.humanRoles),
-    valueChange("authorization", "What AI could do before human review", before.finalAuthority, after.finalAuthority),
     coverageChange,
   ];
   const changes = dimensions.filter(({ changed }) => changed);

@@ -11,11 +11,51 @@ const WORK_TYPE_LABELS = Object.freeze({
 });
 
 const AI_SETUP_LABELS = Object.freeze({
-  'regular-chat': 'Only this conversation',
+  'regular-chat': 'A fresh conversation with no added context',
   'context-enabled-chat': 'Saved instructions, memory, files, tools, or project context',
   'custom-ai': 'A custom assistant, GPT, or agent',
   multiple: 'More than one setup',
   unknown: 'AI setup not identified',
+});
+
+const STARTING_CONTEXT_LABELS = Object.freeze({
+  'nothing-added': 'Nothing the creator added before the project began',
+  'saved-instructions-memory': 'Saved instructions or memory',
+  'custom-ai': 'A custom GPT, assistant, or agent',
+  'existing-project-workspace': 'An existing project or workspace',
+  'prior-conversations': 'Earlier conversations about this work',
+  'connected-apps-tools': 'Connected apps, accounts, or tools',
+  'legacy-context-enabled': 'Earlier record: saved context was available, but details were not recorded',
+  'legacy-multiple': 'Earlier record: more than one setup was used, but details were not recorded',
+  unknown: 'Starting context not identified',
+});
+
+const ADDED_CONTEXT_LABELS = Object.freeze({
+  conversation: 'Prompts or conversation',
+  documents: 'Documents or source material',
+  links: 'Links or websites',
+  examples: 'Examples or templates',
+  instructions: 'New instructions or requirements',
+  'connected-apps-tools': 'Connected apps, accounts, or tools',
+  'nothing-else': 'Nothing else was added',
+  unknown: 'What was added is unknown',
+});
+
+const ACCESS_LEVEL_LABELS = Object.freeze({
+  'chat-only': 'Respond in the conversation only',
+  read: 'Read files, pages, or connected apps',
+  create: 'Create drafts, files, images, or code',
+  'edit-run': 'Change files or code and run tools or tests',
+  'external-action': 'Send, publish, submit, deploy, or change a connected service',
+  unknown: 'Access level not identified',
+});
+
+const APPROVAL_MODE_LABELS = Object.freeze({
+  'per-change': 'Approval required before each change outside the conversation',
+  'before-external-action': 'Approval required before sending, publishing, submitting, or deploying',
+  'standing-permission': 'Could act within previously approved limits',
+  'no-external-actions': 'Could not change anything outside the conversation or workspace',
+  unknown: 'Approval boundary not identified',
 });
 
 const STATUS_BY_STAGE = Object.freeze({
@@ -61,15 +101,22 @@ function referenceToEvidence(reference, fallbackLabel) {
 
 function snapshotEvidence(snapshot) {
   const candidates = [];
-  const chat = referenceToEvidence(snapshot.chatReference, 'AI conversation');
-  if (chat) candidates.push(chat);
+  const chatReferences = snapshot.chatReferences?.length
+    ? snapshot.chatReferences
+    : snapshot.chatReference
+      ? [snapshot.chatReference]
+      : [];
+  chatReferences.forEach((reference) => {
+    const chat = referenceToEvidence(reference, 'AI conversation');
+    if (chat) candidates.push(chat);
+  });
   snapshot.sourceReferences.forEach((reference) => {
     const item = referenceToEvidence(reference, 'Source material');
     if (item) candidates.push(item);
   });
   if (snapshot.githubUrl) candidates.push({
-    label: 'GitHub repository',
-    description: 'Repository link supplied with the Snapshot. Its contents were not inspected.',
+    label: 'Repository or version history',
+    description: 'Repository or version-history link supplied with the Work Receipt. Its contents were not inspected.',
     url: snapshot.githubUrl,
     version: '',
     date: '',
@@ -98,10 +145,21 @@ function mappedSystems(snapshot) {
   const role = snapshot.aiSystems.length > 1 && roles
     ? `Roles recorded across the listed AI tools: ${roles}`
     : roles;
-  const setup = [
-    AI_SETUP_LABELS[snapshot.aiSetup] || snapshot.aiSetup,
-    snapshot.finalAuthority ? `Authorization recorded in the Snapshot: ${snapshot.finalAuthority}` : '',
+  const arrangementDetails = [
+    snapshot.startingContext?.length
+      ? `Starting context: ${snapshot.startingContext.map((value) => STARTING_CONTEXT_LABELS[value] || value).join('; ')}`
+      : AI_SETUP_LABELS[snapshot.aiSetup] || snapshot.aiSetup,
+    snapshot.addedContext?.length
+      ? `Added during the work: ${snapshot.addedContext.map((value) => ADDED_CONTEXT_LABELS[value] || value).join('; ')}`
+      : '',
+    snapshot.accessLevel ? `Access or action level: ${ACCESS_LEVEL_LABELS[snapshot.accessLevel] || snapshot.accessLevel}` : '',
+    snapshot.approvalMode ? `Approval boundary: ${APPROVAL_MODE_LABELS[snapshot.approvalMode] || snapshot.approvalMode}` : '',
+    snapshot.connectedTools?.length ? `Connected apps or tools: ${snapshot.connectedTools.join('; ')}` : '',
+    snapshot.finalAuthority ? `Authorization recorded in the Work Receipt: ${snapshot.finalAuthority}` : '',
   ].filter(Boolean).join('. ');
+  const setup = snapshot.aiSystems.length > 1 && arrangementDetails
+    ? `Overall arrangement across the listed AI tools; per-tool access was not recorded: ${arrangementDetails}`
+    : arrangementDetails;
   return snapshot.aiSystems.map(({ product, model }) => ({
     product,
     model,
@@ -126,6 +184,7 @@ export function workRecordFromSnapshot(snapshotInput, options = {}) {
     title: snapshot.projectName,
     workType: WORK_TYPE_LABELS[snapshot.workType] || snapshot.workType,
     description: '',
+    creator: { name: snapshot.creatorName, role: 'Creator' },
     artifact: { url: snapshot.artifactUrl, version: '', date: '' },
     aiUse: snapshot.aiSystems.length || snapshot.aiRoles.length ? 'yes' : 'unknown',
     modelHistoryCompleteness: 'unknown',
@@ -175,7 +234,7 @@ export function mergeSnapshotIntoWorkRecord(recordInput, snapshotInput, options 
   const current = normalizeWorkRecord(recordInput, options);
   const incoming = workRecordFromSnapshot(snapshotInput, options);
   if (current.projectId && incoming.projectId && current.projectId !== incoming.projectId) {
-    throw new Error('The Snapshot and Work Record belong to different projects.');
+    throw new Error('The Work Receipt and Detailed Work Record belong to different projects.');
   }
   return normalizeWorkRecord({
     ...current,
