@@ -620,7 +620,7 @@ function renderHome() {
       <div class="callout ship-preview">
         <p class="kicker">A focused companion is coming</p>
         <h2 id="ship-heading">Building real software with AI?</h2>
-        <p><strong>Before You Ship</strong> will use the same evAIdence record to show what a nondeveloper can explain, what was tested, what remains unknown, and what changed before a release. It will have its own focused experience instead of making this one harder to use.</p>
+        <p><strong>Before You Ship</strong> will be a separate tool for AI-assisted software projects. It will focus on what you understand, what was tested, and what still needs to be checked before release.</p>
       </div>
     </section>
 

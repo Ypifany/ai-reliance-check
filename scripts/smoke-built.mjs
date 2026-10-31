@@ -65,6 +65,8 @@ assert.match(appSource, /A receipt for work made with AI/, 'The homepage must id
 assert.match(appSource, /document\.title = 'evAIdence \| Protect your credibility when AI helps'/, 'The loaded homepage title must keep the credibility promise');
 assert.match(appSource, /Created by Cheryl Abram\./, 'The homepage must identify the creator');
 assert.match(appSource, /https:\/\/www\.ypifany\.org\/about/, 'The homepage must link to the creator’s About page');
+assert.match(appSource, /Before You Ship<\/strong> will be a separate tool for AI-assisted software projects\./, 'The homepage must describe Before You Ship in plain language');
+assert.doesNotMatch(appSource, /will use the same evAIdence record|own focused experience instead of making this one harder to use/, 'The homepage must not promise an integration or use unclear product language');
 assert.match(snapshotUiSource, /name="creatorName"/, 'A Work Receipt must collect the creator name');
 assert.match(snapshotUiSource, /checkboxOptions\('startingContext'/, 'Starting AI context must permit more than one answer');
 assert.match(snapshotUiSource, /checkboxOptions\('addedContext'/, 'Context added during the work must permit more than one answer');
