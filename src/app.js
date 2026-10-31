@@ -1,4 +1,5 @@
 import './styles.css';
+import { canonicalProjectId } from './project-identity.js';
 import {
   DIMENSIONS,
   getAssessmentScopeKey,
@@ -32,6 +33,7 @@ import {
   toPublicWorkRecord,
 } from './work-record.js';
 import { renderChangesPage, renderSnapshotPage } from './snapshot-ui.js';
+import { mergeSnapshotIntoWorkRecord, workRecordFromSnapshot } from './snapshot-work-record.js';
 
 const STORAGE_KEY = 'ai-reliance-check:v0.2';
 const LEGACY_STORAGE_KEY = 'ai-reliance-check:v0.1';
@@ -125,6 +127,7 @@ function makeAssessment() {
     schemaVersion: ASSESSMENT_SCHEMA_VERSION,
     methodVersion: METHOD_VERSION,
     id: makeId('check'),
+    projectId: makeId('project'),
     stage: '',
     project: {
       name: '',
@@ -266,6 +269,7 @@ function loadAssessment() {
     ...stored,
     schemaVersion: ASSESSMENT_SCHEMA_VERSION,
     methodVersion: METHOD_VERSION,
+    projectId: canonicalProjectId(stored.projectId || stored.id || fallback.projectId),
     project,
     answers: stored.answers && typeof stored.answers === 'object' ? stored.answers : {},
   };
@@ -419,6 +423,40 @@ function downloadJSON(filename, value) {
   URL.revokeObjectURL(url);
 }
 
+function snapshotWorkType(value = '') {
+  const normalized = String(value).toLocaleLowerCase();
+  if (/writ|research|publish|article|report|factual/.test(normalized)) return 'writing';
+  if (/software|website|application|\bapp\b|code|configuration/.test(normalized)) return 'software';
+  if (/training|learning|course/.test(normalized)) return 'training';
+  if (/image|audio|video|design|creative/.test(normalized)) return 'creative';
+  if (/analysis|recommendation|decision/.test(normalized)) return 'decision';
+  return 'other';
+}
+
+function knownProjectsForSnapshots() {
+  const projects = new Map();
+  const add = (project) => {
+    if (!project.projectId || !project.projectName) return;
+    const existing = projects.get(project.projectId);
+    if (!existing || String(project.createdAt || '') >= String(existing.createdAt || '')) projects.set(project.projectId, project);
+  };
+  if (creationRecord.title) add({
+    projectId: creationRecord.projectId,
+    projectName: creationRecord.title,
+    workType: snapshotWorkType(creationRecord.workType || creationRecord.description),
+    stage: creationRecord.readiness?.stage || ({ ready: 'release', 'public-prototype': 'release', released: 'live', retired: 'live' }[creationRecord.status] || 'build'),
+    createdAt: creationRecord.updatedAt,
+  });
+  if (assessment.project?.name) add({
+    projectId: assessment.projectId,
+    projectName: assessment.project.name,
+    workType: ({ factual: 'writing', software: 'software', training: 'training', creative: 'creative', decision: 'decision', automation: 'other' })[assessment.project.workTypes?.[0]] || snapshotWorkType(assessment.project.task),
+    stage: assessment.stage || 'build',
+    createdAt: assessment.updatedAt,
+  });
+  return [...projects.values()];
+}
+
 function route() {
   const path = (location.hash || '#/').slice(1).split('?')[0];
   setMenuOpen(false);
@@ -429,9 +467,9 @@ function route() {
     '/check': renderCheck,
     '/load-test': renderCheck,
     '/sample': renderSample,
-    '/snapshot': () => renderSnapshotPage(main, { showToast }),
+    '/snapshot': () => renderSnapshotPage(main, { showToast, onCreateWorkRecord: prepareWorkRecordFromSnapshot, knownProjects: knownProjectsForSnapshots() }),
     '/changes': () => renderChangesPage(main, { showToast }),
-    '/creation-record': () => renderSnapshotPage(main, { showToast }),
+    '/creation-record': () => renderSnapshotPage(main, { showToast, onCreateWorkRecord: prepareWorkRecordFromSnapshot, knownProjects: knownProjectsForSnapshots() }),
     '/detailed-record': renderCreationRecord,
     '/method': renderMethod,
     '/research': renderResearch,
@@ -472,7 +510,7 @@ function homepageCreditsSequence(duplicate = false) {
     <div class="credits-entry"><p>Implementation and production</p><strong>AI tool</strong><span>Wrote and revised code and executed approved publication changes.</span></div>
     <div class="credits-entry"><p>Verification and testing</p><strong>Human + AI tool</strong><span>The AI tool ran automated checks. The human reviewed visible behavior. Independent technical review is not claimed.</span></div>
     <div class="credits-entry"><p>Final release decision</p><strong>Human</strong><span>Approved the documented version and decided it was ready to publish.</span></div>
-    <div class="credits-entry credits-evidence"><p>Evidence connected</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
+    <div class="credits-entry credits-evidence"><p>Records provided</p><strong>Conversation history · Source material · GitHub history · Live version</strong></div>
     <p class="credits-end">End of example credits</p>
   </div>`;
 }
@@ -2231,12 +2269,13 @@ function humanLoadFit(result) {
 }
 
 function prepareWorkRecordFromAssessment() {
-  const belongsToAnotherProject = Boolean(creationRecord.title) && creationRecord.projectId !== assessment.id;
+  const projectId = assessment.projectId || assessment.id;
+  const belongsToAnotherProject = Boolean(creationRecord.title) && creationRecord.projectId !== projectId;
   if (belongsToAnotherProject && !window.confirm('Start a new Work Record for this project? This will replace the Work Record currently saved in this browser.')) {
     return false;
   }
   if (belongsToAnotherProject || !creationRecord.title) {
-    creationRecord = makeCreationRecord(assessment.id);
+    creationRecord = makeCreationRecord(projectId);
     creationRecord.title = assessment.project.name || '';
     creationRecord.description = assessment.project.task || '';
     creationRecord.systems = assessment.project.systems.map((system) => ({
@@ -2263,7 +2302,7 @@ function prepareWorkRecordFromAssessment() {
     };
     saveCreationRecord();
   } else {
-    creationRecord.projectId = assessment.id;
+    creationRecord.projectId = projectId;
     creationRecord.readiness = {
       ...(creationRecord.readiness || {}),
       workCheckId: assessment.id,
@@ -2275,6 +2314,37 @@ function prepareWorkRecordFromAssessment() {
   }
   recordStep = 1;
   saveRecordStep();
+  return true;
+}
+
+function prepareWorkRecordFromSnapshot(snapshot) {
+  const hasCurrentRecord = hasWorkRecordContent(creationRecord);
+  const sameProject = Boolean(creationRecord.projectId && creationRecord.projectId === snapshot.projectId);
+  if (hasCurrentRecord && !sameProject && !window.confirm(`Replace the Detailed Work Record currently saved in this browser with a record for “${snapshot.projectName || 'this project'}”? Export the current record first if you want to keep it.`)) {
+    return false;
+  }
+  const options = { idFactory: (prefix) => makeId(prefix) };
+  let mergedSameVersion = false;
+  if (hasCurrentRecord && sameProject) {
+    const currentUrl = creationRecord.artifact?.url || '';
+    const differentArtifact = Boolean(currentUrl && snapshot.artifactUrl && currentUrl !== snapshot.artifactUrl);
+    const currentStage = creationRecord.readiness?.stage || '';
+    const differentStage = Boolean(currentStage && snapshot.stage && currentStage !== snapshot.stage);
+    if (differentArtifact || differentStage) {
+      if (!window.confirm('This Snapshot appears to describe a different version of the same project. Start a new Detailed Work Record from it? This will replace the record currently saved in this browser. Export the current record first if you want to keep it.')) return false;
+      creationRecord = workRecordFromSnapshot(snapshot, options);
+    } else {
+      if (!window.confirm('A Detailed Work Record already exists for this project. Add only missing details from this Snapshot? Choose OK only if both describe the same exact work version.')) return false;
+      creationRecord = mergeSnapshotIntoWorkRecord(creationRecord, snapshot, options);
+      mergedSameVersion = true;
+    }
+  } else {
+    creationRecord = workRecordFromSnapshot(snapshot, options);
+  }
+  recordStep = 1;
+  saveRecordStep();
+  saveCreationRecord();
+  showToast(mergedSameVersion ? 'Missing Snapshot details added without replacing your Work Record edits.' : 'Detailed Work Record started from this Snapshot.');
   return true;
 }
 
@@ -2424,6 +2494,7 @@ function normalizeImportedAssessment(imported) {
     schemaVersion: ASSESSMENT_SCHEMA_VERSION,
     methodVersion: METHOD_VERSION,
     stage: imported.stage,
+    projectId: canonicalProjectId(imported.projectId || imported.id || fallback.projectId),
     project,
     answers: isLegacy ? {} : answers,
     completed: false,
@@ -2523,7 +2594,7 @@ function renderSample() {
         <li><span><strong>Final approval</strong><small>Decided the guide was ready to share.</small></span><strong>Human</strong></li>
       </ul></section>
       <section class="record-output-section"><h3>What supports this snapshot</h3><ul class="claim-support-list">
-        <li><span>AI conversation and attached source list</span><strong class="status-pill status-shown-in-records">Shown in records</strong></li>
+        <li><span>AI conversation and attached source list</span><strong class="status-pill status-shown-in-records">Record provided</strong></li>
         <li><span>The writer’s offline revisions and final approval</span><strong class="status-pill status-confirmed-by-creator">Confirmed by creator</strong></li>
         <li><span>Whether every factual claim was independently verified</span><strong class="status-pill status-unknown">Unknown</strong></li>
       </ul></section>
@@ -2708,6 +2779,7 @@ function renderRecordWorkStep(record, errors) {
   return `<div class="record-step-intro"><p class="eyebrow">Step 1</p><h2 id="record-step-heading">What work are you documenting?</h2><p>Use one Work Record for one specific version. If the work changes in an important way, update the version or create a new record.</p></div>
     <div class="field-grid">
       <div class="field field-span-2"><label for="record-title">Work or project title <span class="required">Required</span></label><input id="record-title" name="title" value="${escapeHTML(record.title)}" required ${errorAttributes(errors, 'record-title')} />${fieldError(errors, 'record-title')}</div>
+      <div class="field field-span-2"><label for="record-work-type">What kind of work is it? <span class="helper-text">Optional</span></label><input id="record-work-type" name="workType" value="${escapeHTML(record.workType || '')}" placeholder="For example, training, research, a website, or an article" /></div>
       <div class="field field-span-2"><label for="record-description">What is the work, and what is it meant to do?</label><textarea id="record-description" name="description">${escapeHTML(record.description)}</textarea></div>
       <div class="field"><label for="record-status">Current status</label><select id="record-status" name="status">${selectOptions(WORK_RECORD_STATUS_OPTIONS, record.status)}</select></div>
       <div class="field"><label for="artifact-date">Date of this version or release <span class="helper-text">Optional</span></label><input id="artifact-date" name="artifactDate" type="date" value="${escapeHTML(record.artifact?.date || '')}" /></div>
@@ -2876,6 +2948,7 @@ function recordEvidenceEditor(item, index, claims) {
 function captureWorkRecordStep(form, stepId) {
   if (stepId === 'work') {
     creationRecord.title = String(form.get('title') || '').trim();
+    creationRecord.workType = String(form.get('workType') || '').trim();
     creationRecord.description = String(form.get('description') || '').trim();
     creationRecord.status = String(form.get('status') || 'in-progress');
     creationRecord.artifact = {
@@ -3168,7 +3241,7 @@ function workRecordPreview(recordInput, options = {}) {
   const title = escapeHTML(record.title || 'Untitled work');
   const titleMarkup = options.standalone ? `<h1>${title}</h1>` : `<h1 class="print-only">${title}</h1><h2 class="no-print">${title}</h2>`;
   return `<header class="public-record-header">
-      <p class="kicker">evAIdence™ Work Record · Public prototype v0.3</p>
+      <p class="kicker">evAIdence™ Work Record · Founding Preview v0.5</p>
       ${options.draft ? '<p class="draft-stamp">Draft Work Record · Public-ready requirements are incomplete</p>' : ''}
       ${titleMarkup}
       <p class="record-summary">${escapeHTML(credits.headline)}</p>
@@ -3176,7 +3249,9 @@ function workRecordPreview(recordInput, options = {}) {
     </header>
     <section class="record-output-section"><h3>Work documented</h3><dl class="record-facts">
       <div><dt>Status</dt><dd>${escapeHTML(statusLabel)}</dd></div>
+      <div><dt>Work type</dt><dd>${escapeHTML(record.workType || 'Not identified')}</dd></div>
       <div><dt>Exact version</dt><dd>${escapeHTML(record.artifact?.version || record.artifact?.date || 'Not identified')}</dd></div>
+      <div><dt>Project ID</dt><dd>${escapeHTML(record.projectId || 'Not identified')}</dd></div>
       <div><dt>Record ID</dt><dd>${escapeHTML(record.id)}</dd></div>
       <div><dt>Updated</dt><dd>${escapeHTML(formatDate(record.updatedAt))}</dd></div>
       <div><dt>Recognizable voice needed</dt><dd>${escapeHTML(voiceLabel)}</dd></div>
@@ -3250,7 +3325,7 @@ function downloadPublicWorkRecord(publicRecord, draft = false) {
 
 function hasWorkRecordContent(record) {
   return Boolean(
-    record.title || record.description || record.ideaSource || record.humanActions || record.aiContributions ||
+    record.title || record.workType || record.description || record.ideaSource || record.humanActions || record.aiContributions ||
     record.creator?.name || record.artifact?.url || record.artifact?.version || record.artifact?.date ||
     record.claims?.length || record.evidence?.length || record.contributors?.length ||
     record.systems?.some(({ product, model, role }) => product || model || role) ||
@@ -3264,7 +3339,7 @@ function isRecognizableWorkRecord(value) {
   if (Number(value.schemaVersion) > WORK_RECORD_SCHEMA_VERSION) return false;
   if (value.project && value.answers && !value.title && !value.creator && !value.humanActions) return false;
   return [
-    'title', 'creator', 'creatorName', 'humanActions', 'claims', 'evidence',
+    'title', 'workType', 'creator', 'creatorName', 'humanActions', 'claims', 'evidence',
     'contributions', 'systems', 'artifact', 'artifactUrl', 'finalDecision',
   ].some((key) => Object.hasOwn(value, key));
 }
@@ -3303,8 +3378,9 @@ function importWorkRecord(event) {
 }
 
 function prefillWorkCheckFromRecord() {
-  if (assessment.project?.task && assessment.id !== creationRecord.projectId && !window.confirm('Replace the current Load Test setup with this Work Record? Export the current Load Test first if you want to keep it.')) return false;
+  if (assessment.project?.task && assessment.projectId !== creationRecord.projectId && !window.confirm('Replace the current Load Test setup with this Work Record? Export the current Load Test first if you want to keep it.')) return false;
   assessment = makeAssessment();
+  assessment.projectId = creationRecord.projectId || assessment.projectId;
   assessment.stage = ['released', 'public-prototype', 'ready'].includes(creationRecord.status)
     ? 'release'
     : creationRecord.status === 'in-progress' ? 'build' : 'plan';
@@ -3319,7 +3395,6 @@ function prefillWorkCheckFromRecord() {
   })) : [makeSystem()];
   assessment.project.primarySystemId = assessment.project.systems[0].id;
   assessment.project.system = assessment.project.systems.map(systemSummary).join('; ');
-  creationRecord.projectId = assessment.id;
   saveCreationRecord();
   saveAssessment();
   checkView = 'setup';

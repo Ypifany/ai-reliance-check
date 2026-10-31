@@ -6,13 +6,13 @@ evAIdence is a browser-based prototype from Ypifany. It turns records that alrea
 
 The name is pronounced “evidence.” AI appears inside the word because AI is part of the work, not the whole work.
 
-## The v0.4 experience
+## The v0.5 experience
 
 The main path is intentionally short:
 
 1. **Add your records.** Name the work and AI tools, describe what AI already had, and add the relevant conversation, source material, finished work, or public GitHub repository that you have.
 2. **Check the picture.** Confirm when AI entered, what AI materially did, and what you materially did.
-3. **Save the snapshot.** The first snapshot becomes a baseline. Later comparable snapshots show which parts of the working relationship moved.
+3. **Save the snapshot.** The first snapshot for each project becomes its baseline. Later snapshots for that project show which parts of the working relationship moved.
 
 The change view is descriptive. It does not treat more AI as automatically bad, call a person dependent, or produce a human-versus-AI percentage. It asks whether the change was intentional and leaves the decision with the person.
 
@@ -27,21 +27,22 @@ The change view is descriptive. It does not treat more AI as automatically bad, 
 
 ## Current status
 
-This repository contains the v0.4 public prototype. It is a transparent, practice-based working method. It is not a certification, guarantee, legal conclusion, AI-model rating, probability of accuracy, or independently validated scientific instrument.
+This repository contains the v0.5 Founding Preview. It is a transparent, practice-based working method. It is not a certification, guarantee, legal conclusion, AI-model rating, probability of accuracy, or independently validated scientific instrument.
 
 The prototype:
 
 - Runs entirely in the browser
 - Stores snapshots and drafts locally on the device
 - Saves references, short summaries, and file fingerprints instead of raw pasted conversations or uploaded file contents
-- Labels findings as **Shown in records**, **Confirmed by creator**, or **Unknown**
-- Compares snapshots for the same named project or compatible work type and stage
+- Labels findings as **Record provided**, **Confirmed by creator**, or **Unknown**
+- Gives each project a stable identity, so its snapshots remain comparable after a rename
+- Starts a Detailed Work Record from a Snapshot without overwriting a different saved record unless the person confirms it
 - Exports and imports private snapshot history as JSON
 - Keeps the detailed Work Record and Load Test available
 - Supports public, private, and redacted evidence in the detailed Work Record
 - Produces a privacy-safe public HTML record and private JSON backup from the detailed Work Record
 
-A supplied link is recorded as a reference. The browser prototype does not inspect the linked conversation, repository, or finished work. A fingerprint can show that the same file or pasted text was supplied again, but it does not prove authorship or establish when the source was created.
+A supplied link is recorded as a reference. The browser prototype does not inspect the linked conversation, repository, or finished work. A fingerprint can show that the same file or pasted text was supplied again, but it does not prove authorship or establish when the source was created. Link access and content review are planned for a later connected version, not this browser preview.
 
 Browser storage can be cleared and does not automatically move between devices. Export the private history if it matters. Do not enter confidential, regulated, or sensitive information.
 

@@ -1,3 +1,5 @@
+import { canonicalProjectId } from './project-identity.js';
+
 export const WORK_RECORD_SCHEMA_VERSION = 3;
 
 export const WORK_RECORD_STATUS_OPTIONS = Object.freeze([
@@ -347,12 +349,14 @@ export function createWorkRecord(options = {}) {
   const makeId = idMaker(options);
   const timestamp = nowISO(options.now);
   const recordId = makeId("record", options.id);
+  const projectId = canonicalProjectId(options.projectId) || makeId("project");
   return {
     schemaVersion: WORK_RECORD_SCHEMA_VERSION,
     id: recordId,
-    projectId: text(options.projectId),
+    projectId,
     status: "in-progress",
     title: "",
+    workType: "",
     description: "",
     creator: { name: "", role: "" },
     artifact: { url: "", version: "", date: "" },
@@ -424,9 +428,10 @@ export function normalizeWorkRecord(input = {}, options = {}) {
     schemaVersion: WORK_RECORD_SCHEMA_VERSION,
     sourceSchemaVersion,
     id: recordId,
-    projectId: text(record.projectId || options.projectId),
+    projectId: canonicalProjectId(record.projectId || options.projectId) || canonicalProjectId(`project-${recordId}`),
     status: oneOf(record.status, WORK_RECORD_STATUSES, "in-progress"),
     title: text(record.title),
+    workType: text(record.workType),
     description: text(record.description),
     creator: {
       name: text(creatorValue.name || record.creatorName),
@@ -463,7 +468,7 @@ export function normalizeWorkRecord(input = {}, options = {}) {
       severity: text(record.outcome?.severity),
     },
     readiness: {
-      workCheckId: text(record.readiness?.workCheckId || record.projectId),
+      workCheckId: text(record.readiness?.workCheckId),
       stage: text(record.readiness?.stage),
       decision: text(record.readiness?.decision),
       checkedAt: text(record.readiness?.checkedAt),
@@ -662,6 +667,7 @@ export function toPublicWorkRecord(recordInput, options = {}) {
     projectId: record.projectId,
     status: record.status,
     title: record.title,
+    workType: record.workType,
     description: record.description,
     creator: { ...record.creator },
     artifact: { ...record.artifact },

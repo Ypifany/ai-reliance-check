@@ -51,6 +51,10 @@ for (const fieldId of ['approval-field', 'reversible-field', 'data-authorization
   assert.match(appSource, new RegExp(`toggleConditionalField\\('${fieldId}'`), `${fieldId} must be disabled when hidden`);
 }
 assert.doesNotMatch(appSource, /human-ai-work-check-assessment/, 'New exports must use the Load Test name');
+assert.match(appSource, /Records provided/, 'The public copy must use the approved records label');
+assert.match(appSource, /projectId: makeId\('project'\)/, 'A Load Test must keep a project identity separate from its check identity');
+assert.doesNotMatch(appSource, /creationRecord\.projectId = assessment\.id/, 'A Load Test must not replace the stable project identity');
+assert.match(appSource, /same exact work version/, 'A Snapshot must not silently merge into a Work Record for another version');
 const builtIndex = fs.readFileSync(path.resolve('dist/index.html'), 'utf8');
 const bundleName = builtIndex.match(/assets\/(index-[^"']+\.js)/)?.[1];
 assert.ok(bundleName, 'Built JavaScript bundle not found in dist/index.html. Run npm run build first.');
@@ -232,7 +236,7 @@ const routes = [
   { name: 'home-feedback', route: '#/', expected: 'Try a Snapshot, then tell me how it went.' },
   { name: 'snapshot-step-1', route: '#/snapshot', expected: 'Add the records you already have.' },
   { name: 'legacy-creation-record-route', route: '#/creation-record', expected: 'Add the records you already have.' },
-  { name: 'changes-empty', route: '#/changes', expected: 'Your first snapshot becomes the baseline.' },
+  { name: 'changes-empty', route: '#/changes', expected: 'Each project starts with its own baseline.' },
   { name: 'detailed-record-step-1', route: '#/detailed-record', expected: 'What work are you documenting?' },
   { name: 'sample', route: '#/sample', expected: 'One writer. Two snapshots. A changed relationship with AI.' },
   { name: 'load-test', route: '#/load-test', expected: 'How far along is the work?' },
@@ -309,12 +313,13 @@ const routes = [
 ];
 
 const snapshotHistory = {
-  schemaVersion: 1,
+  schemaVersion: 2,
   baselineId: 'snapshot-january',
   snapshots: [
     {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: 'snapshot-january',
+      projectId: 'project-comparable-writing',
       createdAt: '2026-01-15T12:00:00.000Z',
       projectName: 'Comparable writing project',
       workType: 'writing',
@@ -329,8 +334,9 @@ const snapshotHistory = {
       intent: 'not-answered',
     },
     {
-      schemaVersion: 1,
+      schemaVersion: 2,
       id: 'snapshot-october',
+      projectId: 'project-comparable-writing',
       createdAt: '2026-10-15T12:00:00.000Z',
       projectName: 'Comparable writing project',
       workType: 'writing',
@@ -346,13 +352,54 @@ const snapshotHistory = {
     },
   ],
 };
+const outOfOrderSnapshotHistory = structuredClone(snapshotHistory);
+outOfOrderSnapshotHistory.snapshots.reverse();
 
 routes.push({
   name: 'changes-with-comparable-history',
   route: '#/changes',
-  expected: '1 tracked change in the latest comparable work.',
+  expected: '1 tracked change for Comparable writing project.',
   initial: {
     localStorage: { 'evaidence:snapshots:v1': JSON.stringify(snapshotHistory) },
+  },
+});
+
+routes.push({
+  name: 'changes-project-selector',
+  route: '#/changes',
+  expected: 'Project to compare',
+  initial: {
+    localStorage: { 'evaidence:snapshots:v1': JSON.stringify(snapshotHistory) },
+  },
+});
+
+routes.push({
+  name: 'changes-out-of-order-import',
+  route: '#/changes',
+  expected: '1 tracked change for Comparable writing project.',
+  initial: {
+    localStorage: { 'evaidence:snapshots:v1': JSON.stringify(outOfOrderSnapshotHistory) },
+  },
+});
+
+routes.push({
+  name: 'snapshot-existing-project-choice',
+  route: '#/snapshot',
+  expected: 'Continue: Comparable writing project',
+  initial: {
+    localStorage: { 'evaidence:snapshots:v1': JSON.stringify(snapshotHistory) },
+  },
+});
+
+routes.push({
+  name: 'snapshot-result-to-detailed-record',
+  route: '#/snapshot',
+  expected: 'Create Detailed Work Record',
+  initial: {
+    localStorage: {
+      'evaidence:snapshots:v1': JSON.stringify(snapshotHistory),
+      'evaidence:snapshot-draft:v1': JSON.stringify({ step: 3, savedSnapshotId: 'snapshot-october' }),
+    },
   },
 });
 
@@ -380,6 +427,15 @@ const smokeRecord = {
   review: { status: 'self-reviewed', visibility: 'private', claimIds: [], allClaims: false },
   finalDecision: { name: '', role: '', date: '' },
 };
+
+routes.push({
+  name: 'snapshot-can-continue-work-record-project',
+  route: '#/snapshot',
+  expected: 'Continue: Smoke test work',
+  initial: {
+    localStorage: { 'ai-reliance-check:work-record:v0.3': JSON.stringify(smokeRecord) },
+  },
+});
 
 for (const [step, expected] of [
   [2, 'What do you want this record to show?'],
